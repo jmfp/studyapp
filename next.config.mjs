@@ -8,7 +8,7 @@ const nextConfig = {
         includePaths: [path.join(__dirname, 'styles')],
       },    
     images:{
-        domains: ["images.unsplash.com"]
+        domains: ["images.unsplash.com", "cdn.sanity.io"]
     }
 };
 
