@@ -4,3 +4,10 @@ export interface blogCard{
     currentSlug: string,
     heroImage: any
 }
+
+export interface article{
+    title: string,
+    currentSlug: string,
+    heroImage: any,
+    content: any
+}
