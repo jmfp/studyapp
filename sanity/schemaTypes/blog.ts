@@ -33,6 +33,22 @@ export default{
             of: [
                 {
                     type: "block"
+                },
+                {
+                    type: "image"
+                },
+                {
+                    type: "code",
+                    options: {
+                        language: 'javascript',
+                        languageAlternatives: [
+                          {title: 'Javascript', value: 'javascript'},
+                          {title: 'HTML', value: 'html'},
+                          {title: 'CSS', value: 'css'},
+                          {title: 'Python', value: 'python'},
+                        ],
+                        withFilename: true,
+                      }
                 }
             ]
         }

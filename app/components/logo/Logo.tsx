@@ -5,7 +5,7 @@ import Link from "next/link";
 
 const Logo = () =>{
     return(
-        <div className="prose-2xl">
+        <div className="prose-xl hover:prose-2xl">
         <Link
           href="/"
         >

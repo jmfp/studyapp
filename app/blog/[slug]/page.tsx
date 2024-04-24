@@ -33,7 +33,7 @@ export default async function Article({params}:{params: {slug: string}}){
               height={500}
               className="w-[800px] h-[600px] rounded-lg m-[auto] object-cover border-4 border-violet-600"
             />
-            <div className="mt-24 prose m-[auto] p-10 prose-violet prose-xl dark:prose-invert prose-h2:text-violet-500">
+            <div className="mt-24 prose m-[auto] p-10 prose-violet prose-xl dark:prose-invert prose-h2:text-violet-500 prose-li:color-violet-500">
               <PortableText value={data.content}/>
             </div>
         
