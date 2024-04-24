@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 //fetch the data for blog posts from sanity.io
 async function getPosts() {
   const query = `
-  *[_type == "blog"] | order(_createdAt desc){
+  *[_type == "blog"] | order(_createdAt asc){
     title,
       smallDescription,
       "currentSlug": slug.current,
