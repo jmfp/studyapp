@@ -6,6 +6,8 @@ import { blogCard } from "./lib/interface";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
+export const revalidate = 30
+
 //fetch the data for blog posts from sanity.io
 async function getPosts() {
   const query = `
