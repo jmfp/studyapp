@@ -5,6 +5,7 @@ import { client, urlFor } from "./lib/sanity";
 import { blogCard } from "./lib/interface";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import ButtonWrapper from "./components/button/Button";
 
 export const revalidate = 30
 

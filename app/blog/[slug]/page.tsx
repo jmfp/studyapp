@@ -23,7 +23,7 @@ export default async function Article({params}:{params: {slug: string}}){
     const data: article = await getData(params.slug)
     console.log(data)
     return(
-        <div className="w-[100vw] content-center flex-auto">
+        <div className="w-[100vw] content-center flex-auto p-10">
 
           <h1 className="text-3xl font-extrabold text-center">{data.title}</h1>
             <Image
@@ -33,7 +33,7 @@ export default async function Article({params}:{params: {slug: string}}){
               height={500}
               className="w-[800px] h-[600px] rounded-lg m-[auto] object-cover border-4 border-violet-600"
             />
-            <div className="mt-24 prose m-[auto] prose-violet prose-xl dark:prose-invert prose-h:text-primary">
+            <div className="mt-24 prose m-[auto] p-10 prose-violet prose-xl dark:prose-invert prose-h:text-primary">
               <PortableText value={data.content}/>
             </div>
         
