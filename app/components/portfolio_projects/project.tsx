@@ -12,17 +12,18 @@ interface data {
 export default function Project(props: data){
     return(
         <div>
-            <Card>
+            <Card className="h-[500px]">
                 <Image
                     src={props.image}
                     alt="web development"
                     width={200}
                     height={200}
+                    className="rounded-t-lg h-[300px] w-[100%] object-cover"
                 />
-                <CardContent>
-                    {props.description}
+                <CardContent className="mt-5 text-center">
+                    <p className="text-sm text-violet-500 mt-5">{props.description}</p>
                 </CardContent>
-                <Button asChild>
+                <Button asChild className="w-[50%] bottom-5 ml-[25%]">
                     <Link href={props.link} target="_blank">Check Out</Link>
                 </Button>
             </Card>
