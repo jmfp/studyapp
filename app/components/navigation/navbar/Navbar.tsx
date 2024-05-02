@@ -13,7 +13,6 @@ const NavBar = () =>{
       <div className="container mx-auto px-4 h-full">
         <div className="flex justify-between items-center h-full">
           <Logo/>
-          <Link href="/projects">Projects</Link>
           <SocialLinks/>
         </div>
       </div>
@@ -25,6 +24,7 @@ const NavBar = () =>{
 function SocialLinks(){
   return(
     <div className="flex items-center gap-2">
+      <Link href="/projects">Projects</Link>
       <Link
         href="https://github.com/jmfp"
         target="_blank"
