@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Nunito } from "next/font/google";
 import "./globals.css";
-import Navigation from "./components/navigation/navbar/"
+import Navigation from "./components/navigation/navbar/Navbar"
 import {ThemeProvider} from './components/theme-provider'
 
 const inter = Inter({ subsets: ["latin"] });
