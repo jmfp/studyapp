@@ -23,7 +23,7 @@ export default function Project(props: data){
                     {props.description}
                 </CardContent>
                 <Button asChild>
-                    <Link href={props.link}>Check Out</Link>
+                    <Link href={props.link} target="_blank">Check Out</Link>
                 </Button>
             </Card>
         </div>
