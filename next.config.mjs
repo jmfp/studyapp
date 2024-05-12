@@ -10,6 +10,7 @@ const nextConfig = {
     images:{
         domains: ["images.unsplash.com", "cdn.sanity.io"]
     },
+    reactStrictMode: false,
 };
 
 export default nextConfig;
