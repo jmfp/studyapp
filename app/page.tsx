@@ -31,7 +31,7 @@ export default async function Home() {
   return (
       <div className='display: flex w-[100%] justify-center mb-14'>
         <div className='grid lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 mt-5 gap-5 content-center'>
-          {posts.map((post: any, idx: number) =>(
+          {posts !== null ? posts.map((post: any, idx: number) =>(
             <Card key={idx} className='m-[auto] max-w-[400px] max-h-[550px]'>
               <Image 
               src={post.image} 
@@ -50,7 +50,7 @@ export default async function Home() {
                 <Link href={`/blog/${post.slug}`}>Read More</Link>
               </Button>
             </Card>
-          ))}
+          )) : <span/>}
         </div>
       </div>
   );
