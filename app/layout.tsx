@@ -31,9 +31,9 @@ export default function RootLayout({
           <Providers>
           <Navigation/>
           {children}
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-          <script>hljs.highlightAll();</script>
-          <script>hljs.highlightOnLoad();</script>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" async></script>
+          <script async>hljs.highlightAll();</script>
+          <script async>hljs.highlightOnLoad();</script>
           </Providers>
         </ThemeProvider>
       </body>
