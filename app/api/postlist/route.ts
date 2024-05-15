@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 
 export async function GET(){
     await dbConnect()
+    console.log(`database connected`)
     const posts = await Post.find({})
     //return allPosts
     //return JSON.stringify(posts)
