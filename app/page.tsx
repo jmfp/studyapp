@@ -20,9 +20,13 @@ export interface post{
 
 //fetch posts from mongodb
 async function fetchPosts(){
-  const res = await fetch(`${process.env.API_URL}/api/postlist`)
-  const posts = await res.json()
-  return (posts)
+  try {
+    const res = await fetch(`${process.env.API_URL}/api/postlist`)
+    const posts = await res.json()
+    return (posts)
+  } catch (error: any) {
+    console.log(error.message)
+  }
 }
 
 export default async function Home() {
