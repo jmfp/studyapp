@@ -22,7 +22,6 @@ export interface post{
 async function fetchPosts(){
   const res = await fetch(`${process.env.API_URL}/api/postlist`)
   const posts = await res.json()
-  console.log(posts)
   return (posts)
 }
 

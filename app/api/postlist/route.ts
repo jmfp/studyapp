@@ -7,6 +7,7 @@ export async function GET(){
         await dbConnect()
         console.log(`database connected`)
         const posts = await Post.find({})
+        console.log(posts)
         //return allPosts
         //return JSON.stringify(posts)
         return NextResponse.json(posts, {status: 201})  
