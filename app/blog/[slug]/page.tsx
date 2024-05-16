@@ -11,7 +11,7 @@ export const revalidate = 30
 
 //fetch posts from mongodb
 async function fetchPosts(slug: string){
-  const res = await fetch(`${process.env.DATA_API_URL}/api/posts?slug=${slug}`)
+  const res = await fetch(`${process.env.API_URL}/api/posts?slug=${slug}`)
   const posts = await res.json()
   return (posts[0])
 }
