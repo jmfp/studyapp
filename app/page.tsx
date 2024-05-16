@@ -26,8 +26,7 @@ async function fetchPosts(){
 }
 
 export default async function Home() {
-  const posts = null
-  //const posts = await fetchPosts()
+  const posts = await fetchPosts()
 
   return (
       <div className='display: flex w-[100%] justify-center mb-14'>
