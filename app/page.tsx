@@ -35,14 +35,14 @@ export default async function Home() {
   return (
       <div className='display: flex w-[100%] justify-center mb-14'>
         <div className='grid lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 mt-5 gap-5 content-center'>
-          {posts !== null ? posts.map((post: any, idx: number) =>(
+          {/*posts.length ? posts.map((post: any, idx: number) =>(
             <Card key={idx} className='m-[auto] max-w-[400px] max-h-[550px]'>
               <Image 
-              src={post.image} 
-              alt={post.slug} 
-              width={200} 
-              height={200}
-              className="rounded-t-lg h-[300px] w-[100%] object-cover"
+                src={post.image} 
+                alt={post.slug} 
+                width={200} 
+                height={200}
+                className="rounded-t-lg h-[300px] w-[100%] object-cover"
               />
               <CardContent className="mt-5 text-center">
                 <h3 className="text-xl line-clamp-1 font-bold">{post.title}</h3>
@@ -54,7 +54,7 @@ export default async function Home() {
                 <Link href={`/blog/${post.slug}`}>Read More</Link>
               </Button>
             </Card>
-          )) : <span/>}
+          )) : <span/>*/}
         </div>
       </div>
   );
