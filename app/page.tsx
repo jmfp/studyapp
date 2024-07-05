@@ -6,6 +6,7 @@ import { blogCard } from "./lib/interface";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import parse from 'html-react-parser';
+import { supabase } from "./lib/db/supabase";
 
 export const revalidate = 30
 
@@ -16,6 +17,17 @@ export interface post{
   slug: string,
   description: string,
   content: string
+}
+
+//testing supabase
+async function newView(){
+  const { data, error } = await supabase
+    .from("views")
+    .insert({
+      name: 'random name'
+    })
+    if (data) console.log(data)
+    if (error) console.log(error)
 }
 
 //fetch posts from mongodb
@@ -30,7 +42,8 @@ async function fetchPosts(){
 }
 
 export default async function Home() {
-  const posts = await fetchPosts()
+  //const posts = await fetchPosts()
+  const test = await newView()
 
   return (
       <div className='display: flex w-[100%] justify-center mb-14'>
