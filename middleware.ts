@@ -8,15 +8,15 @@ export async function middleware(req: NextRequest){
         session
     }, error} = await supabase.auth.getSession()
     //redirecting if not logged in
-    //if(!session){
-    //    return NextResponse.rewrite(new URL('/admin/login', req.url))
-    //}
+    if(!session){
+        return NextResponse.rewrite(new URL('/admin/login', req.url))
+    }
 
     return res
 }
 
 export const config = {
     matcher: [
-        '/((?!api|_next/static|_next/image|favicon.ico). *)',
+       '/admin/dashboard/:path*', '/admin/posts/:path*'
     ]
 }

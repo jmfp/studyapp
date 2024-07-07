@@ -1,7 +1,7 @@
 export default function Login(){
     return(
         <div>
-            <form action="../auth/signup" method="post">
+            <form action="../auth/signin" method="post">
                 <label htmlFor="email">Email</label>
                 <input name="email"/>
                 <label htmlFor="password">password</label>
