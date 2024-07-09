@@ -148,6 +148,7 @@ export default function AddPost(){
                             </FormItem>
                         )}
                     />
+                    
                     <Button type='submit'>Submit</Button>
                 </form>
             </Form>
