@@ -4,15 +4,18 @@ import typescript from 'highlight.js/lib/languages/typescript';
 import ParallaxImage from "@/app/components/images/image";
 import 'highlight.js/styles/base16/pop.css'
 import { useEffect } from "react";
+import { PrismaClient } from '@prisma/client';
 
 hljs.registerLanguage('typescript', typescript);
 
 export const revalidate = 30
+const prisma = new PrismaClient()
 
 //fetch posts from mongodb
 async function fetchPosts(slug: string){
-  const res = await fetch(`${process.env.API_URL}/api/posts?slug=${slug}`)
-  const posts = await res.json()
+  //const res = await fetch(`${process.env.API_URL}/api/posts?slug=${slug}`)
+  //const posts = await res.json()
+  const posts = await prisma.post.findMany({where: {slug: slug}})
   return (posts[0])
 }
 
