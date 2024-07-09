@@ -21,6 +21,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next/types/app/admin/login/page.tsx", ".next/types/app/page.tsx", "app/lib/db/prisma.js"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next/types/app/admin/login/page.tsx", ".next/types/app/page.tsx", "app/lib/db/prisma.ts"],
   "exclude": ["node_modules"]
 }
