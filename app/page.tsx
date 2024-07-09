@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import parse from 'html-react-parser';
 import { supabase } from "./lib/db/supabase";
+import { PrismaClient } from "@prisma/client";
 
 export const revalidate = 30
 
@@ -41,14 +42,18 @@ async function fetchPosts(){
   }
 }
 
+//prisma client
+const prisma = new PrismaClient()
+
 export default async function Home() {
   //const posts = await fetchPosts()
-  const test = await newView()
+  const posts = await prisma.post.findMany({})
+  //const test = await newView()
 
   return (
       <div className='display: flex w-[100%] justify-center mb-14'>
         <div className='grid lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 mt-5 gap-5 content-center'>
-          {/*posts.length ? posts.map((post: any, idx: number) =>(
+          {posts.length ? posts.map((post: any, idx: number) =>(
             <Card key={idx} className='m-[auto] max-w-[400px] max-h-[550px]'>
               <Image 
                 src={post.image} 
@@ -67,7 +72,7 @@ export default async function Home() {
                 <Link href={`/blog/${post.slug}`}>Read More</Link>
               </Button>
             </Card>
-          )) : <span/>*/}
+          )) : <span/>}
         </div>
       </div>
   );

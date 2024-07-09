@@ -14,6 +14,9 @@ import { useForm } from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Button } from "@/components/ui/button";
+import { blogPost } from "@/app/lib/interface";
+import { createBlog } from "@/app/lib/actions/blog";
+import { addBlog } from "@/actions/actions";
 
 export default function AddPost(){
 
@@ -22,7 +25,8 @@ export default function AddPost(){
         image: z.string().min(1, {message: 'Image is required'}),
         slug: z.string().min(1, {message: 'slug is required'}),
         description: z.string().min(2, {message: 'description is required'}),
-        content: z.string().min(1, {message: 'content is required'})
+        content: z.string().min(1, {message: 'content is required'}),
+        category: z.string().min(1, {message: 'category is required'})
     })
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -33,20 +37,27 @@ export default function AddPost(){
             image: '',
             slug: '',
             description: '',
-            content: ''
+            content: '',
+            category: ''
         }
     })
 
-    function onSubmit(values: z.infer<typeof formSchema>){
-        fetch('/api/posts', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(values),
-          })
+    async function onSubmit(values: z.infer<typeof formSchema>){
+        //fetch('/api/posts', {
+        //    method: 'POST',
+        //    headers: {
+        //      'Content-Type': 'application/json',
+        //    },
+        //    body: JSON.stringify(values),
+        //  })
+        await addBlog(values)
         //submit data to the backend too be stored in the database
     }
+
+    //async function onSubmit(data: blogPost){
+    //    await createBlog(data)
+    //    //submit data to the backend too be stored in the database
+    //}
 
     function generateSlug(articleTitle: string){
         if(articleTitle !== ''){
@@ -117,6 +128,19 @@ export default function AddPost(){
                         render={({field}) =>(
                             <FormItem>
                                 <FormLabel>Content</FormLabel>
+                                <FormControl>
+                                    <RichText description={field.name} onChange={field.onChange}/>
+                                </FormControl>
+                                <FormMessage/>
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="category"
+                        render={({field}) =>(
+                            <FormItem>
+                                <FormLabel>Category</FormLabel>
                                 <FormControl>
                                     <RichText description={field.name} onChange={field.onChange}/>
                                 </FormControl>

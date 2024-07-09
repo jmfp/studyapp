@@ -11,3 +11,11 @@ export interface article{
     heroImage: any,
     content: any
 }
+
+export interface blogPost{
+    title: string,
+    image_url: string,
+    is_published: boolean,
+    slug: string,
+    content: string
+}
