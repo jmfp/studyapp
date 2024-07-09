@@ -1,12 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import styles from "./sass/components/Container.module.scss"
-import { client, urlFor } from "./lib/sanity";
 import { blogCard } from "./lib/interface";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import parse from 'html-react-parser';
-import { supabase } from "./lib/db/supabase";
 import { PrismaClient } from "@prisma/client";
 
 export const revalidate = 30
@@ -18,28 +16,6 @@ export interface post{
   slug: string,
   description: string,
   content: string
-}
-
-//testing supabase
-async function newView(){
-  const { data, error } = await supabase
-    .from("views")
-    .insert({
-      name: 'random name'
-    })
-    if (data) console.log(data)
-    if (error) console.log(error)
-}
-
-//fetch posts from mongodb
-async function fetchPosts(){
-  try {
-    const res = await fetch(`${process.env.API_URL}/api/postlist`)
-    const posts = await res.json()
-    return (posts)
-  } catch (error: any) {
-    console.log(error.message)
-  }
 }
 
 //prisma client
