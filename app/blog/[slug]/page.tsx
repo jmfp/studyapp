@@ -2,8 +2,9 @@ import parse from 'html-react-parser';
 import hljs from 'highlight.js/lib/core';
 import typescript from 'highlight.js/lib/languages/typescript';
 import ParallaxImage from "@/app/components/images/image";
+import Markdown from "react-markdown"
+import rehypeHighlight from "rehype-highlight"
 import 'highlight.js/styles/base16/pop.css'
-import { useEffect } from "react";
 import {PrismaClient} from "@/prisma/generated/client"
 
 hljs.registerLanguage('typescript', typescript);
@@ -28,6 +29,9 @@ export default async function Article({params}:{params: {slug: string}}){
     const post = await fetchPosts(params.slug)
     return(
       <div>
+        <Markdown
+          rehypePlugins={[rehypeHighlight]}
+        ></Markdown>
         <ParallaxImage 
           image={post.image}
           alt={post.slug}

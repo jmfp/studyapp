@@ -20,7 +20,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
+    
     <html lang="en">
+      <meta name="google-adsense-account" content="ca-pub-9522353240660967"></meta>
       <body className={nunito.className}>
         <ThemeProvider
           attribute="class"
