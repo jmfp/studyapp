@@ -5,7 +5,7 @@ import { blogCard } from "./lib/interface";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import parse from 'html-react-parser';
-import { PrismaClient } from "@prisma/client";
+import {PrismaClient} from "@/prisma/generated/client"
 
 export const revalidate = 30
 

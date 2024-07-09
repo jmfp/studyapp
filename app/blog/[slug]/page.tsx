@@ -4,7 +4,7 @@ import typescript from 'highlight.js/lib/languages/typescript';
 import ParallaxImage from "@/app/components/images/image";
 import 'highlight.js/styles/base16/pop.css'
 import { useEffect } from "react";
-import { PrismaClient } from '@prisma/client';
+import {PrismaClient} from "@/prisma/generated/client"
 
 hljs.registerLanguage('typescript', typescript);
 
