@@ -17,6 +17,8 @@ import { Button } from "@/components/ui/button";
 import { blogPost } from "@/app/lib/interface";
 import { createBlog } from "@/app/lib/actions/blog";
 import { addBlog } from "@/actions/actions";
+import parse from 'html-react-parser'
+import { Textarea } from "@/components/ui/textarea";
 
 export default function AddPost(){
 
@@ -129,7 +131,8 @@ export default function AddPost(){
                             <FormItem>
                                 <FormLabel>Content</FormLabel>
                                 <FormControl>
-                                    <RichText description={field.name} onChange={field.onChange}/>
+                                    <Textarea placeholder="Content" {...field}/>
+                                    {/*<RichText description={field.name} onChange={field.onChange}/>*/}
                                 </FormControl>
                                 <FormMessage/>
                             </FormItem>

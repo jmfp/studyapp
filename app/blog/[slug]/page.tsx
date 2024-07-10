@@ -6,6 +6,7 @@ import Markdown from "react-markdown"
 import rehypeHighlight from "rehype-highlight"
 import 'highlight.js/styles/base16/pop.css'
 import {PrismaClient} from "@/prisma/generated/client"
+import MarkdownArea from '@/app/components/markdown/MarkdownArea';
 
 hljs.registerLanguage('typescript', typescript);
 
@@ -27,11 +28,9 @@ async function fetchPosts(slug: string){
 export default async function Article({params}:{params: {slug: string}}){
     //const data: article = await getData(params.slug)
     const post = await fetchPosts(params.slug)
+    let content = parse(post.content)
     return(
       <div>
-        <Markdown
-          rehypePlugins={[rehypeHighlight]}
-        ></Markdown>
         <ParallaxImage 
           image={post.image}
           alt={post.slug}
@@ -42,8 +41,10 @@ export default async function Article({params}:{params: {slug: string}}){
         />
           <div className="w-[100vw] content-center flex-auto p-10 prose-h1:text-violet-500">
           <h1 className="text-3xl font-extrabold text-center">{post.title}</h1>
-            <div className="mt-24 prose m-[auto] p-10 prose-violet prose-xl dark:prose-invert prose-h2:text-violet-500 prose-li:color-violet-500">
-              {parse(post.content)}
+            <div className="mt-24 prose m-[auto] prose-violet prose-xl dark:prose-invert prose-h2:text-violet-500 prose-li:color-violet-500">
+              {/*parse(post.content)*/}
+              <MarkdownArea content={post.content}>
+              </MarkdownArea>
             </div>
             
         </div>
