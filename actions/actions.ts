@@ -28,3 +28,7 @@ export const addBlog = async (formData: any) => {
     revalidatePath('/admin/posts/new')
     redirect('/')
 }
+
+export const deleteBlog = async(id: any) =>{
+    prisma.post.delete({where: {id: id}})
+}
