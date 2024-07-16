@@ -1,4 +1,3 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { getSession, updateSession } from './app/auth/auth'
 import { redirect } from 'next/navigation'
@@ -6,10 +5,9 @@ import { redirect } from 'next/navigation'
 export async function middleware(request: NextRequest) {
   var session = await getSession()
   if(!session){
-    return await NextResponse.redirect(new URL('/admin/login', request.url))
+    return NextResponse.redirect(new URL('/admin/login', request.url))
   }
-  console.log(session)
-  return await updateSession(request)
+  //return await updateSession(request)
 }
 
 export const config = {
@@ -21,6 +19,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * Feel free to modify this pattern to include more paths.
      */
-    '/((?!api|_next/static|_next/image|auth|admin/login|favicon.ico|blog|robots.txt|images|projects|$).*)', 
+    //'/((?!api|_next/static|_next/image|auth|admin/login|favicon.ico|blog|robots.txt|images|projects|$).*)', 
   ],
 }

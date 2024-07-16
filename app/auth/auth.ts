@@ -21,6 +21,10 @@ export async function encrypt(payload: any) {
     return payload;
   }
 
+  export async function signUp(formData: FormData){
+    //const newUser = await global.prismadb.post
+  }
+
 export async function login(formData: FormData){
     //verify credentials and get user
     const user = {email: formData.get('email')};

@@ -14,10 +14,7 @@ import { useForm } from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Button } from "@/components/ui/button";
-import { blogPost } from "@/app/lib/interface";
-import { createBlog } from "@/app/lib/actions/blog";
 import { addBlog } from "@/actions/actions";
-import parse from 'html-react-parser'
 import { Textarea } from "@/components/ui/textarea";
 
 export default function AddPost(){
@@ -45,21 +42,8 @@ export default function AddPost(){
     })
 
     async function onSubmit(values: z.infer<typeof formSchema>){
-        //fetch('/api/posts', {
-        //    method: 'POST',
-        //    headers: {
-        //      'Content-Type': 'application/json',
-        //    },
-        //    body: JSON.stringify(values),
-        //  })
         await addBlog(values)
-        //submit data to the backend too be stored in the database
     }
-
-    //async function onSubmit(data: blogPost){
-    //    await createBlog(data)
-    //    //submit data to the backend too be stored in the database
-    //}
 
     function generateSlug(articleTitle: string){
         if(articleTitle !== ''){

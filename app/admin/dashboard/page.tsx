@@ -1,20 +1,12 @@
-'use client'
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { redirect } from "next/navigation"
-import {PrismaClient} from "@/prisma/generated/client"
 import Image from "next/image"
+import { getAllPosts } from "@/actions/actions"
 
 export default async function Dashboard(){
     
     //prisma client
-    const prisma = new PrismaClient()
-    const posts = await prisma.post.findMany({})
-
-    //delete blog
-    const deleteBlog = async () =>{
-        await console.log("worked")
-    }
+    const posts = await getAllPosts()
 
     return(
         <div className='display: flex flex-col w-[100%] justify-center items-center'>
@@ -35,8 +27,9 @@ export default async function Dashboard(){
                             <p>{post.title}</p>
                             <div className="display: flex gap-4 m-auto">
                                 <form action={async () =>{
-                                    //'use server'
-                                    await deleteBlog
+                                    'use server'
+                                    await console.log("worked")
+                                    //await deleteBlog
                                 }}>
                                     <Button type='submit'>Delete</Button>
                                 </form>

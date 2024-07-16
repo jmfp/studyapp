@@ -32,3 +32,8 @@ export const addBlog = async (formData: any) => {
 export const deleteBlog = async(id: any) =>{
     prisma.post.delete({where: {id: id}})
 }
+
+export const getAllPosts = async() => {
+    revalidatePath('/admin/dashboard')
+    return await prisma.post.findMany({})
+}

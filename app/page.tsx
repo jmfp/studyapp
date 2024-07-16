@@ -19,7 +19,7 @@ export interface post{
 }
 
 //prisma client
-const prisma = new PrismaClient()
+export const prisma = new PrismaClient()
 
 export default async function Home() {
   //const posts = await fetchPosts()
