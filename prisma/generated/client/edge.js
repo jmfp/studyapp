@@ -120,7 +120,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/Users/jesseprice/Development/Businesswebsite/britemune/prisma/generated/client",
+      "value": "/Users/jesseprice/Development/next_SAAS/jessethedev/prisma/generated/client",
       "fromEnvVar": null
     },
     "config": {
@@ -146,7 +146,7 @@ const config = {
     "db"
   ],
   "activeProvider": "mongodb",
-  "postinstall": false,
+  "postinstall": true,
   "inlineDatasources": {
     "db": {
       "url": {
