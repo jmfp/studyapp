@@ -1,6 +1,6 @@
 'use server'
 
-import { PrismaClient } from "@prisma/client"
+import { PrismaClient } from "@/prisma/generated/client"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
@@ -27,6 +27,16 @@ export const addBlog = async (formData: any) => {
     //revalidate cache for server action
     revalidatePath('/admin/posts/new')
     redirect('/')
+}
+
+export const addCharacter = async (formData: any) =>{
+    const characterName = formData["characterName"]
+    const new_character = await prisma.character.create({
+        data:{
+            name: characterName
+
+        }
+    })
 }
 
 export const deleteBlog = async(id: any) =>{

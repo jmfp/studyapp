@@ -31,3 +31,17 @@ model Post {
   //authorId String    @db.ObjectId
   //comments Comment[]
 }
+
+model Character {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  owner       User?     @relation(fields: [userId], references: [id])
+  userId      String?   @unique @db.ObjectId
+}
+
+model User {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  email       String    @unique
+  username    String    @unique
+  characters  Character[]
+}

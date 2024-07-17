@@ -6,6 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import parse from 'html-react-parser';
 import {PrismaClient} from "@/prisma/generated/client"
+import MenuItem from "./components/menu/menu";
+import { GiIciclesAura, GiDiceTwentyFacesTwenty } from "react-icons/gi";
 
 export const revalidate = 30
 
@@ -27,8 +29,25 @@ export default async function Home() {
   //const test = await newView()
 
   return (
-      <div className='display: flex w-[100%] justify-center mb-14'>
-        <div className='grid lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 mt-5 gap-5 content-center'>
+      <div className='display: flex w-[100%] justify-space-between mb-14'>
+        <div className="display: flex flex-col border-r border-b border-b-green-400 h-full border-r-green-400 w-[15%]">
+          <Image
+            src="https://images.unsplash.com/photo-1720975945110-6278215f280d?q=80&w=3269&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+            alt="User Icon"
+            width={200}
+            height={200}
+            className="m-auto mb-6 border border-green-400 rounded-full h-[100px] w-[100px] object-cover"
+          />
+          <Link href={"/characters"}>
+            <MenuItem icon={GiIciclesAura} text="Characters"/>
+          </Link>
+          <Link href={"/characters"}>
+            <MenuItem icon={GiDiceTwentyFacesTwenty} text="Campaigns"/>
+          </Link>
+          
+        </div>
+        
+        <div className='m-auto grid lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 mt-5 gap-5 content-center'>
           {posts.length ? posts.map((post: any, idx: number) =>(
             <Card key={idx} className='m-[auto] max-w-[400px] max-h-[550px]'>
               <Image 
