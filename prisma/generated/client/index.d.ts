@@ -2012,45 +2012,103 @@ export namespace Prisma {
 
   export type AggregateCharacter = {
     _count: CharacterCountAggregateOutputType | null
+    _avg: CharacterAvgAggregateOutputType | null
+    _sum: CharacterSumAggregateOutputType | null
     _min: CharacterMinAggregateOutputType | null
     _max: CharacterMaxAggregateOutputType | null
+  }
+
+  export type CharacterAvgAggregateOutputType = {
+    level: number | null
+    exp: number | null
+  }
+
+  export type CharacterSumAggregateOutputType = {
+    level: number | null
+    exp: number | null
   }
 
   export type CharacterMinAggregateOutputType = {
     id: string | null
     name: string | null
+    level: number | null
+    exp: number | null
+    race: string | null
+    pclass: string | null
+    background: string | null
+    backstory: string | null
     userId: string | null
   }
 
   export type CharacterMaxAggregateOutputType = {
     id: string | null
     name: string | null
+    level: number | null
+    exp: number | null
+    race: string | null
+    pclass: string | null
+    background: string | null
+    backstory: string | null
     userId: string | null
   }
 
   export type CharacterCountAggregateOutputType = {
     id: number
     name: number
+    level: number
+    exp: number
+    race: number
+    pclass: number
+    background: number
+    backstory: number
     userId: number
     _all: number
   }
 
 
+  export type CharacterAvgAggregateInputType = {
+    level?: true
+    exp?: true
+  }
+
+  export type CharacterSumAggregateInputType = {
+    level?: true
+    exp?: true
+  }
+
   export type CharacterMinAggregateInputType = {
     id?: true
     name?: true
+    level?: true
+    exp?: true
+    race?: true
+    pclass?: true
+    background?: true
+    backstory?: true
     userId?: true
   }
 
   export type CharacterMaxAggregateInputType = {
     id?: true
     name?: true
+    level?: true
+    exp?: true
+    race?: true
+    pclass?: true
+    background?: true
+    backstory?: true
     userId?: true
   }
 
   export type CharacterCountAggregateInputType = {
     id?: true
     name?: true
+    level?: true
+    exp?: true
+    race?: true
+    pclass?: true
+    background?: true
+    backstory?: true
     userId?: true
     _all?: true
   }
@@ -2093,6 +2151,18 @@ export namespace Prisma {
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
+     * Select which fields to average
+    **/
+    _avg?: CharacterAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: CharacterSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
      * Select which fields to find the minimum value
     **/
     _min?: CharacterMinAggregateInputType
@@ -2123,6 +2193,8 @@ export namespace Prisma {
     take?: number
     skip?: number
     _count?: CharacterCountAggregateInputType | true
+    _avg?: CharacterAvgAggregateInputType
+    _sum?: CharacterSumAggregateInputType
     _min?: CharacterMinAggregateInputType
     _max?: CharacterMaxAggregateInputType
   }
@@ -2130,8 +2202,16 @@ export namespace Prisma {
   export type CharacterGroupByOutputType = {
     id: string
     name: string
+    level: number
+    exp: number
+    race: string
+    pclass: string
+    background: string
+    backstory: string
     userId: string | null
     _count: CharacterCountAggregateOutputType | null
+    _avg: CharacterAvgAggregateOutputType | null
+    _sum: CharacterSumAggregateOutputType | null
     _min: CharacterMinAggregateOutputType | null
     _max: CharacterMaxAggregateOutputType | null
   }
@@ -2153,6 +2233,12 @@ export namespace Prisma {
   export type CharacterSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     name?: boolean
+    level?: boolean
+    exp?: boolean
+    race?: boolean
+    pclass?: boolean
+    background?: boolean
+    backstory?: boolean
     userId?: boolean
     owner?: boolean | Character$ownerArgs<ExtArgs>
   }, ExtArgs["result"]["character"]>
@@ -2161,6 +2247,12 @@ export namespace Prisma {
   export type CharacterSelectScalar = {
     id?: boolean
     name?: boolean
+    level?: boolean
+    exp?: boolean
+    race?: boolean
+    pclass?: boolean
+    background?: boolean
+    backstory?: boolean
     userId?: boolean
   }
 
@@ -2176,6 +2268,12 @@ export namespace Prisma {
     scalars: $Extensions.GetPayloadResult<{
       id: string
       name: string
+      level: number
+      exp: number
+      race: string
+      pclass: string
+      background: string
+      backstory: string
       userId: string | null
     }, ExtArgs["result"]["character"]>
     composites: {}
@@ -2572,6 +2670,12 @@ export namespace Prisma {
   interface CharacterFieldRefs {
     readonly id: FieldRef<"Character", 'String'>
     readonly name: FieldRef<"Character", 'String'>
+    readonly level: FieldRef<"Character", 'Int'>
+    readonly exp: FieldRef<"Character", 'Int'>
+    readonly race: FieldRef<"Character", 'String'>
+    readonly pclass: FieldRef<"Character", 'String'>
+    readonly background: FieldRef<"Character", 'String'>
+    readonly backstory: FieldRef<"Character", 'String'>
     readonly userId: FieldRef<"Character", 'String'>
   }
     
@@ -2941,19 +3045,25 @@ export namespace Prisma {
   export type UserMinAggregateOutputType = {
     id: string | null
     email: string | null
+    password: string | null
     username: string | null
+    subscribed: boolean | null
   }
 
   export type UserMaxAggregateOutputType = {
     id: string | null
     email: string | null
+    password: string | null
     username: string | null
+    subscribed: boolean | null
   }
 
   export type UserCountAggregateOutputType = {
     id: number
     email: number
+    password: number
     username: number
+    subscribed: number
     _all: number
   }
 
@@ -2961,19 +3071,25 @@ export namespace Prisma {
   export type UserMinAggregateInputType = {
     id?: true
     email?: true
+    password?: true
     username?: true
+    subscribed?: true
   }
 
   export type UserMaxAggregateInputType = {
     id?: true
     email?: true
+    password?: true
     username?: true
+    subscribed?: true
   }
 
   export type UserCountAggregateInputType = {
     id?: true
     email?: true
+    password?: true
     username?: true
+    subscribed?: true
     _all?: true
   }
 
@@ -3052,7 +3168,9 @@ export namespace Prisma {
   export type UserGroupByOutputType = {
     id: string
     email: string
+    password: string
     username: string
+    subscribed: boolean
     _count: UserCountAggregateOutputType | null
     _min: UserMinAggregateOutputType | null
     _max: UserMaxAggregateOutputType | null
@@ -3075,7 +3193,9 @@ export namespace Prisma {
   export type UserSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     email?: boolean
+    password?: boolean
     username?: boolean
+    subscribed?: boolean
     characters?: boolean | User$charactersArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
@@ -3084,7 +3204,9 @@ export namespace Prisma {
   export type UserSelectScalar = {
     id?: boolean
     email?: boolean
+    password?: boolean
     username?: boolean
+    subscribed?: boolean
   }
 
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -3100,7 +3222,9 @@ export namespace Prisma {
     scalars: $Extensions.GetPayloadResult<{
       id: string
       email: string
+      password: string
       username: string
+      subscribed: boolean
     }, ExtArgs["result"]["user"]>
     composites: {}
   }
@@ -3496,7 +3620,9 @@ export namespace Prisma {
   interface UserFieldRefs {
     readonly id: FieldRef<"User", 'String'>
     readonly email: FieldRef<"User", 'String'>
+    readonly password: FieldRef<"User", 'String'>
     readonly username: FieldRef<"User", 'String'>
+    readonly subscribed: FieldRef<"User", 'Boolean'>
   }
     
 
@@ -3882,6 +4008,12 @@ export namespace Prisma {
   export const CharacterScalarFieldEnum: {
     id: 'id',
     name: 'name',
+    level: 'level',
+    exp: 'exp',
+    race: 'race',
+    pclass: 'pclass',
+    background: 'background',
+    backstory: 'backstory',
     userId: 'userId'
   };
 
@@ -3891,7 +4023,9 @@ export namespace Prisma {
   export const UserScalarFieldEnum: {
     id: 'id',
     email: 'email',
-    username: 'username'
+    password: 'password',
+    username: 'username',
+    subscribed: 'subscribed'
   };
 
   export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
@@ -3964,6 +4098,20 @@ export namespace Prisma {
    * Reference to a field of type 'Int[]'
    */
   export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'Float'
+   */
+  export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+    
+
+
+  /**
+   * Reference to a field of type 'Float[]'
+   */
+  export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
     
   /**
    * Deep Input Types
@@ -4063,6 +4211,12 @@ export namespace Prisma {
     NOT?: CharacterWhereInput | CharacterWhereInput[]
     id?: StringFilter<"Character"> | string
     name?: StringFilter<"Character"> | string
+    level?: IntFilter<"Character"> | number
+    exp?: IntFilter<"Character"> | number
+    race?: StringFilter<"Character"> | string
+    pclass?: StringFilter<"Character"> | string
+    background?: StringFilter<"Character"> | string
+    backstory?: StringFilter<"Character"> | string
     userId?: StringNullableFilter<"Character"> | string | null
     owner?: XOR<UserNullableRelationFilter, UserWhereInput> | null
   }
@@ -4070,27 +4224,47 @@ export namespace Prisma {
   export type CharacterOrderByWithRelationInput = {
     id?: SortOrder
     name?: SortOrder
+    level?: SortOrder
+    exp?: SortOrder
+    race?: SortOrder
+    pclass?: SortOrder
+    background?: SortOrder
+    backstory?: SortOrder
     userId?: SortOrder
     owner?: UserOrderByWithRelationInput
   }
 
   export type CharacterWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    userId?: string
     AND?: CharacterWhereInput | CharacterWhereInput[]
     OR?: CharacterWhereInput[]
     NOT?: CharacterWhereInput | CharacterWhereInput[]
     name?: StringFilter<"Character"> | string
+    level?: IntFilter<"Character"> | number
+    exp?: IntFilter<"Character"> | number
+    race?: StringFilter<"Character"> | string
+    pclass?: StringFilter<"Character"> | string
+    background?: StringFilter<"Character"> | string
+    backstory?: StringFilter<"Character"> | string
+    userId?: StringNullableFilter<"Character"> | string | null
     owner?: XOR<UserNullableRelationFilter, UserWhereInput> | null
-  }, "id" | "userId">
+  }, "id">
 
   export type CharacterOrderByWithAggregationInput = {
     id?: SortOrder
     name?: SortOrder
+    level?: SortOrder
+    exp?: SortOrder
+    race?: SortOrder
+    pclass?: SortOrder
+    background?: SortOrder
+    backstory?: SortOrder
     userId?: SortOrder
     _count?: CharacterCountOrderByAggregateInput
+    _avg?: CharacterAvgOrderByAggregateInput
     _max?: CharacterMaxOrderByAggregateInput
     _min?: CharacterMinOrderByAggregateInput
+    _sum?: CharacterSumOrderByAggregateInput
   }
 
   export type CharacterScalarWhereWithAggregatesInput = {
@@ -4099,6 +4273,12 @@ export namespace Prisma {
     NOT?: CharacterScalarWhereWithAggregatesInput | CharacterScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"Character"> | string
     name?: StringWithAggregatesFilter<"Character"> | string
+    level?: IntWithAggregatesFilter<"Character"> | number
+    exp?: IntWithAggregatesFilter<"Character"> | number
+    race?: StringWithAggregatesFilter<"Character"> | string
+    pclass?: StringWithAggregatesFilter<"Character"> | string
+    background?: StringWithAggregatesFilter<"Character"> | string
+    backstory?: StringWithAggregatesFilter<"Character"> | string
     userId?: StringNullableWithAggregatesFilter<"Character"> | string | null
   }
 
@@ -4108,14 +4288,18 @@ export namespace Prisma {
     NOT?: UserWhereInput | UserWhereInput[]
     id?: StringFilter<"User"> | string
     email?: StringFilter<"User"> | string
+    password?: StringFilter<"User"> | string
     username?: StringFilter<"User"> | string
+    subscribed?: BoolFilter<"User"> | boolean
     characters?: CharacterListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
     id?: SortOrder
     email?: SortOrder
+    password?: SortOrder
     username?: SortOrder
+    subscribed?: SortOrder
     characters?: CharacterOrderByRelationAggregateInput
   }
 
@@ -4126,13 +4310,17 @@ export namespace Prisma {
     AND?: UserWhereInput | UserWhereInput[]
     OR?: UserWhereInput[]
     NOT?: UserWhereInput | UserWhereInput[]
+    password?: StringFilter<"User"> | string
+    subscribed?: BoolFilter<"User"> | boolean
     characters?: CharacterListRelationFilter
   }, "id" | "email" | "username">
 
   export type UserOrderByWithAggregationInput = {
     id?: SortOrder
     email?: SortOrder
+    password?: SortOrder
     username?: SortOrder
+    subscribed?: SortOrder
     _count?: UserCountOrderByAggregateInput
     _max?: UserMaxOrderByAggregateInput
     _min?: UserMinOrderByAggregateInput
@@ -4144,7 +4332,9 @@ export namespace Prisma {
     NOT?: UserScalarWhereWithAggregatesInput | UserScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"User"> | string
     email?: StringWithAggregatesFilter<"User"> | string
+    password?: StringWithAggregatesFilter<"User"> | string
     username?: StringWithAggregatesFilter<"User"> | string
+    subscribed?: BoolWithAggregatesFilter<"User"> | boolean
   }
 
   export type PostCreateInput = {
@@ -4251,80 +4441,136 @@ export namespace Prisma {
   export type CharacterCreateInput = {
     id?: string
     name: string
+    level?: number
+    exp?: number
+    race: string
+    pclass: string
+    background: string
+    backstory: string
     owner?: UserCreateNestedOneWithoutCharactersInput
   }
 
   export type CharacterUncheckedCreateInput = {
     id?: string
     name: string
+    level?: number
+    exp?: number
+    race: string
+    pclass: string
+    background: string
+    backstory: string
     userId?: string | null
   }
 
   export type CharacterUpdateInput = {
     name?: StringFieldUpdateOperationsInput | string
+    level?: IntFieldUpdateOperationsInput | number
+    exp?: IntFieldUpdateOperationsInput | number
+    race?: StringFieldUpdateOperationsInput | string
+    pclass?: StringFieldUpdateOperationsInput | string
+    background?: StringFieldUpdateOperationsInput | string
+    backstory?: StringFieldUpdateOperationsInput | string
     owner?: UserUpdateOneWithoutCharactersNestedInput
   }
 
   export type CharacterUncheckedUpdateInput = {
     name?: StringFieldUpdateOperationsInput | string
+    level?: IntFieldUpdateOperationsInput | number
+    exp?: IntFieldUpdateOperationsInput | number
+    race?: StringFieldUpdateOperationsInput | string
+    pclass?: StringFieldUpdateOperationsInput | string
+    background?: StringFieldUpdateOperationsInput | string
+    backstory?: StringFieldUpdateOperationsInput | string
     userId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type CharacterCreateManyInput = {
     id?: string
     name: string
+    level?: number
+    exp?: number
+    race: string
+    pclass: string
+    background: string
+    backstory: string
     userId?: string | null
   }
 
   export type CharacterUpdateManyMutationInput = {
     name?: StringFieldUpdateOperationsInput | string
+    level?: IntFieldUpdateOperationsInput | number
+    exp?: IntFieldUpdateOperationsInput | number
+    race?: StringFieldUpdateOperationsInput | string
+    pclass?: StringFieldUpdateOperationsInput | string
+    background?: StringFieldUpdateOperationsInput | string
+    backstory?: StringFieldUpdateOperationsInput | string
   }
 
   export type CharacterUncheckedUpdateManyInput = {
     name?: StringFieldUpdateOperationsInput | string
+    level?: IntFieldUpdateOperationsInput | number
+    exp?: IntFieldUpdateOperationsInput | number
+    race?: StringFieldUpdateOperationsInput | string
+    pclass?: StringFieldUpdateOperationsInput | string
+    background?: StringFieldUpdateOperationsInput | string
+    backstory?: StringFieldUpdateOperationsInput | string
     userId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type UserCreateInput = {
     id?: string
     email: string
+    password: string
     username: string
+    subscribed?: boolean
     characters?: CharacterCreateNestedManyWithoutOwnerInput
   }
 
   export type UserUncheckedCreateInput = {
     id?: string
     email: string
+    password: string
     username: string
+    subscribed?: boolean
     characters?: CharacterUncheckedCreateNestedManyWithoutOwnerInput
   }
 
   export type UserUpdateInput = {
     email?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
     username?: StringFieldUpdateOperationsInput | string
+    subscribed?: BoolFieldUpdateOperationsInput | boolean
     characters?: CharacterUpdateManyWithoutOwnerNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
     email?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
     username?: StringFieldUpdateOperationsInput | string
+    subscribed?: BoolFieldUpdateOperationsInput | boolean
     characters?: CharacterUncheckedUpdateManyWithoutOwnerNestedInput
   }
 
   export type UserCreateManyInput = {
     id?: string
     email: string
+    password: string
     username: string
+    subscribed?: boolean
   }
 
   export type UserUpdateManyMutationInput = {
     email?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
     username?: StringFieldUpdateOperationsInput | string
+    subscribed?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type UserUncheckedUpdateManyInput = {
     email?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
     username?: StringFieldUpdateOperationsInput | string
+    subscribed?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type StringFilter<$PrismaModel = never> = {
@@ -4478,6 +4724,17 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
+  export type IntFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntFilter<$PrismaModel> | number
+  }
+
   export type UserNullableRelationFilter = {
     is?: UserWhereInput | null
     isNot?: UserWhereInput | null
@@ -4486,19 +4743,63 @@ export namespace Prisma {
   export type CharacterCountOrderByAggregateInput = {
     id?: SortOrder
     name?: SortOrder
+    level?: SortOrder
+    exp?: SortOrder
+    race?: SortOrder
+    pclass?: SortOrder
+    background?: SortOrder
+    backstory?: SortOrder
     userId?: SortOrder
+  }
+
+  export type CharacterAvgOrderByAggregateInput = {
+    level?: SortOrder
+    exp?: SortOrder
   }
 
   export type CharacterMaxOrderByAggregateInput = {
     id?: SortOrder
     name?: SortOrder
+    level?: SortOrder
+    exp?: SortOrder
+    race?: SortOrder
+    pclass?: SortOrder
+    background?: SortOrder
+    backstory?: SortOrder
     userId?: SortOrder
   }
 
   export type CharacterMinOrderByAggregateInput = {
     id?: SortOrder
     name?: SortOrder
+    level?: SortOrder
+    exp?: SortOrder
+    race?: SortOrder
+    pclass?: SortOrder
+    background?: SortOrder
+    backstory?: SortOrder
     userId?: SortOrder
+  }
+
+  export type CharacterSumOrderByAggregateInput = {
+    level?: SortOrder
+    exp?: SortOrder
+  }
+
+  export type IntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedIntFilter<$PrismaModel>
+    _min?: NestedIntFilter<$PrismaModel>
+    _max?: NestedIntFilter<$PrismaModel>
   }
 
   export type CharacterListRelationFilter = {
@@ -4514,19 +4815,25 @@ export namespace Prisma {
   export type UserCountOrderByAggregateInput = {
     id?: SortOrder
     email?: SortOrder
+    password?: SortOrder
     username?: SortOrder
+    subscribed?: SortOrder
   }
 
   export type UserMaxOrderByAggregateInput = {
     id?: SortOrder
     email?: SortOrder
+    password?: SortOrder
     username?: SortOrder
+    subscribed?: SortOrder
   }
 
   export type UserMinOrderByAggregateInput = {
     id?: SortOrder
     email?: SortOrder
+    password?: SortOrder
     username?: SortOrder
+    subscribed?: SortOrder
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -4550,6 +4857,14 @@ export namespace Prisma {
     create?: XOR<UserCreateWithoutCharactersInput, UserUncheckedCreateWithoutCharactersInput>
     connectOrCreate?: UserCreateOrConnectWithoutCharactersInput
     connect?: UserWhereUniqueInput
+  }
+
+  export type IntFieldUpdateOperationsInput = {
+    set?: number
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
   }
 
   export type UserUpdateOneWithoutCharactersNestedInput = {
@@ -4729,16 +5044,47 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
+  export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedIntFilter<$PrismaModel>
+    _min?: NestedIntFilter<$PrismaModel>
+    _max?: NestedIntFilter<$PrismaModel>
+  }
+
+  export type NestedFloatFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatFilter<$PrismaModel> | number
+  }
+
   export type UserCreateWithoutCharactersInput = {
     id?: string
     email: string
+    password: string
     username: string
+    subscribed?: boolean
   }
 
   export type UserUncheckedCreateWithoutCharactersInput = {
     id?: string
     email: string
+    password: string
     username: string
+    subscribed?: boolean
   }
 
   export type UserCreateOrConnectWithoutCharactersInput = {
@@ -4759,22 +5105,38 @@ export namespace Prisma {
 
   export type UserUpdateWithoutCharactersInput = {
     email?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
     username?: StringFieldUpdateOperationsInput | string
+    subscribed?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type UserUncheckedUpdateWithoutCharactersInput = {
     email?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
     username?: StringFieldUpdateOperationsInput | string
+    subscribed?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type CharacterCreateWithoutOwnerInput = {
     id?: string
     name: string
+    level?: number
+    exp?: number
+    race: string
+    pclass: string
+    background: string
+    backstory: string
   }
 
   export type CharacterUncheckedCreateWithoutOwnerInput = {
     id?: string
     name: string
+    level?: number
+    exp?: number
+    race: string
+    pclass: string
+    background: string
+    backstory: string
   }
 
   export type CharacterCreateOrConnectWithoutOwnerInput = {
@@ -4808,24 +5170,54 @@ export namespace Prisma {
     NOT?: CharacterScalarWhereInput | CharacterScalarWhereInput[]
     id?: StringFilter<"Character"> | string
     name?: StringFilter<"Character"> | string
+    level?: IntFilter<"Character"> | number
+    exp?: IntFilter<"Character"> | number
+    race?: StringFilter<"Character"> | string
+    pclass?: StringFilter<"Character"> | string
+    background?: StringFilter<"Character"> | string
+    backstory?: StringFilter<"Character"> | string
     userId?: StringNullableFilter<"Character"> | string | null
   }
 
   export type CharacterCreateManyOwnerInput = {
     id?: string
     name: string
+    level?: number
+    exp?: number
+    race: string
+    pclass: string
+    background: string
+    backstory: string
   }
 
   export type CharacterUpdateWithoutOwnerInput = {
     name?: StringFieldUpdateOperationsInput | string
+    level?: IntFieldUpdateOperationsInput | number
+    exp?: IntFieldUpdateOperationsInput | number
+    race?: StringFieldUpdateOperationsInput | string
+    pclass?: StringFieldUpdateOperationsInput | string
+    background?: StringFieldUpdateOperationsInput | string
+    backstory?: StringFieldUpdateOperationsInput | string
   }
 
   export type CharacterUncheckedUpdateWithoutOwnerInput = {
     name?: StringFieldUpdateOperationsInput | string
+    level?: IntFieldUpdateOperationsInput | number
+    exp?: IntFieldUpdateOperationsInput | number
+    race?: StringFieldUpdateOperationsInput | string
+    pclass?: StringFieldUpdateOperationsInput | string
+    background?: StringFieldUpdateOperationsInput | string
+    backstory?: StringFieldUpdateOperationsInput | string
   }
 
   export type CharacterUncheckedUpdateManyWithoutOwnerInput = {
     name?: StringFieldUpdateOperationsInput | string
+    level?: IntFieldUpdateOperationsInput | number
+    exp?: IntFieldUpdateOperationsInput | number
+    race?: StringFieldUpdateOperationsInput | string
+    pclass?: StringFieldUpdateOperationsInput | string
+    background?: StringFieldUpdateOperationsInput | string
+    backstory?: StringFieldUpdateOperationsInput | string
   }
 
 

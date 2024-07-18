@@ -130,13 +130,21 @@ exports.Prisma.PostScalarFieldEnum = {
 exports.Prisma.CharacterScalarFieldEnum = {
   id: 'id',
   name: 'name',
+  level: 'level',
+  exp: 'exp',
+  race: 'race',
+  pclass: 'pclass',
+  background: 'background',
+  backstory: 'backstory',
   userId: 'userId'
 };
 
 exports.Prisma.UserScalarFieldEnum = {
   id: 'id',
   email: 'email',
-  username: 'username'
+  password: 'password',
+  username: 'username',
+  subscribed: 'subscribed'
 };
 
 exports.Prisma.SortOrder = {

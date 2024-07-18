@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse, NextRequest } from "next/server";
 import { SignJWT, jwtVerify } from "jose";
 import { redirect } from "next/navigation";
+import { validateUser } from "@/actions/actions";
 
 const secretKey = process.env.JWT_SECRET;
 const key = new TextEncoder().encode(secretKey);
@@ -22,19 +23,29 @@ export async function encrypt(payload: any) {
   }
 
   export async function signUp(formData: FormData){
-    //const newUser = await global.prismadb.post
+    const email = formData.get("email") as string
+    const password = formData.get("password") as string
+    const username = formData.get("username") as string
+    const newUser = await global.prismadb.user.create({
+      data:{
+        email,
+        password,
+        username
+      }
+    })
   }
 
 export async function login(formData: FormData){
     //verify credentials and get user
-    const user = {email: formData.get('email')};
+    const user = {email: formData.get('email'), password: formData.get('password')};
+    if(await validateUser){
+      //create the session
+      const expires = new Date(Date.now() + 3600 * 1000)
+      const session = await encrypt({user, expires})
 
-    //create the session
-    const expires = new Date(Date.now() + 10 * 1000)
-    const session = await encrypt({user, expires})
-
-    //save the session in a cookie
-    cookies().set('session', session, {expires, httpOnly: true});
+      //save the session in a cookie
+      cookies().set('session', session, {expires, httpOnly: true});
+    }
 }
 
 export async function logout(){
