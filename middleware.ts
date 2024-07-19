@@ -4,10 +4,9 @@ import { redirect } from 'next/navigation'
 
 export async function middleware(request: NextRequest) {
   var session = await getSession()
-  console.log(session)
   await updateSession(request)
   if(!session){
-    return NextResponse.redirect(new URL('/admin/login', request.url))
+    return NextResponse.redirect(new URL('/signin', request.url))
   }
 }
 
@@ -20,6 +19,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * Feel free to modify this pattern to include more paths.
      */
-    '/((?!api|_next/static|_next/image|auth|admin/login|favicon.ico|blog|robots.txt|images|projects|$).*)', 
+    '/((?!api|_next/static|_next/image|characters|auth|admin/login|favicon.ico|blog|robots.txt|images|projects|$).*)', 
   ],
 }

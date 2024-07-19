@@ -136,6 +136,7 @@ exports.Prisma.CharacterScalarFieldEnum = {
   pclass: 'pclass',
   background: 'background',
   backstory: 'backstory',
+  image: 'image',
   userId: 'userId'
 };
 
@@ -144,6 +145,7 @@ exports.Prisma.UserScalarFieldEnum = {
   email: 'email',
   password: 'password',
   username: 'username',
+  characters: 'characters',
   subscribed: 'subscribed'
 };
 

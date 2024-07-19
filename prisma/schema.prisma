@@ -16,14 +16,8 @@ datasource db {
 
 model Post {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  slug        String    @unique
-  title       String
   content     String
-  image       String
-  description String
-  category    String
-  previous    String?   //slug of previous post in series
-  next        String?   //slug of next post in series
+  //image       String
   published   Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -41,7 +35,7 @@ model Character {
   pclass      String
   background  String
   backstory   String    
-  owner       User?     @relation(fields: [userId], references: [id])
+  image       String?
   userId      String?   @db.ObjectId
 }
 
@@ -50,7 +44,9 @@ model User {
   email       String    @unique
   password    String
   username    String    @unique
-  characters  Character[]
+  characters  String[]  @db.ObjectId//array of id's of objects for users characters
   subscribed  Boolean   @default(false)
+  friends     String[]  @db.ObjectId
+  messages    String[]  @db.ObjectId
 }
 

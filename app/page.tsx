@@ -8,6 +8,7 @@ import parse from 'html-react-parser';
 import {PrismaClient} from "@/prisma/generated/client"
 import MenuItem from "./components/menu/menu";
 import { GiIciclesAura, GiDiceTwentyFacesTwenty } from "react-icons/gi";
+import { BiLogOut } from "react-icons/bi";
 
 export const revalidate = 30
 
@@ -43,6 +44,9 @@ export default async function Home() {
           </Link>
           <Link href={"/characters"}>
             <MenuItem icon={GiDiceTwentyFacesTwenty} text="Campaigns"/>
+          </Link>
+          <Link href={"/signin"}>
+            <MenuItem icon={BiLogOut} text="Logout"/>
           </Link>
           
         </div>

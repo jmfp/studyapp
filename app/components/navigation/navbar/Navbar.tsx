@@ -24,15 +24,6 @@ const NavBar = () =>{
 function SocialLinks(){
   return(
     <div className="flex items-center gap-2">
-      <Link href="/projects">Projects</Link>
-      <Link
-        href="https://github.com/jmfp"
-        target="_blank"
-      ><PiGithubLogoThin size={42}/></Link>
-      <Link
-        href="https://www.linkedin.com/in/jessie-price-629167245/"
-        target="_blank"
-      ><PiLinkedinLogoThin size={42}/></Link>
       <ModeToggle/>
     </div>
   )

@@ -17,7 +17,10 @@ export default function Signup() {
                 <Button type="submit">Signup</Button>
             </form>
         </div>
-        page
+        <div className="display: flex m-auto">
+            <p>Already have an account? </p>
+            <a className="text-green-400" href="/signin">Sign In</a>
+        </div>
     </div>
   )
 }

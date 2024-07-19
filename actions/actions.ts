@@ -1,11 +1,30 @@
 'use server'
 
+import { getSession } from "@/app/auth/auth"
 import { PrismaClient } from "@/prisma/generated/client"
 import { revalidatePath } from "next/cache"
-import { redirect } from "next/navigation"
+import { redirect, RedirectType } from "next/navigation"
 import { NextResponse } from "next/server"
+import fs from "node:fs/promises";
 
 const prisma = new PrismaClient()
+
+//convert file to base64
+const toBase64 = (file: File) => {
+    return new Promise((resolve, reject) => {
+      const fileReader = new FileReader();
+  
+      fileReader.readAsDataURL(file);
+  
+      fileReader.onload = () => {
+        resolve(fileReader.result);
+      };
+  
+      fileReader.onerror = (error) => {
+        reject(error);
+      };
+    });
+  };
 
 export const addBlog = async (formData: any) => {
     const title = formData["title"]
@@ -52,6 +71,48 @@ export async function validateUser(user: any){
     } catch (error: any) {
         console.log(error.message)
     }
+    return false
+}
+
+export async function getUser(email: string){
+    try {
+        const res = await prisma.user.findUnique({where: {email}})
+        return JSON.parse(`${JSON.stringify(res?.id)}`)
+    } catch (error: any) {
+        console.log(error.message)
+    }
+}
+
+export const deleteCharacter = async (id: string) => {
+    try {
+        const character = await prisma.character.findUnique({
+            where: {
+                id
+            }
+        })
+
+        const user = await prisma.user.findUnique({where:
+            {
+                id: character?.userId?.toString()
+            }
+        })
+        let chars = user?.characters
+        chars?.splice(chars?.indexOf(id), 1)
+        await prisma.character.delete({where: {id}})
+        await prisma.user.update({where: {
+            id: character?.userId?.toString() 
+        }, data:{characters: chars}})
+        revalidatePath("/characters")
+    } catch (error: any) {
+        console.log(error.message)
+    }
+}
+
+export const getCharacters = async (userId: string, id?: string) =>{
+    const characters = await prisma.character.findMany({where: {
+        userId
+    }})
+    return characters
 }
 
 export const addCharacter = async (formData: any) =>{
@@ -60,17 +121,36 @@ export const addCharacter = async (formData: any) =>{
     const pclass = formData.get("pclass")
     const background = formData.get("background")
     const backstory = formData.get("backstory")
+    const user = formData.get("user")
+    const userObject = await prisma.user.findUnique({where:{id: user}})
+    let charList = userObject?.characters.length? userObject?.characters.length : 0
+    console.log(`user object is ${userObject}`)
+    if(!userObject?.subscribed && charList >= 1 ){
+        //user cannot add more characters until subscribed
+        redirect("/pricing")
+        return "You need to subscribe to add more characters"
+    }
+    //const file = await fs.readFile("./public/images/drizzt1.jpeg")
+    //const image = toBase64(file)
     const attributes = await get5eRaceAttributes(race)
-    console.log(attributes)
     const new_character = await prisma.character.create({
         data:{
             name: characterName,
             race,
             pclass,
             background,
-            backstory
+            backstory,
+            userId: user
         }
     })
+    await prisma.user.update({where: {
+        id: user
+    }, data:{
+        characters:{
+            push: new_character.id
+
+        }
+    }})
     revalidatePath('/characters/new')
     redirect('/characters')
 }

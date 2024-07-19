@@ -1012,36 +1012,6 @@ export namespace Prisma {
    */
 
 
-  /**
-   * Count Type UserCountOutputType
-   */
-
-  export type UserCountOutputType = {
-    characters: number
-  }
-
-  export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    characters?: boolean | UserCountOutputTypeCountCharactersArgs
-  }
-
-  // Custom InputTypes
-  /**
-   * UserCountOutputType without action
-   */
-  export type UserCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the UserCountOutputType
-     */
-    select?: UserCountOutputTypeSelect<ExtArgs> | null
-  }
-
-  /**
-   * UserCountOutputType without action
-   */
-  export type UserCountOutputTypeCountCharactersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: CharacterWhereInput
-  }
-
 
   /**
    * Models
@@ -2037,6 +2007,7 @@ export namespace Prisma {
     pclass: string | null
     background: string | null
     backstory: string | null
+    image: string | null
     userId: string | null
   }
 
@@ -2049,6 +2020,7 @@ export namespace Prisma {
     pclass: string | null
     background: string | null
     backstory: string | null
+    image: string | null
     userId: string | null
   }
 
@@ -2061,6 +2033,7 @@ export namespace Prisma {
     pclass: number
     background: number
     backstory: number
+    image: number
     userId: number
     _all: number
   }
@@ -2085,6 +2058,7 @@ export namespace Prisma {
     pclass?: true
     background?: true
     backstory?: true
+    image?: true
     userId?: true
   }
 
@@ -2097,6 +2071,7 @@ export namespace Prisma {
     pclass?: true
     background?: true
     backstory?: true
+    image?: true
     userId?: true
   }
 
@@ -2109,6 +2084,7 @@ export namespace Prisma {
     pclass?: true
     background?: true
     backstory?: true
+    image?: true
     userId?: true
     _all?: true
   }
@@ -2208,6 +2184,7 @@ export namespace Prisma {
     pclass: string
     background: string
     backstory: string
+    image: string | null
     userId: string | null
     _count: CharacterCountAggregateOutputType | null
     _avg: CharacterAvgAggregateOutputType | null
@@ -2239,8 +2216,8 @@ export namespace Prisma {
     pclass?: boolean
     background?: boolean
     backstory?: boolean
+    image?: boolean
     userId?: boolean
-    owner?: boolean | Character$ownerArgs<ExtArgs>
   }, ExtArgs["result"]["character"]>
 
 
@@ -2253,18 +2230,14 @@ export namespace Prisma {
     pclass?: boolean
     background?: boolean
     backstory?: boolean
+    image?: boolean
     userId?: boolean
   }
 
-  export type CharacterInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    owner?: boolean | Character$ownerArgs<ExtArgs>
-  }
 
   export type $CharacterPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Character"
-    objects: {
-      owner: Prisma.$UserPayload<ExtArgs> | null
-    }
+    objects: {}
     scalars: $Extensions.GetPayloadResult<{
       id: string
       name: string
@@ -2274,6 +2247,7 @@ export namespace Prisma {
       pclass: string
       background: string
       backstory: string
+      image: string | null
       userId: string | null
     }, ExtArgs["result"]["character"]>
     composites: {}
@@ -2638,7 +2612,6 @@ export namespace Prisma {
    */
   export interface Prisma__CharacterClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
-    owner<T extends Character$ownerArgs<ExtArgs> = {}>(args?: Subset<T, Character$ownerArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2676,6 +2649,7 @@ export namespace Prisma {
     readonly pclass: FieldRef<"Character", 'String'>
     readonly background: FieldRef<"Character", 'String'>
     readonly backstory: FieldRef<"Character", 'String'>
+    readonly image: FieldRef<"Character", 'String'>
     readonly userId: FieldRef<"Character", 'String'>
   }
     
@@ -2689,10 +2663,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the Character
      */
     select?: CharacterSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CharacterInclude<ExtArgs> | null
     /**
      * Filter, which Character to fetch.
      */
@@ -2708,10 +2678,6 @@ export namespace Prisma {
      */
     select?: CharacterSelect<ExtArgs> | null
     /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CharacterInclude<ExtArgs> | null
-    /**
      * Filter, which Character to fetch.
      */
     where: CharacterWhereUniqueInput
@@ -2725,10 +2691,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the Character
      */
     select?: CharacterSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CharacterInclude<ExtArgs> | null
     /**
      * Filter, which Character to fetch.
      */
@@ -2774,10 +2736,6 @@ export namespace Prisma {
      */
     select?: CharacterSelect<ExtArgs> | null
     /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CharacterInclude<ExtArgs> | null
-    /**
      * Filter, which Character to fetch.
      */
     where?: CharacterWhereInput
@@ -2822,10 +2780,6 @@ export namespace Prisma {
      */
     select?: CharacterSelect<ExtArgs> | null
     /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CharacterInclude<ExtArgs> | null
-    /**
      * Filter, which Characters to fetch.
      */
     where?: CharacterWhereInput
@@ -2865,10 +2819,6 @@ export namespace Prisma {
      */
     select?: CharacterSelect<ExtArgs> | null
     /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CharacterInclude<ExtArgs> | null
-    /**
      * The data needed to create a Character.
      */
     data: XOR<CharacterCreateInput, CharacterUncheckedCreateInput>
@@ -2892,10 +2842,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the Character
      */
     select?: CharacterSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CharacterInclude<ExtArgs> | null
     /**
      * The data needed to update a Character.
      */
@@ -2929,10 +2875,6 @@ export namespace Prisma {
      */
     select?: CharacterSelect<ExtArgs> | null
     /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CharacterInclude<ExtArgs> | null
-    /**
      * The filter to search for the Character to update in case it exists.
      */
     where: CharacterWhereUniqueInput
@@ -2954,10 +2896,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the Character
      */
     select?: CharacterSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CharacterInclude<ExtArgs> | null
     /**
      * Filter which Character to delete.
      */
@@ -3003,21 +2941,6 @@ export namespace Prisma {
   }
 
   /**
-   * Character.owner
-   */
-  export type Character$ownerArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the User
-     */
-    select?: UserSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: UserInclude<ExtArgs> | null
-    where?: UserWhereInput
-  }
-
-  /**
    * Character without action
    */
   export type CharacterDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -3025,10 +2948,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the Character
      */
     select?: CharacterSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CharacterInclude<ExtArgs> | null
   }
 
 
@@ -3063,6 +2982,7 @@ export namespace Prisma {
     email: number
     password: number
     username: number
+    characters: number
     subscribed: number
     _all: number
   }
@@ -3089,6 +3009,7 @@ export namespace Prisma {
     email?: true
     password?: true
     username?: true
+    characters?: true
     subscribed?: true
     _all?: true
   }
@@ -3170,6 +3091,7 @@ export namespace Prisma {
     email: string
     password: string
     username: string
+    characters: string[]
     subscribed: boolean
     _count: UserCountAggregateOutputType | null
     _min: UserMinAggregateOutputType | null
@@ -3195,9 +3117,8 @@ export namespace Prisma {
     email?: boolean
     password?: boolean
     username?: boolean
+    characters?: boolean
     subscribed?: boolean
-    characters?: boolean | User$charactersArgs<ExtArgs>
-    _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
 
@@ -3206,24 +3127,20 @@ export namespace Prisma {
     email?: boolean
     password?: boolean
     username?: boolean
+    characters?: boolean
     subscribed?: boolean
   }
 
-  export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    characters?: boolean | User$charactersArgs<ExtArgs>
-    _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
-  }
 
   export type $UserPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "User"
-    objects: {
-      characters: Prisma.$CharacterPayload<ExtArgs>[]
-    }
+    objects: {}
     scalars: $Extensions.GetPayloadResult<{
       id: string
       email: string
       password: string
       username: string
+      characters: string[]
       subscribed: boolean
     }, ExtArgs["result"]["user"]>
     composites: {}
@@ -3588,7 +3505,6 @@ export namespace Prisma {
    */
   export interface Prisma__UserClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
-    characters<T extends User$charactersArgs<ExtArgs> = {}>(args?: Subset<T, User$charactersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CharacterPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3622,6 +3538,7 @@ export namespace Prisma {
     readonly email: FieldRef<"User", 'String'>
     readonly password: FieldRef<"User", 'String'>
     readonly username: FieldRef<"User", 'String'>
+    readonly characters: FieldRef<"User", 'String[]'>
     readonly subscribed: FieldRef<"User", 'Boolean'>
   }
     
@@ -3635,10 +3552,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the User
      */
     select?: UserSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: UserInclude<ExtArgs> | null
     /**
      * Filter, which User to fetch.
      */
@@ -3654,10 +3567,6 @@ export namespace Prisma {
      */
     select?: UserSelect<ExtArgs> | null
     /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: UserInclude<ExtArgs> | null
-    /**
      * Filter, which User to fetch.
      */
     where: UserWhereUniqueInput
@@ -3671,10 +3580,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the User
      */
     select?: UserSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: UserInclude<ExtArgs> | null
     /**
      * Filter, which User to fetch.
      */
@@ -3720,10 +3625,6 @@ export namespace Prisma {
      */
     select?: UserSelect<ExtArgs> | null
     /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: UserInclude<ExtArgs> | null
-    /**
      * Filter, which User to fetch.
      */
     where?: UserWhereInput
@@ -3768,10 +3669,6 @@ export namespace Prisma {
      */
     select?: UserSelect<ExtArgs> | null
     /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: UserInclude<ExtArgs> | null
-    /**
      * Filter, which Users to fetch.
      */
     where?: UserWhereInput
@@ -3811,10 +3708,6 @@ export namespace Prisma {
      */
     select?: UserSelect<ExtArgs> | null
     /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: UserInclude<ExtArgs> | null
-    /**
      * The data needed to create a User.
      */
     data: XOR<UserCreateInput, UserUncheckedCreateInput>
@@ -3838,10 +3731,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the User
      */
     select?: UserSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: UserInclude<ExtArgs> | null
     /**
      * The data needed to update a User.
      */
@@ -3875,10 +3764,6 @@ export namespace Prisma {
      */
     select?: UserSelect<ExtArgs> | null
     /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: UserInclude<ExtArgs> | null
-    /**
      * The filter to search for the User to update in case it exists.
      */
     where: UserWhereUniqueInput
@@ -3900,10 +3785,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the User
      */
     select?: UserSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: UserInclude<ExtArgs> | null
     /**
      * Filter which User to delete.
      */
@@ -3949,26 +3830,6 @@ export namespace Prisma {
   }
 
   /**
-   * User.characters
-   */
-  export type User$charactersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Character
-     */
-    select?: CharacterSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: CharacterInclude<ExtArgs> | null
-    where?: CharacterWhereInput
-    orderBy?: CharacterOrderByWithRelationInput | CharacterOrderByWithRelationInput[]
-    cursor?: CharacterWhereUniqueInput
-    take?: number
-    skip?: number
-    distinct?: CharacterScalarFieldEnum | CharacterScalarFieldEnum[]
-  }
-
-  /**
    * User without action
    */
   export type UserDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -3976,10 +3837,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the User
      */
     select?: UserSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: UserInclude<ExtArgs> | null
   }
 
 
@@ -4014,6 +3871,7 @@ export namespace Prisma {
     pclass: 'pclass',
     background: 'background',
     backstory: 'backstory',
+    image: 'image',
     userId: 'userId'
   };
 
@@ -4025,6 +3883,7 @@ export namespace Prisma {
     email: 'email',
     password: 'password',
     username: 'username',
+    characters: 'characters',
     subscribed: 'subscribed'
   };
 
@@ -4217,8 +4076,8 @@ export namespace Prisma {
     pclass?: StringFilter<"Character"> | string
     background?: StringFilter<"Character"> | string
     backstory?: StringFilter<"Character"> | string
+    image?: StringNullableFilter<"Character"> | string | null
     userId?: StringNullableFilter<"Character"> | string | null
-    owner?: XOR<UserNullableRelationFilter, UserWhereInput> | null
   }
 
   export type CharacterOrderByWithRelationInput = {
@@ -4230,8 +4089,8 @@ export namespace Prisma {
     pclass?: SortOrder
     background?: SortOrder
     backstory?: SortOrder
+    image?: SortOrder
     userId?: SortOrder
-    owner?: UserOrderByWithRelationInput
   }
 
   export type CharacterWhereUniqueInput = Prisma.AtLeast<{
@@ -4246,8 +4105,8 @@ export namespace Prisma {
     pclass?: StringFilter<"Character"> | string
     background?: StringFilter<"Character"> | string
     backstory?: StringFilter<"Character"> | string
+    image?: StringNullableFilter<"Character"> | string | null
     userId?: StringNullableFilter<"Character"> | string | null
-    owner?: XOR<UserNullableRelationFilter, UserWhereInput> | null
   }, "id">
 
   export type CharacterOrderByWithAggregationInput = {
@@ -4259,6 +4118,7 @@ export namespace Prisma {
     pclass?: SortOrder
     background?: SortOrder
     backstory?: SortOrder
+    image?: SortOrder
     userId?: SortOrder
     _count?: CharacterCountOrderByAggregateInput
     _avg?: CharacterAvgOrderByAggregateInput
@@ -4279,6 +4139,7 @@ export namespace Prisma {
     pclass?: StringWithAggregatesFilter<"Character"> | string
     background?: StringWithAggregatesFilter<"Character"> | string
     backstory?: StringWithAggregatesFilter<"Character"> | string
+    image?: StringNullableWithAggregatesFilter<"Character"> | string | null
     userId?: StringNullableWithAggregatesFilter<"Character"> | string | null
   }
 
@@ -4290,8 +4151,8 @@ export namespace Prisma {
     email?: StringFilter<"User"> | string
     password?: StringFilter<"User"> | string
     username?: StringFilter<"User"> | string
+    characters?: StringNullableListFilter<"User">
     subscribed?: BoolFilter<"User"> | boolean
-    characters?: CharacterListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -4299,8 +4160,8 @@ export namespace Prisma {
     email?: SortOrder
     password?: SortOrder
     username?: SortOrder
+    characters?: SortOrder
     subscribed?: SortOrder
-    characters?: CharacterOrderByRelationAggregateInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -4311,8 +4172,8 @@ export namespace Prisma {
     OR?: UserWhereInput[]
     NOT?: UserWhereInput | UserWhereInput[]
     password?: StringFilter<"User"> | string
+    characters?: StringNullableListFilter<"User">
     subscribed?: BoolFilter<"User"> | boolean
-    characters?: CharacterListRelationFilter
   }, "id" | "email" | "username">
 
   export type UserOrderByWithAggregationInput = {
@@ -4320,6 +4181,7 @@ export namespace Prisma {
     email?: SortOrder
     password?: SortOrder
     username?: SortOrder
+    characters?: SortOrder
     subscribed?: SortOrder
     _count?: UserCountOrderByAggregateInput
     _max?: UserMaxOrderByAggregateInput
@@ -4334,6 +4196,7 @@ export namespace Prisma {
     email?: StringWithAggregatesFilter<"User"> | string
     password?: StringWithAggregatesFilter<"User"> | string
     username?: StringWithAggregatesFilter<"User"> | string
+    characters?: StringNullableListFilter<"User">
     subscribed?: BoolWithAggregatesFilter<"User"> | boolean
   }
 
@@ -4447,7 +4310,8 @@ export namespace Prisma {
     pclass: string
     background: string
     backstory: string
-    owner?: UserCreateNestedOneWithoutCharactersInput
+    image?: string | null
+    userId?: string | null
   }
 
   export type CharacterUncheckedCreateInput = {
@@ -4459,6 +4323,7 @@ export namespace Prisma {
     pclass: string
     background: string
     backstory: string
+    image?: string | null
     userId?: string | null
   }
 
@@ -4470,7 +4335,8 @@ export namespace Prisma {
     pclass?: StringFieldUpdateOperationsInput | string
     background?: StringFieldUpdateOperationsInput | string
     backstory?: StringFieldUpdateOperationsInput | string
-    owner?: UserUpdateOneWithoutCharactersNestedInput
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type CharacterUncheckedUpdateInput = {
@@ -4481,6 +4347,7 @@ export namespace Prisma {
     pclass?: StringFieldUpdateOperationsInput | string
     background?: StringFieldUpdateOperationsInput | string
     backstory?: StringFieldUpdateOperationsInput | string
+    image?: NullableStringFieldUpdateOperationsInput | string | null
     userId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
@@ -4493,6 +4360,7 @@ export namespace Prisma {
     pclass: string
     background: string
     backstory: string
+    image?: string | null
     userId?: string | null
   }
 
@@ -4504,6 +4372,8 @@ export namespace Prisma {
     pclass?: StringFieldUpdateOperationsInput | string
     background?: StringFieldUpdateOperationsInput | string
     backstory?: StringFieldUpdateOperationsInput | string
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type CharacterUncheckedUpdateManyInput = {
@@ -4514,6 +4384,7 @@ export namespace Prisma {
     pclass?: StringFieldUpdateOperationsInput | string
     background?: StringFieldUpdateOperationsInput | string
     backstory?: StringFieldUpdateOperationsInput | string
+    image?: NullableStringFieldUpdateOperationsInput | string | null
     userId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
@@ -4522,8 +4393,8 @@ export namespace Prisma {
     email: string
     password: string
     username: string
+    characters?: UserCreatecharactersInput | string[]
     subscribed?: boolean
-    characters?: CharacterCreateNestedManyWithoutOwnerInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -4531,24 +4402,24 @@ export namespace Prisma {
     email: string
     password: string
     username: string
+    characters?: UserCreatecharactersInput | string[]
     subscribed?: boolean
-    characters?: CharacterUncheckedCreateNestedManyWithoutOwnerInput
   }
 
   export type UserUpdateInput = {
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     username?: StringFieldUpdateOperationsInput | string
+    characters?: UserUpdatecharactersInput | string[]
     subscribed?: BoolFieldUpdateOperationsInput | boolean
-    characters?: CharacterUpdateManyWithoutOwnerNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     username?: StringFieldUpdateOperationsInput | string
+    characters?: UserUpdatecharactersInput | string[]
     subscribed?: BoolFieldUpdateOperationsInput | boolean
-    characters?: CharacterUncheckedUpdateManyWithoutOwnerNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -4556,6 +4427,7 @@ export namespace Prisma {
     email: string
     password: string
     username: string
+    characters?: UserCreatecharactersInput | string[]
     subscribed?: boolean
   }
 
@@ -4563,6 +4435,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     username?: StringFieldUpdateOperationsInput | string
+    characters?: UserUpdatecharactersInput | string[]
     subscribed?: BoolFieldUpdateOperationsInput | boolean
   }
 
@@ -4570,6 +4443,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     username?: StringFieldUpdateOperationsInput | string
+    characters?: UserUpdatecharactersInput | string[]
     subscribed?: BoolFieldUpdateOperationsInput | boolean
   }
 
@@ -4735,11 +4609,6 @@ export namespace Prisma {
     not?: NestedIntFilter<$PrismaModel> | number
   }
 
-  export type UserNullableRelationFilter = {
-    is?: UserWhereInput | null
-    isNot?: UserWhereInput | null
-  }
-
   export type CharacterCountOrderByAggregateInput = {
     id?: SortOrder
     name?: SortOrder
@@ -4749,6 +4618,7 @@ export namespace Prisma {
     pclass?: SortOrder
     background?: SortOrder
     backstory?: SortOrder
+    image?: SortOrder
     userId?: SortOrder
   }
 
@@ -4766,6 +4636,7 @@ export namespace Prisma {
     pclass?: SortOrder
     background?: SortOrder
     backstory?: SortOrder
+    image?: SortOrder
     userId?: SortOrder
   }
 
@@ -4778,6 +4649,7 @@ export namespace Prisma {
     pclass?: SortOrder
     background?: SortOrder
     backstory?: SortOrder
+    image?: SortOrder
     userId?: SortOrder
   }
 
@@ -4802,14 +4674,12 @@ export namespace Prisma {
     _max?: NestedIntFilter<$PrismaModel>
   }
 
-  export type CharacterListRelationFilter = {
-    every?: CharacterWhereInput
-    some?: CharacterWhereInput
-    none?: CharacterWhereInput
-  }
-
-  export type CharacterOrderByRelationAggregateInput = {
-    _count?: SortOrder
+  export type StringNullableListFilter<$PrismaModel = never> = {
+    equals?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    has?: string | StringFieldRefInput<$PrismaModel> | null
+    hasEvery?: string[] | ListStringFieldRefInput<$PrismaModel>
+    hasSome?: string[] | ListStringFieldRefInput<$PrismaModel>
+    isEmpty?: boolean
   }
 
   export type UserCountOrderByAggregateInput = {
@@ -4817,6 +4687,7 @@ export namespace Prisma {
     email?: SortOrder
     password?: SortOrder
     username?: SortOrder
+    characters?: SortOrder
     subscribed?: SortOrder
   }
 
@@ -4853,12 +4724,6 @@ export namespace Prisma {
     set?: Date | string
   }
 
-  export type UserCreateNestedOneWithoutCharactersInput = {
-    create?: XOR<UserCreateWithoutCharactersInput, UserUncheckedCreateWithoutCharactersInput>
-    connectOrCreate?: UserCreateOrConnectWithoutCharactersInput
-    connect?: UserWhereUniqueInput
-  }
-
   export type IntFieldUpdateOperationsInput = {
     set?: number
     increment?: number
@@ -4867,56 +4732,13 @@ export namespace Prisma {
     divide?: number
   }
 
-  export type UserUpdateOneWithoutCharactersNestedInput = {
-    create?: XOR<UserCreateWithoutCharactersInput, UserUncheckedCreateWithoutCharactersInput>
-    connectOrCreate?: UserCreateOrConnectWithoutCharactersInput
-    upsert?: UserUpsertWithoutCharactersInput
-    disconnect?: boolean
-    delete?: UserWhereInput | boolean
-    connect?: UserWhereUniqueInput
-    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutCharactersInput, UserUpdateWithoutCharactersInput>, UserUncheckedUpdateWithoutCharactersInput>
+  export type UserCreatecharactersInput = {
+    set: string[]
   }
 
-  export type CharacterCreateNestedManyWithoutOwnerInput = {
-    create?: XOR<CharacterCreateWithoutOwnerInput, CharacterUncheckedCreateWithoutOwnerInput> | CharacterCreateWithoutOwnerInput[] | CharacterUncheckedCreateWithoutOwnerInput[]
-    connectOrCreate?: CharacterCreateOrConnectWithoutOwnerInput | CharacterCreateOrConnectWithoutOwnerInput[]
-    createMany?: CharacterCreateManyOwnerInputEnvelope
-    connect?: CharacterWhereUniqueInput | CharacterWhereUniqueInput[]
-  }
-
-  export type CharacterUncheckedCreateNestedManyWithoutOwnerInput = {
-    create?: XOR<CharacterCreateWithoutOwnerInput, CharacterUncheckedCreateWithoutOwnerInput> | CharacterCreateWithoutOwnerInput[] | CharacterUncheckedCreateWithoutOwnerInput[]
-    connectOrCreate?: CharacterCreateOrConnectWithoutOwnerInput | CharacterCreateOrConnectWithoutOwnerInput[]
-    createMany?: CharacterCreateManyOwnerInputEnvelope
-    connect?: CharacterWhereUniqueInput | CharacterWhereUniqueInput[]
-  }
-
-  export type CharacterUpdateManyWithoutOwnerNestedInput = {
-    create?: XOR<CharacterCreateWithoutOwnerInput, CharacterUncheckedCreateWithoutOwnerInput> | CharacterCreateWithoutOwnerInput[] | CharacterUncheckedCreateWithoutOwnerInput[]
-    connectOrCreate?: CharacterCreateOrConnectWithoutOwnerInput | CharacterCreateOrConnectWithoutOwnerInput[]
-    upsert?: CharacterUpsertWithWhereUniqueWithoutOwnerInput | CharacterUpsertWithWhereUniqueWithoutOwnerInput[]
-    createMany?: CharacterCreateManyOwnerInputEnvelope
-    set?: CharacterWhereUniqueInput | CharacterWhereUniqueInput[]
-    disconnect?: CharacterWhereUniqueInput | CharacterWhereUniqueInput[]
-    delete?: CharacterWhereUniqueInput | CharacterWhereUniqueInput[]
-    connect?: CharacterWhereUniqueInput | CharacterWhereUniqueInput[]
-    update?: CharacterUpdateWithWhereUniqueWithoutOwnerInput | CharacterUpdateWithWhereUniqueWithoutOwnerInput[]
-    updateMany?: CharacterUpdateManyWithWhereWithoutOwnerInput | CharacterUpdateManyWithWhereWithoutOwnerInput[]
-    deleteMany?: CharacterScalarWhereInput | CharacterScalarWhereInput[]
-  }
-
-  export type CharacterUncheckedUpdateManyWithoutOwnerNestedInput = {
-    create?: XOR<CharacterCreateWithoutOwnerInput, CharacterUncheckedCreateWithoutOwnerInput> | CharacterCreateWithoutOwnerInput[] | CharacterUncheckedCreateWithoutOwnerInput[]
-    connectOrCreate?: CharacterCreateOrConnectWithoutOwnerInput | CharacterCreateOrConnectWithoutOwnerInput[]
-    upsert?: CharacterUpsertWithWhereUniqueWithoutOwnerInput | CharacterUpsertWithWhereUniqueWithoutOwnerInput[]
-    createMany?: CharacterCreateManyOwnerInputEnvelope
-    set?: CharacterWhereUniqueInput | CharacterWhereUniqueInput[]
-    disconnect?: CharacterWhereUniqueInput | CharacterWhereUniqueInput[]
-    delete?: CharacterWhereUniqueInput | CharacterWhereUniqueInput[]
-    connect?: CharacterWhereUniqueInput | CharacterWhereUniqueInput[]
-    update?: CharacterUpdateWithWhereUniqueWithoutOwnerInput | CharacterUpdateWithWhereUniqueWithoutOwnerInput[]
-    updateMany?: CharacterUpdateManyWithWhereWithoutOwnerInput | CharacterUpdateManyWithWhereWithoutOwnerInput[]
-    deleteMany?: CharacterScalarWhereInput | CharacterScalarWhereInput[]
+  export type UserUpdatecharactersInput = {
+    set?: string[]
+    push?: string | string[]
   }
 
   export type NestedStringFilter<$PrismaModel = never> = {
@@ -5071,164 +4893,11 @@ export namespace Prisma {
     not?: NestedFloatFilter<$PrismaModel> | number
   }
 
-  export type UserCreateWithoutCharactersInput = {
-    id?: string
-    email: string
-    password: string
-    username: string
-    subscribed?: boolean
-  }
-
-  export type UserUncheckedCreateWithoutCharactersInput = {
-    id?: string
-    email: string
-    password: string
-    username: string
-    subscribed?: boolean
-  }
-
-  export type UserCreateOrConnectWithoutCharactersInput = {
-    where: UserWhereUniqueInput
-    create: XOR<UserCreateWithoutCharactersInput, UserUncheckedCreateWithoutCharactersInput>
-  }
-
-  export type UserUpsertWithoutCharactersInput = {
-    update: XOR<UserUpdateWithoutCharactersInput, UserUncheckedUpdateWithoutCharactersInput>
-    create: XOR<UserCreateWithoutCharactersInput, UserUncheckedCreateWithoutCharactersInput>
-    where?: UserWhereInput
-  }
-
-  export type UserUpdateToOneWithWhereWithoutCharactersInput = {
-    where?: UserWhereInput
-    data: XOR<UserUpdateWithoutCharactersInput, UserUncheckedUpdateWithoutCharactersInput>
-  }
-
-  export type UserUpdateWithoutCharactersInput = {
-    email?: StringFieldUpdateOperationsInput | string
-    password?: StringFieldUpdateOperationsInput | string
-    username?: StringFieldUpdateOperationsInput | string
-    subscribed?: BoolFieldUpdateOperationsInput | boolean
-  }
-
-  export type UserUncheckedUpdateWithoutCharactersInput = {
-    email?: StringFieldUpdateOperationsInput | string
-    password?: StringFieldUpdateOperationsInput | string
-    username?: StringFieldUpdateOperationsInput | string
-    subscribed?: BoolFieldUpdateOperationsInput | boolean
-  }
-
-  export type CharacterCreateWithoutOwnerInput = {
-    id?: string
-    name: string
-    level?: number
-    exp?: number
-    race: string
-    pclass: string
-    background: string
-    backstory: string
-  }
-
-  export type CharacterUncheckedCreateWithoutOwnerInput = {
-    id?: string
-    name: string
-    level?: number
-    exp?: number
-    race: string
-    pclass: string
-    background: string
-    backstory: string
-  }
-
-  export type CharacterCreateOrConnectWithoutOwnerInput = {
-    where: CharacterWhereUniqueInput
-    create: XOR<CharacterCreateWithoutOwnerInput, CharacterUncheckedCreateWithoutOwnerInput>
-  }
-
-  export type CharacterCreateManyOwnerInputEnvelope = {
-    data: CharacterCreateManyOwnerInput | CharacterCreateManyOwnerInput[]
-  }
-
-  export type CharacterUpsertWithWhereUniqueWithoutOwnerInput = {
-    where: CharacterWhereUniqueInput
-    update: XOR<CharacterUpdateWithoutOwnerInput, CharacterUncheckedUpdateWithoutOwnerInput>
-    create: XOR<CharacterCreateWithoutOwnerInput, CharacterUncheckedCreateWithoutOwnerInput>
-  }
-
-  export type CharacterUpdateWithWhereUniqueWithoutOwnerInput = {
-    where: CharacterWhereUniqueInput
-    data: XOR<CharacterUpdateWithoutOwnerInput, CharacterUncheckedUpdateWithoutOwnerInput>
-  }
-
-  export type CharacterUpdateManyWithWhereWithoutOwnerInput = {
-    where: CharacterScalarWhereInput
-    data: XOR<CharacterUpdateManyMutationInput, CharacterUncheckedUpdateManyWithoutOwnerInput>
-  }
-
-  export type CharacterScalarWhereInput = {
-    AND?: CharacterScalarWhereInput | CharacterScalarWhereInput[]
-    OR?: CharacterScalarWhereInput[]
-    NOT?: CharacterScalarWhereInput | CharacterScalarWhereInput[]
-    id?: StringFilter<"Character"> | string
-    name?: StringFilter<"Character"> | string
-    level?: IntFilter<"Character"> | number
-    exp?: IntFilter<"Character"> | number
-    race?: StringFilter<"Character"> | string
-    pclass?: StringFilter<"Character"> | string
-    background?: StringFilter<"Character"> | string
-    backstory?: StringFilter<"Character"> | string
-    userId?: StringNullableFilter<"Character"> | string | null
-  }
-
-  export type CharacterCreateManyOwnerInput = {
-    id?: string
-    name: string
-    level?: number
-    exp?: number
-    race: string
-    pclass: string
-    background: string
-    backstory: string
-  }
-
-  export type CharacterUpdateWithoutOwnerInput = {
-    name?: StringFieldUpdateOperationsInput | string
-    level?: IntFieldUpdateOperationsInput | number
-    exp?: IntFieldUpdateOperationsInput | number
-    race?: StringFieldUpdateOperationsInput | string
-    pclass?: StringFieldUpdateOperationsInput | string
-    background?: StringFieldUpdateOperationsInput | string
-    backstory?: StringFieldUpdateOperationsInput | string
-  }
-
-  export type CharacterUncheckedUpdateWithoutOwnerInput = {
-    name?: StringFieldUpdateOperationsInput | string
-    level?: IntFieldUpdateOperationsInput | number
-    exp?: IntFieldUpdateOperationsInput | number
-    race?: StringFieldUpdateOperationsInput | string
-    pclass?: StringFieldUpdateOperationsInput | string
-    background?: StringFieldUpdateOperationsInput | string
-    backstory?: StringFieldUpdateOperationsInput | string
-  }
-
-  export type CharacterUncheckedUpdateManyWithoutOwnerInput = {
-    name?: StringFieldUpdateOperationsInput | string
-    level?: IntFieldUpdateOperationsInput | number
-    exp?: IntFieldUpdateOperationsInput | number
-    race?: StringFieldUpdateOperationsInput | string
-    pclass?: StringFieldUpdateOperationsInput | string
-    background?: StringFieldUpdateOperationsInput | string
-    backstory?: StringFieldUpdateOperationsInput | string
-  }
-
 
 
   /**
    * Aliases for legacy arg types
    */
-    /**
-     * @deprecated Use UserCountOutputTypeDefaultArgs instead
-     */
-    export type UserCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = UserCountOutputTypeDefaultArgs<ExtArgs>
     /**
      * @deprecated Use PostDefaultArgs instead
      */

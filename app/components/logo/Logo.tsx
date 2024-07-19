@@ -9,7 +9,7 @@ const Logo = () =>{
         <Link
           href="/"
         >
-          <p>JesseThe{"["}<span className="text-violet-500">Dev</span>{"]"}</p>
+          <p>Dungeons<span className="text-green-400">&</span>Dragons</p>
         </Link>
         </div>
     );
