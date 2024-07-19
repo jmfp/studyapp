@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { getSession, updateSession } from './app/auth/auth'
-import { redirect } from 'next/navigation'
 
 export async function middleware(request: NextRequest) {
   var session = await getSession()

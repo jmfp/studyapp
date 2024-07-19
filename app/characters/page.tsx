@@ -6,7 +6,7 @@ import { redirect } from "next/navigation"
 export default async function Characters() {
     const user = await getSession()
     if(!user){
-        redirect("/admin/login")
+        redirect("/signin")
     }
     const userObject = await getUser(user.user.email)
     const characters = await getCharacters(userObject.id)

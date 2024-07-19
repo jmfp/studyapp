@@ -28,8 +28,6 @@ async function add(data: FormData){
     console.log(data)
     //addCharacter(data)
 }
-getChoices("elf")
-console.log(alignments)
   return (
     <div className="display: flex flex-col">
         <form className="display: flex m-auto flex-col w-[80%] gap-4" name="form1" action={async (formData: FormData) =>{

@@ -114,14 +114,7 @@ Prisma.NullTypes = {
 
 exports.Prisma.PostScalarFieldEnum = {
   id: 'id',
-  slug: 'slug',
-  title: 'title',
   content: 'content',
-  image: 'image',
-  description: 'description',
-  category: 'category',
-  previous: 'previous',
-  next: 'next',
   published: 'published',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -146,7 +139,9 @@ exports.Prisma.UserScalarFieldEnum = {
   password: 'password',
   username: 'username',
   characters: 'characters',
-  subscribed: 'subscribed'
+  subscribed: 'subscribed',
+  friends: 'friends',
+  messages: 'messages'
 };
 
 exports.Prisma.SortOrder = {
