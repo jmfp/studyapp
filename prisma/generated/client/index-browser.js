@@ -129,6 +129,9 @@ exports.Prisma.CharacterScalarFieldEnum = {
   pclass: 'pclass',
   background: 'background',
   backstory: 'backstory',
+  equipment: 'equipment',
+  languages: 'languages',
+  finished: 'finished',
   image: 'image',
   userId: 'userId'
 };

@@ -104,8 +104,17 @@ export const deleteCharacter = async (id: string) => {
 }
 
 export const getCharacters = async (userId: string, id?: string) =>{
+    //if there is no specific character id passed, return all characters owned by the user
+    if(!id){
+        const characters = await prisma.character.findMany({where: {
+            userId
+        }})
+
+        return characters
+    }
+    //if there is an id passed, return just the specific character
     const characters = await prisma.character.findMany({where: {
-        userId
+        id
     }})
     return characters
 }
@@ -119,7 +128,6 @@ export const addCharacter = async (formData: any) =>{
     const user = formData.get("user")
     const userObject = await prisma.user.findUnique({where:{id: user}})
     let charList = userObject?.characters.length? userObject?.characters.length : 0
-    console.log(`user object is ${userObject}`)
     if(!userObject?.subscribed && charList >= 1 ){
         //user cannot add more characters until subscribed
         redirect("/pricing")
@@ -135,9 +143,12 @@ export const addCharacter = async (formData: any) =>{
             pclass,
             background,
             backstory,
+            equipment : [{}],
+            languages : [{}],
             userId: user
         }
     })
+    //adding ownership of new character to the current user 
     await prisma.user.update({where: {
         id: user
     }, data:{
@@ -147,15 +158,16 @@ export const addCharacter = async (formData: any) =>{
         }
     }})
     revalidatePath('/characters/new')
-    redirect('/characters')
+    redirect(`/characters/${new_character.id}`)
 }
 
 //gets all of the choices available for race when creating a character
 export const get5eRaceAttributes = async (race: string) =>{
     try {
-        const res = await fetch(`https://www.dnd5eapi.co/api/races/${race}`).then(
+        const res = await fetch(`https://www.dnd5eapi.co/api/races/${race.toLowerCase()}`).then(
             (response) => response.text()
         )
+        //console.log(race)
         let jsonAttributes = {speed: JSON.parse(`${res}`).speed, 
             languages: JSON.parse(`${res}`).languages,
             size: JSON.parse(`${res}`).size,

@@ -45,12 +45,14 @@ export async function login(formData: FormData){
 
       //save the session in a cookie
       cookies().set('session', session, {expires, httpOnly: true});
+      redirect("/")
     }
 }
 
 export async function logout(){
     //destroy the session
     cookies().set('session', '', {expires: new Date(0)})
+    redirect("/signin")
 }
 
 export async function getSession(){

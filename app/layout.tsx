@@ -10,8 +10,8 @@ const inter = Inter({ subsets: ["latin"] });
 const nunito = Nunito({subsets: ["latin"]});
 
 export const metadata: Metadata = {
-  title: "JesseTheDev",
-  description: "Software Development",
+  title: "Dungeons and Dragons",
+  description: "Online tabletop rpg tools",
 };
 
 export default function RootLayout({

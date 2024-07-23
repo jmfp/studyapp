@@ -26,6 +26,12 @@ export default async function Characters() {
                         }}>
                             <Button type="submit">Delete</Button>
                         </form>
+                        <form action={async () =>{
+                            'use server'
+                            await redirect(`/characters/${character.id}`)
+                        }}>
+                            <Button type="submit">Edit</Button>
+                        </form>
                     </div>
                 </div>
             ))}

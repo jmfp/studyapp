@@ -1930,6 +1930,7 @@ export namespace Prisma {
     pclass: string | null
     background: string | null
     backstory: string | null
+    finished: boolean | null
     image: string | null
     userId: string | null
   }
@@ -1943,6 +1944,7 @@ export namespace Prisma {
     pclass: string | null
     background: string | null
     backstory: string | null
+    finished: boolean | null
     image: string | null
     userId: string | null
   }
@@ -1956,6 +1958,9 @@ export namespace Prisma {
     pclass: number
     background: number
     backstory: number
+    equipment: number
+    languages: number
+    finished: number
     image: number
     userId: number
     _all: number
@@ -1981,6 +1986,7 @@ export namespace Prisma {
     pclass?: true
     background?: true
     backstory?: true
+    finished?: true
     image?: true
     userId?: true
   }
@@ -1994,6 +2000,7 @@ export namespace Prisma {
     pclass?: true
     background?: true
     backstory?: true
+    finished?: true
     image?: true
     userId?: true
   }
@@ -2007,6 +2014,9 @@ export namespace Prisma {
     pclass?: true
     background?: true
     backstory?: true
+    equipment?: true
+    languages?: true
+    finished?: true
     image?: true
     userId?: true
     _all?: true
@@ -2107,6 +2117,9 @@ export namespace Prisma {
     pclass: string
     background: string
     backstory: string
+    equipment: JsonValue[]
+    languages: JsonValue[]
+    finished: boolean
     image: string | null
     userId: string | null
     _count: CharacterCountAggregateOutputType | null
@@ -2139,6 +2152,9 @@ export namespace Prisma {
     pclass?: boolean
     background?: boolean
     backstory?: boolean
+    equipment?: boolean
+    languages?: boolean
+    finished?: boolean
     image?: boolean
     userId?: boolean
   }, ExtArgs["result"]["character"]>
@@ -2153,6 +2169,9 @@ export namespace Prisma {
     pclass?: boolean
     background?: boolean
     backstory?: boolean
+    equipment?: boolean
+    languages?: boolean
+    finished?: boolean
     image?: boolean
     userId?: boolean
   }
@@ -2170,6 +2189,9 @@ export namespace Prisma {
       pclass: string
       background: string
       backstory: string
+      equipment: Prisma.JsonValue[]
+      languages: Prisma.JsonValue[]
+      finished: boolean
       image: string | null
       userId: string | null
     }, ExtArgs["result"]["character"]>
@@ -2572,6 +2594,9 @@ export namespace Prisma {
     readonly pclass: FieldRef<"Character", 'String'>
     readonly background: FieldRef<"Character", 'String'>
     readonly backstory: FieldRef<"Character", 'String'>
+    readonly equipment: FieldRef<"Character", 'Json[]'>
+    readonly languages: FieldRef<"Character", 'Json[]'>
+    readonly finished: FieldRef<"Character", 'Boolean'>
     readonly image: FieldRef<"Character", 'String'>
     readonly userId: FieldRef<"Character", 'String'>
   }
@@ -3801,6 +3826,9 @@ export namespace Prisma {
     pclass: 'pclass',
     background: 'background',
     backstory: 'backstory',
+    equipment: 'equipment',
+    languages: 'languages',
+    finished: 'finished',
     image: 'image',
     userId: 'userId'
   };
@@ -3893,6 +3921,20 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'Json[]'
+   */
+  export type ListJsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'Json'
+   */
+  export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+  /**
    * Reference to a field of type 'Float'
    */
   export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -3973,6 +4015,9 @@ export namespace Prisma {
     pclass?: StringFilter<"Character"> | string
     background?: StringFilter<"Character"> | string
     backstory?: StringFilter<"Character"> | string
+    equipment?: JsonNullableListFilter<"Character">
+    languages?: JsonNullableListFilter<"Character">
+    finished?: BoolFilter<"Character"> | boolean
     image?: StringNullableFilter<"Character"> | string | null
     userId?: StringNullableFilter<"Character"> | string | null
   }
@@ -3986,6 +4031,9 @@ export namespace Prisma {
     pclass?: SortOrder
     background?: SortOrder
     backstory?: SortOrder
+    equipment?: SortOrder
+    languages?: SortOrder
+    finished?: SortOrder
     image?: SortOrder
     userId?: SortOrder
   }
@@ -4002,6 +4050,9 @@ export namespace Prisma {
     pclass?: StringFilter<"Character"> | string
     background?: StringFilter<"Character"> | string
     backstory?: StringFilter<"Character"> | string
+    equipment?: JsonNullableListFilter<"Character">
+    languages?: JsonNullableListFilter<"Character">
+    finished?: BoolFilter<"Character"> | boolean
     image?: StringNullableFilter<"Character"> | string | null
     userId?: StringNullableFilter<"Character"> | string | null
   }, "id">
@@ -4015,6 +4066,9 @@ export namespace Prisma {
     pclass?: SortOrder
     background?: SortOrder
     backstory?: SortOrder
+    equipment?: SortOrder
+    languages?: SortOrder
+    finished?: SortOrder
     image?: SortOrder
     userId?: SortOrder
     _count?: CharacterCountOrderByAggregateInput
@@ -4036,6 +4090,9 @@ export namespace Prisma {
     pclass?: StringWithAggregatesFilter<"Character"> | string
     background?: StringWithAggregatesFilter<"Character"> | string
     backstory?: StringWithAggregatesFilter<"Character"> | string
+    equipment?: JsonNullableListFilter<"Character">
+    languages?: JsonNullableListFilter<"Character">
+    finished?: BoolWithAggregatesFilter<"Character"> | boolean
     image?: StringNullableWithAggregatesFilter<"Character"> | string | null
     userId?: StringNullableWithAggregatesFilter<"Character"> | string | null
   }
@@ -4168,6 +4225,9 @@ export namespace Prisma {
     pclass: string
     background: string
     backstory: string
+    equipment?: CharacterCreateequipmentInput | InputJsonValue[]
+    languages?: CharacterCreatelanguagesInput | InputJsonValue[]
+    finished?: boolean
     image?: string | null
     userId?: string | null
   }
@@ -4181,6 +4241,9 @@ export namespace Prisma {
     pclass: string
     background: string
     backstory: string
+    equipment?: CharacterCreateequipmentInput | InputJsonValue[]
+    languages?: CharacterCreatelanguagesInput | InputJsonValue[]
+    finished?: boolean
     image?: string | null
     userId?: string | null
   }
@@ -4193,6 +4256,9 @@ export namespace Prisma {
     pclass?: StringFieldUpdateOperationsInput | string
     background?: StringFieldUpdateOperationsInput | string
     backstory?: StringFieldUpdateOperationsInput | string
+    equipment?: CharacterUpdateequipmentInput | InputJsonValue[]
+    languages?: CharacterUpdatelanguagesInput | InputJsonValue[]
+    finished?: BoolFieldUpdateOperationsInput | boolean
     image?: NullableStringFieldUpdateOperationsInput | string | null
     userId?: NullableStringFieldUpdateOperationsInput | string | null
   }
@@ -4205,6 +4271,9 @@ export namespace Prisma {
     pclass?: StringFieldUpdateOperationsInput | string
     background?: StringFieldUpdateOperationsInput | string
     backstory?: StringFieldUpdateOperationsInput | string
+    equipment?: CharacterUpdateequipmentInput | InputJsonValue[]
+    languages?: CharacterUpdatelanguagesInput | InputJsonValue[]
+    finished?: BoolFieldUpdateOperationsInput | boolean
     image?: NullableStringFieldUpdateOperationsInput | string | null
     userId?: NullableStringFieldUpdateOperationsInput | string | null
   }
@@ -4218,6 +4287,9 @@ export namespace Prisma {
     pclass: string
     background: string
     backstory: string
+    equipment?: CharacterCreateequipmentInput | InputJsonValue[]
+    languages?: CharacterCreatelanguagesInput | InputJsonValue[]
+    finished?: boolean
     image?: string | null
     userId?: string | null
   }
@@ -4230,6 +4302,9 @@ export namespace Prisma {
     pclass?: StringFieldUpdateOperationsInput | string
     background?: StringFieldUpdateOperationsInput | string
     backstory?: StringFieldUpdateOperationsInput | string
+    equipment?: CharacterUpdateequipmentInput | InputJsonValue[]
+    languages?: CharacterUpdatelanguagesInput | InputJsonValue[]
+    finished?: BoolFieldUpdateOperationsInput | boolean
     image?: NullableStringFieldUpdateOperationsInput | string | null
     userId?: NullableStringFieldUpdateOperationsInput | string | null
   }
@@ -4242,6 +4317,9 @@ export namespace Prisma {
     pclass?: StringFieldUpdateOperationsInput | string
     background?: StringFieldUpdateOperationsInput | string
     backstory?: StringFieldUpdateOperationsInput | string
+    equipment?: CharacterUpdateequipmentInput | InputJsonValue[]
+    languages?: CharacterUpdatelanguagesInput | InputJsonValue[]
+    finished?: BoolFieldUpdateOperationsInput | boolean
     image?: NullableStringFieldUpdateOperationsInput | string | null
     userId?: NullableStringFieldUpdateOperationsInput | string | null
   }
@@ -4424,6 +4502,20 @@ export namespace Prisma {
     gte?: number | IntFieldRefInput<$PrismaModel>
     not?: NestedIntFilter<$PrismaModel> | number
   }
+  export type JsonNullableListFilter<$PrismaModel = never> = 
+    | PatchUndefined<
+        Either<Required<JsonNullableListFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableListFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonNullableListFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonNullableListFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonNullableListFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue[] | ListJsonFieldRefInput<$PrismaModel> | null
+    has?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    hasEvery?: InputJsonValue[] | ListJsonFieldRefInput<$PrismaModel>
+    hasSome?: InputJsonValue[] | ListJsonFieldRefInput<$PrismaModel>
+    isEmpty?: boolean
+  }
 
   export type StringNullableFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
@@ -4450,6 +4542,9 @@ export namespace Prisma {
     pclass?: SortOrder
     background?: SortOrder
     backstory?: SortOrder
+    equipment?: SortOrder
+    languages?: SortOrder
+    finished?: SortOrder
     image?: SortOrder
     userId?: SortOrder
   }
@@ -4468,6 +4563,7 @@ export namespace Prisma {
     pclass?: SortOrder
     background?: SortOrder
     backstory?: SortOrder
+    finished?: SortOrder
     image?: SortOrder
     userId?: SortOrder
   }
@@ -4481,6 +4577,7 @@ export namespace Prisma {
     pclass?: SortOrder
     background?: SortOrder
     backstory?: SortOrder
+    finished?: SortOrder
     image?: SortOrder
     userId?: SortOrder
   }
@@ -4572,12 +4669,30 @@ export namespace Prisma {
     set?: Date | string
   }
 
+  export type CharacterCreateequipmentInput = {
+    set: InputJsonValue[]
+  }
+
+  export type CharacterCreatelanguagesInput = {
+    set: InputJsonValue[]
+  }
+
   export type IntFieldUpdateOperationsInput = {
     set?: number
     increment?: number
     decrement?: number
     multiply?: number
     divide?: number
+  }
+
+  export type CharacterUpdateequipmentInput = {
+    set?: InputJsonValue[]
+    push?: InputJsonValue | InputJsonValue[]
+  }
+
+  export type CharacterUpdatelanguagesInput = {
+    set?: InputJsonValue[]
+    push?: InputJsonValue | InputJsonValue[]
   }
 
   export type NullableStringFieldUpdateOperationsInput = {

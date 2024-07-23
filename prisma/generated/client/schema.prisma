@@ -35,6 +35,9 @@ model Character {
   pclass     String
   background String
   backstory  String
+  equipment  Json[] //all equipment in the characters inventory
+  languages  Json[] //all languages known by character
+  finished   Boolean @default(false) //ensures the character creation process is finished
   image      String?
   userId     String? @db.ObjectId
 }

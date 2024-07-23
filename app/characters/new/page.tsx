@@ -23,15 +23,11 @@ async function getChoices(race: string){
     console.log(res)
     return res
 }
-
-async function add(data: FormData){
-    console.log(data)
-    //addCharacter(data)
-}
   return (
     <div className="display: flex flex-col">
         <form className="display: flex m-auto flex-col w-[80%] gap-4" name="form1" action={async (formData: FormData) =>{
                 'use server'
+                //append user information to the data sent to the server so ownership of the character is linked in the database
                 const sess = await getSession()
                 formData.append("user", `${await getUser(sess.user.email)}`)
                 console.log(formData)
@@ -71,7 +67,7 @@ async function add(data: FormData){
                 }
             </select>
             <p>Character Backstory</p>
-            <textarea name="backstory" />
+            <textarea placeholder="Write your character's backstory" name="backstory" />
             <Button type="submit">Add</Button>
         </form>
     </div>
