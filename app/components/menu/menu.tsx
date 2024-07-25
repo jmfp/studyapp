@@ -10,3 +10,5 @@ export default function MenuItem({icon, text}:{icon: any, text: string}) {
     </div>
   )
 }
+
+

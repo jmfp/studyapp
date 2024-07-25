@@ -231,6 +231,16 @@ export const get5eAlignments = async (alignment?: string) =>{
     }
 }
 
+export const get5eLanguages = async (language?: string) =>{
+    try {
+        const res = await fetch(`https://www.dnd5eapi.co/api/languages/${language ? language : ""}`)
+        .then((response) => response.text())
+        return JSON.parse(`${res}`)
+    } catch (error: any) {
+        console.log(error.message)
+    }
+}
+
 export const deleteBlog = async(id: any) =>{
     prisma.post.delete({where: {id: id}})
 }
