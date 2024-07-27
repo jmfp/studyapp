@@ -1,4 +1,4 @@
-import { get5eClasses, get5eLanguages, get5eRaceAttributes, get5eRaces, getCharacters, getUser } from "@/actions/actions"
+import { get5eBackgrounds, get5eClasses, get5eLanguages, get5eRaceAttributes, get5eRaces, getCharacters, getUser } from "@/actions/actions"
 import { getSession } from "@/app/auth/auth"
 import { ClientButton } from "@/app/components/button/Button"
 import { Button } from "@/components/ui/button"
@@ -18,13 +18,15 @@ export default async function CharacterSheet({params} : {params: {id: string}}) 
     const allLanguages = await get5eLanguages()
     //getting the details for the characters class
     const pclass = await get5eClasses(character[0].pclass.toLowerCase())
-    console.log(character[0])
+    //getting choices related to background
+    const background = await get5eBackgrounds(character[0].background.toLowerCase())
+    console.log(background)
     let extra = {
         ability_bonuses: 0
     }
     //TODO: remove already existing proficiencies from choices before finishing character
-    console.log(pclass.proficiency_choices[0].from.options[0].item)
-    console.log(pclass)
+    //console.log(pclass.proficiency_choices[0])
+    //console.log(pclass.starting_equipment_options)
   return (
     <div>
         {!character ? <span/> : 
@@ -45,12 +47,12 @@ export default async function CharacterSheet({params} : {params: {id: string}}) 
                             </div>
                         ))
                     }
-                    <p>Proficiencies</p>
+                    <p>{pclass.proficiency_choices[0].desc}</p>
                     {!pclass ? <span/> :
-                        pclass.proficiency_choices.map((choice: any, idx: number) =>(
+                        pclass.proficiency_choices[0].from.options.map((choice: any, idx: number) =>(
                             <div>
-                                <input type="checkbox" id={choice.from.options[idx].item.index} name="proficiencies" value={`${choice[idx].from.options[idx].item.name}`}/>
-                                <label htmlFor={choice[idx].from.options[idx].item.index}>{` ${choice[idx].from.options[idx].item.name}`}</label>
+                                <input type="checkbox" id={choice.item.index} name="proficiencies" value={`${choice.item.index}`}/>
+                                <label htmlFor={choice.item.index}>{` ${choice.item.name}`}</label>
                             </div>
                         ))
                     }
