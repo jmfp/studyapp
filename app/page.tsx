@@ -50,6 +50,15 @@ export default async function Home() {
           </Link>
           
         </div>
+
+        {/* post field for user */}
+
+        <div className="display: flex flex-col m-auto w-[50%] h-100 border border-green-500 rounded-lg">
+          <textarea placeholder="Add a New Post"/>
+          <div className="display: flex justify-evenly border-t border-green-500 p-6">
+            <Button >Post</Button>
+          </div>
+        </div>
         
         <div className='m-auto grid lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 mt-5 gap-5 content-center'>
           {posts.length ? posts.map((post: any, idx: number) =>(
