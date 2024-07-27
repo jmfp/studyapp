@@ -26,22 +26,19 @@ const toBase64 = (file: File) => {
     });
   };
 
-export const addBlog = async (formData: any) => {
-    const title = formData["title"]
-    const image = formData["image"]
-    const slug = formData["slug"]
-    const description = formData["description"]
-    const content = formData["content"]
-    const category = formData["category"]
-    const new_blog = await prisma.post.create({
+export const addPost = async (formData: any) => {
+    const content = formData.get("content")
+    const userId = formData.get("userId")
+    const new_post = await prisma.post.create({
         data:{
-            content: content
+            content,
+            userId
         }
     })
 
     //revalidate cache for server action
-    revalidatePath('/admin/posts/new')
-    redirect('/')
+    revalidatePath('/')
+    //redirect('/')
 }
 
 export async function signUp(formData: FormData){

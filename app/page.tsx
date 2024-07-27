@@ -9,6 +9,9 @@ import {PrismaClient} from "@/prisma/generated/client"
 import MenuItem from "./components/menu/menu";
 import { GiIciclesAura, GiDiceTwentyFacesTwenty } from "react-icons/gi";
 import { BiLogOut } from "react-icons/bi";
+import { addPost, getUser } from "@/actions/actions";
+import { getSession } from "./auth/auth";
+import { redirect } from "next/navigation";
 
 export const revalidate = 30
 
@@ -26,7 +29,19 @@ export const prisma = new PrismaClient()
 
 export default async function Home() {
   //const posts = await fetchPosts()
-  const posts = await prisma.post.findMany({})
+  //getting current user session
+  const session = await getSession()
+  if (!session){
+    redirect("/signin")
+  }
+  const userObject = await getUser(session.user.email)
+  const user = await prisma.user.findUnique({where: {
+    email: session.user.email
+  }})
+  console.log(user?.id)
+  const posts = await prisma.post.findMany({where:{
+    userId: user?.id
+  }})
   //const test = await newView()
 
   return (
@@ -53,34 +68,30 @@ export default async function Home() {
 
         {/* post field for user */}
 
-        <div className="display: flex flex-col m-auto w-[50%] h-100 border border-green-500 rounded-lg">
-          <textarea placeholder="Add a New Post"/>
-          <div className="display: flex justify-evenly border-t border-green-500 p-6">
-            <Button >Post</Button>
+        <div className="display: flex flex-col m-auto w-[80%]">
+
+          <div className="display: flex flex-col m-auto w-[100%] h-100 border border-green-500 rounded-lg">
+            <form action={async (formData: FormData) =>{
+              'use server'
+              formData.append('userId', `${user?.id}`)
+              console.log(formData)
+              await addPost(formData)
+            }}>
+              <textarea name="content" placeholder="Add a New Post"/>
+              <div className="display: flex justify-evenly border-t border-green-500 p-6">
+                <Button type="submit">Post</Button>
+              </div>
+            </form>
           </div>
-        </div>
-        
-        <div className='m-auto grid lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 mt-5 gap-5 content-center'>
-          {posts.length ? posts.map((post: any, idx: number) =>(
-            <Card key={idx} className='m-[auto] max-w-[400px] max-h-[550px]'>
-              <Image 
-                src={post.image} 
-                alt={post.slug} 
-                width={200} 
-                height={200}
-                className="rounded-t-lg h-[300px] w-[100%] object-cover"
-              />
-              <CardContent className="mt-5 text-center">
-                <h3 className="text-xl line-clamp-1 font-bold">{post.title}</h3>
-                <div className="line-clamp-2 text-sm text-violet-500 mt-5">
-                  {parse(post.description)}
-                </div>
-              </CardContent>
-              <Button asChild className="w-[50%] mt-7 mb-7 ml-[25%]">
-                <Link href={`/blog/${post.slug}`}>Read More</Link>
-              </Button>
-            </Card>
-          )) : <span/>}
+          
+          <div className='display: flex flex-col m-auto w-full border h-[vh] gap-4'>
+            {posts.length ? posts.map((post: any, idx: number) =>(
+              <div className="display: flex flex-col m-auto w-full h-60 border border-green-500 rounded-lg gap-4">
+                <p>{post.content}</p>
+              </div>
+            )) : <span/>}
+          </div>
+
         </div>
       </div>
   );

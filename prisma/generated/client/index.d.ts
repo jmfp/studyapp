@@ -1030,6 +1030,7 @@ export namespace Prisma {
   export type PostMinAggregateOutputType = {
     id: string | null
     content: string | null
+    userId: string | null
     published: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -1038,6 +1039,7 @@ export namespace Prisma {
   export type PostMaxAggregateOutputType = {
     id: string | null
     content: string | null
+    userId: string | null
     published: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -1046,6 +1048,7 @@ export namespace Prisma {
   export type PostCountAggregateOutputType = {
     id: number
     content: number
+    userId: number
     published: number
     createdAt: number
     updatedAt: number
@@ -1056,6 +1059,7 @@ export namespace Prisma {
   export type PostMinAggregateInputType = {
     id?: true
     content?: true
+    userId?: true
     published?: true
     createdAt?: true
     updatedAt?: true
@@ -1064,6 +1068,7 @@ export namespace Prisma {
   export type PostMaxAggregateInputType = {
     id?: true
     content?: true
+    userId?: true
     published?: true
     createdAt?: true
     updatedAt?: true
@@ -1072,6 +1077,7 @@ export namespace Prisma {
   export type PostCountAggregateInputType = {
     id?: true
     content?: true
+    userId?: true
     published?: true
     createdAt?: true
     updatedAt?: true
@@ -1153,6 +1159,7 @@ export namespace Prisma {
   export type PostGroupByOutputType = {
     id: string
     content: string
+    userId: string
     published: boolean
     createdAt: Date
     updatedAt: Date
@@ -1178,6 +1185,7 @@ export namespace Prisma {
   export type PostSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     content?: boolean
+    userId?: boolean
     published?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -1187,6 +1195,7 @@ export namespace Prisma {
   export type PostSelectScalar = {
     id?: boolean
     content?: boolean
+    userId?: boolean
     published?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -1199,6 +1208,7 @@ export namespace Prisma {
     scalars: $Extensions.GetPayloadResult<{
       id: string
       content: string
+      userId: string
       published: boolean
       createdAt: Date
       updatedAt: Date
@@ -1596,6 +1606,7 @@ export namespace Prisma {
   interface PostFieldRefs {
     readonly id: FieldRef<"Post", 'String'>
     readonly content: FieldRef<"Post", 'String'>
+    readonly userId: FieldRef<"Post", 'String'>
     readonly published: FieldRef<"Post", 'Boolean'>
     readonly createdAt: FieldRef<"Post", 'DateTime'>
     readonly updatedAt: FieldRef<"Post", 'DateTime'>
@@ -3809,6 +3820,7 @@ export namespace Prisma {
   export const PostScalarFieldEnum: {
     id: 'id',
     content: 'content',
+    userId: 'userId',
     published: 'published',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
@@ -3957,6 +3969,7 @@ export namespace Prisma {
     NOT?: PostWhereInput | PostWhereInput[]
     id?: StringFilter<"Post"> | string
     content?: StringFilter<"Post"> | string
+    userId?: StringFilter<"Post"> | string
     published?: BoolFilter<"Post"> | boolean
     createdAt?: DateTimeFilter<"Post"> | Date | string
     updatedAt?: DateTimeFilter<"Post"> | Date | string
@@ -3965,6 +3978,7 @@ export namespace Prisma {
   export type PostOrderByWithRelationInput = {
     id?: SortOrder
     content?: SortOrder
+    userId?: SortOrder
     published?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -3976,6 +3990,7 @@ export namespace Prisma {
     OR?: PostWhereInput[]
     NOT?: PostWhereInput | PostWhereInput[]
     content?: StringFilter<"Post"> | string
+    userId?: StringFilter<"Post"> | string
     published?: BoolFilter<"Post"> | boolean
     createdAt?: DateTimeFilter<"Post"> | Date | string
     updatedAt?: DateTimeFilter<"Post"> | Date | string
@@ -3984,6 +3999,7 @@ export namespace Prisma {
   export type PostOrderByWithAggregationInput = {
     id?: SortOrder
     content?: SortOrder
+    userId?: SortOrder
     published?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -3998,6 +4014,7 @@ export namespace Prisma {
     NOT?: PostScalarWhereWithAggregatesInput | PostScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"Post"> | string
     content?: StringWithAggregatesFilter<"Post"> | string
+    userId?: StringWithAggregatesFilter<"Post"> | string
     published?: BoolWithAggregatesFilter<"Post"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"Post"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Post"> | Date | string
@@ -4167,6 +4184,7 @@ export namespace Prisma {
   export type PostCreateInput = {
     id?: string
     content: string
+    userId: string
     published?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -4175,6 +4193,7 @@ export namespace Prisma {
   export type PostUncheckedCreateInput = {
     id?: string
     content: string
+    userId: string
     published?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -4182,6 +4201,7 @@ export namespace Prisma {
 
   export type PostUpdateInput = {
     content?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
     published?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -4189,6 +4209,7 @@ export namespace Prisma {
 
   export type PostUncheckedUpdateInput = {
     content?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
     published?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -4197,6 +4218,7 @@ export namespace Prisma {
   export type PostCreateManyInput = {
     id?: string
     content: string
+    userId: string
     published?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -4204,6 +4226,7 @@ export namespace Prisma {
 
   export type PostUpdateManyMutationInput = {
     content?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
     published?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -4211,6 +4234,7 @@ export namespace Prisma {
 
   export type PostUncheckedUpdateManyInput = {
     content?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
     published?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -4431,6 +4455,7 @@ export namespace Prisma {
   export type PostCountOrderByAggregateInput = {
     id?: SortOrder
     content?: SortOrder
+    userId?: SortOrder
     published?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -4439,6 +4464,7 @@ export namespace Prisma {
   export type PostMaxOrderByAggregateInput = {
     id?: SortOrder
     content?: SortOrder
+    userId?: SortOrder
     published?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -4447,6 +4473,7 @@ export namespace Prisma {
   export type PostMinOrderByAggregateInput = {
     id?: SortOrder
     content?: SortOrder
+    userId?: SortOrder
     published?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder

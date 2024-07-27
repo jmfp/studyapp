@@ -115,6 +115,7 @@ Prisma.NullTypes = {
 exports.Prisma.PostScalarFieldEnum = {
   id: 'id',
   content: 'content',
+  userId: 'userId',
   published: 'published',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
