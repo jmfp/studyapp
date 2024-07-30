@@ -66,6 +66,15 @@ export async function validateUser(user: any){
     return false
 }
 
+export async function sendFriendRequest(user: any){
+    try {
+        
+    } catch (error: any) {
+        console.log(error.message)
+    }
+    return false
+}
+
 export async function getUser(email: string){
     try {
         const res = await prisma.user.findUnique({where: {email}})
@@ -245,4 +254,11 @@ export const deleteBlog = async(id: any) =>{
 export const getAllPosts = async() => {
     revalidatePath('/admin/dashboard')
     return await prisma.post.findMany({})
+}
+
+export const getUserPosts = async(id: any) => {
+    revalidatePath('/admin/dashboard')
+    return await prisma.post.findMany({where: {
+        userId: id
+    }})
 }

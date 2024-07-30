@@ -57,7 +57,7 @@ export default async function Home() {
           <Link href={"/characters"}>
             <MenuItem icon={GiIciclesAura} text="Characters"/>
           </Link>
-          <Link href={"/characters"}>
+          <Link href={"/campaign"}>
             <MenuItem icon={GiDiceTwentyFacesTwenty} text="Campaigns"/>
           </Link>
           <Link href={"/signin"}>

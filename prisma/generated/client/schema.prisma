@@ -53,3 +53,10 @@ model User {
   friends    String[] @db.ObjectId
   messages   String[] @db.ObjectId
 }
+
+model FriendRequest {
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String  @db.ObjectId //id of user sending request
+  receiverId String  @db.ObjectId //id of user receiving request
+  active     Boolean @default(true)
+}
