@@ -12,6 +12,7 @@ import { BiLogOut } from "react-icons/bi";
 import { addPost, getFeedPosts, getLatestPost, getUser, getUserFriends } from "@/actions/actions";
 import { getSession } from "./auth/auth";
 import { redirect } from "next/navigation";
+import { GiHearts } from "react-icons/gi";
 
 export const revalidate = 30
 
@@ -50,6 +51,7 @@ export default async function Home() {
 
   //get feed for user
   const newFeed = await getFeedPosts(user?.id)
+  //console.log(newFeed)
   //console.log(feed)
 
   return (
@@ -57,7 +59,7 @@ export default async function Home() {
         <div className="display: flex flex-col border-r border-b border-b-green-400 h-full border-r-green-400 w-[15%]">
           <Link href={`/user/${userObject}`}>
             <Image
-              src="https://images.unsplash.com/photo-1720975945110-6278215f280d?q=80&w=3269&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+              src={user?.profilePic !== "" ? `${user?.profilePic}` : "https://images.unsplash.com/photo-1720975945110-6278215f280d?q=80&w=3269&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"}
               alt="User Icon"
               width={200}
               height={200}
@@ -95,10 +97,25 @@ export default async function Home() {
           </div>
           
           <div className='display: flex flex-col m-auto w-full border h-[vh] gap-4'>
-            {feed.length ? feed.map((post: any, idx: number) =>(
+            {newFeed.length ? newFeed.map((post: any, idx: number) =>(
               <div className="display: flex flex-col m-auto w-full h-60 border border-green-500 rounded-lg gap-4">
                 <div className="display: flex">
+                  <Link href={`user/${post.friendId}`}>
+                    <Image 
+                      src={post.pic}
+                      alt="User pic"
+                      width={200}
+                      height={200}
+                      className="m-auto mb-6 border border-green-400 rounded-full h-[100px] w-[100px] object-cover"
+                    />
+                  </Link>
                   <p>{post.content}</p>
+                </div>
+                <div className="display: flex items-center text-center justify-between border-t border-green-400">
+                  <div className="display: flex text-center items-center gap-2 m-auto">
+                    <GiHearts className="text-green-400"/>
+                    <p>{post.likes.length}</p>
+                  </div>
                 </div>
                 
               </div>
