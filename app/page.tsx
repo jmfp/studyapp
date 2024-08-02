@@ -34,7 +34,7 @@ export default async function Home() {
   if (!session){
     redirect("/signin")
   }
-  const userObject = await getUser(session.user.email)
+  const userObject = await getUser()
   const user = await prisma.user.findUnique({where: {
     email: session.user.email
   }})
@@ -47,13 +47,15 @@ export default async function Home() {
   return (
       <div className='display: flex w-[100%] justify-space-between mb-14'>
         <div className="display: flex flex-col border-r border-b border-b-green-400 h-full border-r-green-400 w-[15%]">
-          <Image
-            src="https://images.unsplash.com/photo-1720975945110-6278215f280d?q=80&w=3269&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-            alt="User Icon"
-            width={200}
-            height={200}
-            className="m-auto mb-6 border border-green-400 rounded-full h-[100px] w-[100px] object-cover"
-          />
+          <Link href={`/user/${userObject}`}>
+            <Image
+              src="https://images.unsplash.com/photo-1720975945110-6278215f280d?q=80&w=3269&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+              alt="User Icon"
+              width={200}
+              height={200}
+              className="m-auto mb-6 border border-green-400 rounded-full h-[100px] w-[100px] object-cover"
+            />
+          </Link>
           <Link href={"/characters"}>
             <MenuItem icon={GiIciclesAura} text="Characters"/>
           </Link>

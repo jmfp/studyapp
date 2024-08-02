@@ -118,7 +118,20 @@ exports.Prisma.PostScalarFieldEnum = {
   userId: 'userId',
   published: 'published',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  likes: 'likes',
+  comments: 'comments'
+};
+
+exports.Prisma.LikeScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId'
+};
+
+exports.Prisma.CommentScalarFieldEnum = {
+  id: 'id',
+  content: 'content',
+  likes: 'likes'
 };
 
 exports.Prisma.CharacterScalarFieldEnum = {
@@ -145,14 +158,14 @@ exports.Prisma.UserScalarFieldEnum = {
   characters: 'characters',
   subscribed: 'subscribed',
   friends: 'friends',
-  messages: 'messages'
+  messages: 'messages',
+  profilePic: 'profilePic'
 };
 
 exports.Prisma.FriendRequestScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
-  receiverId: 'receiverId',
-  active: 'active'
+  receiverId: 'receiverId'
 };
 
 exports.Prisma.SortOrder = {
@@ -168,6 +181,8 @@ exports.Prisma.QueryMode = {
 
 exports.Prisma.ModelName = {
   Post: 'Post',
+  Like: 'Like',
+  Comment: 'Comment',
   Character: 'Character',
   User: 'User',
   FriendRequest: 'FriendRequest'

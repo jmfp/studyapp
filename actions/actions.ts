@@ -66,17 +66,72 @@ export async function validateUser(user: any){
     return false
 }
 
-export async function sendFriendRequest(user: any){
+export async function sendFriendRequest(user: string, receiver: string){
     try {
-        
+        const newRequest = await prisma.friendRequest.create({
+            data:{
+                userId: user,
+                receiverId: receiver
+            }
+        })
+        console.log(newRequest)
     } catch (error: any) {
         console.log(error.message)
     }
-    return false
 }
 
-export async function getUser(email: string){
+
+export const getFriendRequest = async (id: string) =>{
     try {
+        const res = await prisma.friendRequest.findMany({where:{receiverId: id}})
+        return res
+    } catch (error: any) {
+        console.log(error.message)
+    }
+}
+
+export async function decideFriendRequest(approval: boolean, id: string){
+    try {
+        const user = await getUser()
+        if(approval){
+            //add friend to user object
+            await prisma.user.update({where:{
+                id: user
+            }, data:{
+                friends: {
+                    push: user
+                }
+            }})
+            //add friend to the receiver object
+            const request = await prisma.friendRequest.findUnique({where: {
+                id
+            }})
+            await prisma.user.update({where:{
+                id: request?.userId
+            }, data:{
+                friends: {
+                    push: user
+                }
+            }})
+            await prisma.friendRequest.delete({where:{id}})
+            //await prisma.friendRequest.delete({where: {
+            //        receiverId: user
+            //}})
+        }
+        if(!approval){
+            await prisma.friendRequest.delete({where: {id}})
+        }
+        revalidatePath(`/user/${user}/notifications`)
+        console.log("Success")
+    } catch (error: any) {
+        console.log(error.message)
+    }
+}
+
+export async function getUser(){
+    try {
+        const session = await getSession()
+        const email = session.user.email
         const res = await prisma.user.findUnique({where: {email}})
         return JSON.parse(`${JSON.stringify(res?.id)}`)
     } catch (error: any) {

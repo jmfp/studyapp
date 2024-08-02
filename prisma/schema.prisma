@@ -22,9 +22,25 @@ model Post {
   published   Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  likes       String[]  //ids of the likes for the content
+  //reposts     Int       @default(0)
+  comments    String[]  //ids of comment objects
   //author   User      @relation(fields: [authorId], references: [id])
   //authorId String    @db.ObjectId
   //comments Comment[]
+}
+
+model Like{
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String    //id of user that liked the content
+  //replies     String[]
+}
+
+model Comment{
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  content     String    
+  likes       String[]
+  //replies     String[]
 }
 
 model Character {
@@ -52,12 +68,11 @@ model User {
   subscribed  Boolean   @default(false)
   friends     String[]  @db.ObjectId
   messages    String[]  @db.ObjectId
+  profilePic  String    @default("")
 }
 
 model FriendRequest {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  userId      String    @db.ObjectId //id of user sending request
-  receiverId  String    @db.ObjectId //id of user receiving request
-  active      Boolean   @default(true)
+  userId      String    @db.ObjectId//id of user sending request
+  receiverId  String    @db.ObjectId//id of user receiving request
 }
-

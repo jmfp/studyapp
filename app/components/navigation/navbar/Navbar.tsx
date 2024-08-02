@@ -5,8 +5,11 @@ import Logo from "../../logo/Logo";
 //import Logo from "../../logo";
 //import Button from "../../button";
 import { PiGithubLogoThin, PiLinkedinLogoThin } from "react-icons/pi";
+import { VscBell } from "react-icons/vsc";
+import { getUser } from "@/actions/actions";
+import { getSession } from "@/app/auth/auth";
 
-const NavBar = () =>{
+const NavBar = async () =>{
     return(
     <>
     <div className="w-full h-20 lg:sticky top-0 z-50">
@@ -21,9 +24,17 @@ const NavBar = () =>{
     );
 };
 
-function SocialLinks(){
+async function SocialLinks(){
+  
+  const user = await getUser()
+  console.log(user)
   return(
     <div className="flex items-center gap-2">
+      {!user ? <span/> : 
+        <Link href={`/user/${user}/notifications`}>
+          <VscBell/>
+        </Link>
+      }
       <ModeToggle/>
     </div>
   )

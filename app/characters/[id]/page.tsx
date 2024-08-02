@@ -10,7 +10,7 @@ export default async function CharacterSheet({params} : {params: {id: string}}) 
     if(!user){
         redirect("/signin")
     }
-    const userObject = await getUser(user.user.email)
+    const userObject = await getUser()
     const character = await getCharacters(userObject.id, params.id)
     //get race attributes to choose from if char not finished
     const raceAttributes = await get5eRaceAttributes(character[0].race)
