@@ -93,19 +93,20 @@ export const getFriendRequest = async (id: string) =>{
 export async function decideFriendRequest(approval: boolean, id: string){
     try {
         const user = await getUser()
+
+        const request = await prisma.friendRequest.findUnique({where: {
+            id
+        }})
         if(approval){
             //add friend to user object
             await prisma.user.update({where:{
-                id: user
+                id: request?.receiverId
             }, data:{
                 friends: {
-                    push: user
+                    push: request?.receiverId
                 }
             }})
             //add friend to the receiver object
-            const request = await prisma.friendRequest.findUnique({where: {
-                id
-            }})
             await prisma.user.update({where:{
                 id: request?.userId
             }, data:{
@@ -134,6 +135,24 @@ export async function getUser(){
         const email = session.user.email
         const res = await prisma.user.findUnique({where: {email}})
         return JSON.parse(`${JSON.stringify(res?.id)}`)
+    } catch (error: any) {
+        console.log(error.message)
+    }
+}
+
+export async function getUserObject(id: string){
+    try {
+        const res = await prisma.user.findUnique({where: {id}})
+        return res
+    } catch (error: any) {
+        console.log(error.message)
+    }
+}
+
+export async function getUserFriends(id: any){
+    try {
+        const res = await prisma.user.findUnique({where: {id}})
+        return res?.friends
     } catch (error: any) {
         console.log(error.message)
     }
@@ -316,4 +335,26 @@ export const getUserPosts = async(id: any) => {
     return await prisma.post.findMany({where: {
         userId: id
     }})
+}
+
+export const getLatestPost = async(id: any) =>{
+    return await prisma.post.findFirst({where: {
+        userId: id
+    }})
+}
+
+export const getFeedPosts = async(id: any) =>{
+    const user = await prisma.user.findUnique({where: {id}})
+    let friends = user?.friends
+    let data: any = []
+    friends?.map(async(friend: any, idx: number) => {
+        const friendObject = await prisma.user.findUnique({where: {id: friends[idx]}})
+        const friendLatestPost = await prisma.post.findFirst({where:{userId: friends[idx]}})
+        const friendPost = {
+            pic: friendObject?.profilePic,
+            content: friendLatestPost?.content
+        }
+        data.push(friendPost)
+    })
+    console.log(data)
 }

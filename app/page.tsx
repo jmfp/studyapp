@@ -9,7 +9,7 @@ import {PrismaClient} from "@/prisma/generated/client"
 import MenuItem from "./components/menu/menu";
 import { GiIciclesAura, GiDiceTwentyFacesTwenty } from "react-icons/gi";
 import { BiLogOut } from "react-icons/bi";
-import { addPost, getUser } from "@/actions/actions";
+import { addPost, getFeedPosts, getLatestPost, getUser, getUserFriends } from "@/actions/actions";
 import { getSession } from "./auth/auth";
 import { redirect } from "next/navigation";
 
@@ -17,11 +17,11 @@ export const revalidate = 30
 
 //design interface for post return
 export interface post{
-  title: string,
-  image: string,
-  slug: string,
+  image?: string,
   description: string,
-  content: string
+  content: string,
+  profilePic: string,
+  likes: number
 }
 
 //prisma client
@@ -42,7 +42,15 @@ export default async function Home() {
   const posts = await prisma.post.findMany({where:{
     userId: user?.id
   }})
-  //const test = await newView()
+  let feed: any = []
+  //user?.friends.map(async (friend:any, idx:number) =>{
+  //  feed.push(await prisma.post.findFirst({where:{userId: user?.friends[idx]}}))
+  //})
+  feed.push(await prisma.post.findFirst({where:{userId: user?.friends[0]}}))
+
+  //get feed for user
+  const newFeed = await getFeedPosts(user?.id)
+  //console.log(feed)
 
   return (
       <div className='display: flex w-[100%] justify-space-between mb-14'>
@@ -87,9 +95,12 @@ export default async function Home() {
           </div>
           
           <div className='display: flex flex-col m-auto w-full border h-[vh] gap-4'>
-            {posts.length ? posts.map((post: any, idx: number) =>(
+            {feed.length ? feed.map((post: any, idx: number) =>(
               <div className="display: flex flex-col m-auto w-full h-60 border border-green-500 rounded-lg gap-4">
-                <p>{post.content}</p>
+                <div className="display: flex">
+                  <p>{post.content}</p>
+                </div>
+                
               </div>
             )) : <span/>}
           </div>
