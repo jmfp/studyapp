@@ -15,7 +15,8 @@ const prisma = new PrismaClient()
 const toBase64 = async (file: File) => {
     const bufferFile = await file.arrayBuffer()
     const fileBase64 = Buffer.from(bufferFile).toString('base64')
-    return fileBase64
+    const finalString = `data:${file.type};base64,${fileBase64}`
+    return finalString
   };
 
 export const fromBase64 = async (file: string) => {
