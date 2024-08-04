@@ -38,6 +38,7 @@
     "mongodb": "^6.5.0",
     "mongoose": "^8.3.3",
     "next": "14.2.2",
+    "next-base64": "^1.1.0",
     "next-sanity": "^9.0.8",
     "next-themes": "^0.3.0",
     "prisma": "^5.15.1",

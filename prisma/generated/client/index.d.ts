@@ -1304,6 +1304,8 @@ export namespace Prisma {
     published: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
+    pictures: string | null
+    link: string | null
   }
 
   export type PostMaxAggregateOutputType = {
@@ -1313,6 +1315,8 @@ export namespace Prisma {
     published: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
+    pictures: string | null
+    link: string | null
   }
 
   export type PostCountAggregateOutputType = {
@@ -1324,6 +1328,8 @@ export namespace Prisma {
     updatedAt: number
     likes: number
     comments: number
+    pictures: number
+    link: number
     _all: number
   }
 
@@ -1335,6 +1341,8 @@ export namespace Prisma {
     published?: true
     createdAt?: true
     updatedAt?: true
+    pictures?: true
+    link?: true
   }
 
   export type PostMaxAggregateInputType = {
@@ -1344,6 +1352,8 @@ export namespace Prisma {
     published?: true
     createdAt?: true
     updatedAt?: true
+    pictures?: true
+    link?: true
   }
 
   export type PostCountAggregateInputType = {
@@ -1355,6 +1365,8 @@ export namespace Prisma {
     updatedAt?: true
     likes?: true
     comments?: true
+    pictures?: true
+    link?: true
     _all?: true
   }
 
@@ -1439,6 +1451,8 @@ export namespace Prisma {
     updatedAt: Date
     likes: string[]
     comments: string[]
+    pictures: string
+    link: string
     _count: PostCountAggregateOutputType | null
     _min: PostMinAggregateOutputType | null
     _max: PostMaxAggregateOutputType | null
@@ -1467,6 +1481,8 @@ export namespace Prisma {
     updatedAt?: boolean
     likes?: boolean
     comments?: boolean
+    pictures?: boolean
+    link?: boolean
   }, ExtArgs["result"]["post"]>
 
 
@@ -1479,6 +1495,8 @@ export namespace Prisma {
     updatedAt?: boolean
     likes?: boolean
     comments?: boolean
+    pictures?: boolean
+    link?: boolean
   }
 
 
@@ -1494,6 +1512,8 @@ export namespace Prisma {
       updatedAt: Date
       likes: string[]
       comments: string[]
+      pictures: string
+      link: string
     }, ExtArgs["result"]["post"]>
     composites: {}
   }
@@ -1894,6 +1914,8 @@ export namespace Prisma {
     readonly updatedAt: FieldRef<"Post", 'DateTime'>
     readonly likes: FieldRef<"Post", 'String[]'>
     readonly comments: FieldRef<"Post", 'String[]'>
+    readonly pictures: FieldRef<"Post", 'String'>
+    readonly link: FieldRef<"Post", 'String'>
   }
     
 
@@ -6685,7 +6707,9 @@ export namespace Prisma {
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
     likes: 'likes',
-    comments: 'comments'
+    comments: 'comments',
+    pictures: 'pictures',
+    link: 'link'
   };
 
   export type PostScalarFieldEnum = (typeof PostScalarFieldEnum)[keyof typeof PostScalarFieldEnum]
@@ -6864,6 +6888,8 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"Post"> | Date | string
     likes?: StringNullableListFilter<"Post">
     comments?: StringNullableListFilter<"Post">
+    pictures?: StringFilter<"Post"> | string
+    link?: StringFilter<"Post"> | string
   }
 
   export type PostOrderByWithRelationInput = {
@@ -6875,6 +6901,8 @@ export namespace Prisma {
     updatedAt?: SortOrder
     likes?: SortOrder
     comments?: SortOrder
+    pictures?: SortOrder
+    link?: SortOrder
   }
 
   export type PostWhereUniqueInput = Prisma.AtLeast<{
@@ -6889,6 +6917,8 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"Post"> | Date | string
     likes?: StringNullableListFilter<"Post">
     comments?: StringNullableListFilter<"Post">
+    pictures?: StringFilter<"Post"> | string
+    link?: StringFilter<"Post"> | string
   }, "id">
 
   export type PostOrderByWithAggregationInput = {
@@ -6900,6 +6930,8 @@ export namespace Prisma {
     updatedAt?: SortOrder
     likes?: SortOrder
     comments?: SortOrder
+    pictures?: SortOrder
+    link?: SortOrder
     _count?: PostCountOrderByAggregateInput
     _max?: PostMaxOrderByAggregateInput
     _min?: PostMinOrderByAggregateInput
@@ -6917,6 +6949,8 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"Post"> | Date | string
     likes?: StringNullableListFilter<"Post">
     comments?: StringNullableListFilter<"Post">
+    pictures?: StringWithAggregatesFilter<"Post"> | string
+    link?: StringWithAggregatesFilter<"Post"> | string
   }
 
   export type LikeWhereInput = {
@@ -7215,6 +7249,8 @@ export namespace Prisma {
     updatedAt?: Date | string
     likes?: PostCreatelikesInput | string[]
     comments?: PostCreatecommentsInput | string[]
+    pictures?: string
+    link?: string
   }
 
   export type PostUncheckedCreateInput = {
@@ -7226,6 +7262,8 @@ export namespace Prisma {
     updatedAt?: Date | string
     likes?: PostCreatelikesInput | string[]
     comments?: PostCreatecommentsInput | string[]
+    pictures?: string
+    link?: string
   }
 
   export type PostUpdateInput = {
@@ -7236,6 +7274,8 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     likes?: PostUpdatelikesInput | string[]
     comments?: PostUpdatecommentsInput | string[]
+    pictures?: StringFieldUpdateOperationsInput | string
+    link?: StringFieldUpdateOperationsInput | string
   }
 
   export type PostUncheckedUpdateInput = {
@@ -7246,6 +7286,8 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     likes?: PostUpdatelikesInput | string[]
     comments?: PostUpdatecommentsInput | string[]
+    pictures?: StringFieldUpdateOperationsInput | string
+    link?: StringFieldUpdateOperationsInput | string
   }
 
   export type PostCreateManyInput = {
@@ -7257,6 +7299,8 @@ export namespace Prisma {
     updatedAt?: Date | string
     likes?: PostCreatelikesInput | string[]
     comments?: PostCreatecommentsInput | string[]
+    pictures?: string
+    link?: string
   }
 
   export type PostUpdateManyMutationInput = {
@@ -7267,6 +7311,8 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     likes?: PostUpdatelikesInput | string[]
     comments?: PostUpdatecommentsInput | string[]
+    pictures?: StringFieldUpdateOperationsInput | string
+    link?: StringFieldUpdateOperationsInput | string
   }
 
   export type PostUncheckedUpdateManyInput = {
@@ -7277,6 +7323,8 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     likes?: PostUpdatelikesInput | string[]
     comments?: PostUpdatecommentsInput | string[]
+    pictures?: StringFieldUpdateOperationsInput | string
+    link?: StringFieldUpdateOperationsInput | string
   }
 
   export type LikeCreateInput = {
@@ -7622,6 +7670,8 @@ export namespace Prisma {
     updatedAt?: SortOrder
     likes?: SortOrder
     comments?: SortOrder
+    pictures?: SortOrder
+    link?: SortOrder
   }
 
   export type PostMaxOrderByAggregateInput = {
@@ -7631,6 +7681,8 @@ export namespace Prisma {
     published?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    pictures?: SortOrder
+    link?: SortOrder
   }
 
   export type PostMinOrderByAggregateInput = {
@@ -7640,6 +7692,8 @@ export namespace Prisma {
     published?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    pictures?: SortOrder
+    link?: SortOrder
   }
 
   export type StringWithAggregatesFilter<$PrismaModel = never> = {

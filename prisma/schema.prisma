@@ -25,6 +25,8 @@ model Post {
   likes       String[]  //ids of the likes for the content
   //reposts     Int       @default(0)
   comments    String[]  //ids of comment objects
+  pictures    String    @default("") //TODO: add support for multiple images
+  link        String    @default("")
   //author   User      @relation(fields: [authorId], references: [id])
   //authorId String    @db.ObjectId
   //comments Comment[]

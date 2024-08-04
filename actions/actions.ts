@@ -4,35 +4,49 @@ import { getSession } from "@/app/auth/auth"
 import { PrismaClient } from "@/prisma/generated/client"
 import { revalidatePath } from "next/cache"
 import { redirect, RedirectType } from "next/navigation"
+import nextBase64 from 'next-base64';
 import { NextResponse } from "next/server"
 import fs from "node:fs/promises";
 
 const prisma = new PrismaClient()
 
 //convert file to base64
-const toBase64 = (file: File) => {
-    return new Promise((resolve, reject) => {
-      const fileReader = new FileReader();
-  
-      fileReader.readAsDataURL(file);
-  
-      fileReader.onload = () => {
-        resolve(fileReader.result);
-      };
-  
-      fileReader.onerror = (error) => {
-        reject(error);
-      };
-    });
+const toBase64 = async (file: File) => {
+    const bufferFile = await file.arrayBuffer()
+    const fileBase64 = Buffer.from(bufferFile).toString('base64')
+    //console.log(`${fileBase64} base 64`)
+    return fileBase64
+    //return new Promise((resolve, reject) => {
+    //  const fileReader = new FileReader();
+  //
+    //  fileReader.readAsDataURL(file);
+  //
+    //  fileReader.onload = () => {
+    //    resolve(fileReader.result);
+    //  };
+  //
+    //  fileReader.onerror = (error) => {
+    //    reject(error);
+    //  };
+    //});
   };
 
 export const addPost = async (formData: any) => {
     const content = formData.get("content")
     const userId = formData.get("userId")
+    const pictures = formData.get("pictures")
+    let newPictures = pictures
+    console.log(pictures)
+    if (newPictures.name !== 'undefined'){
+        const base64 = await toBase64(newPictures)
+        newPictures = base64
+        //console.log(base64)
+    }
     const new_post = await prisma.post.create({
         data:{
             content,
-            userId
+            userId,
+            pictures: newPictures? newPictures : ""
         }
     })
 

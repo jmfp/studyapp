@@ -13,6 +13,7 @@ import { addPost, getFeedPosts, getLatestPost, getUser, getUserFriends } from "@
 import { getSession } from "./auth/auth";
 import { redirect } from "next/navigation";
 import { GiHearts } from "react-icons/gi";
+import { TiCamera } from "react-icons/ti";
 
 export const revalidate = 30
 
@@ -86,11 +87,15 @@ export default async function Home() {
             <form action={async (formData: FormData) =>{
               'use server'
               formData.append('userId', `${user?.id}`)
-              console.log(formData)
+              //console.log(formData)
               await addPost(formData)
             }}>
               <textarea name="content" placeholder="Add a New Post"/>
               <div className="display: flex justify-evenly border-t border-green-500 p-6">
+                <label htmlFor="pictures">
+                  <TiCamera/>
+                </label>
+                <input type="file" name="pictures" accept=".jpeg, .jpg, .png .gif"/>
                 <Button type="submit">Post</Button>
               </div>
             </form>
@@ -117,7 +122,6 @@ export default async function Home() {
                     <p>{post.likes.length}</p>
                   </div>
                 </div>
-                
               </div>
             )) : <span/>}
           </div>
