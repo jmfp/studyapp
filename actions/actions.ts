@@ -7,6 +7,7 @@ import { redirect, RedirectType } from "next/navigation"
 import nextBase64 from 'next-base64';
 import { NextResponse } from "next/server"
 import fs from "node:fs/promises";
+import Jimp from 'jimp'
 
 const prisma = new PrismaClient()
 
@@ -14,22 +15,17 @@ const prisma = new PrismaClient()
 const toBase64 = async (file: File) => {
     const bufferFile = await file.arrayBuffer()
     const fileBase64 = Buffer.from(bufferFile).toString('base64')
-    //console.log(`${fileBase64} base 64`)
     return fileBase64
-    //return new Promise((resolve, reject) => {
-    //  const fileReader = new FileReader();
-  //
-    //  fileReader.readAsDataURL(file);
-  //
-    //  fileReader.onload = () => {
-    //    resolve(fileReader.result);
-    //  };
-  //
-    //  fileReader.onerror = (error) => {
-    //    reject(error);
-    //  };
-    //});
   };
+
+export const fromBase64 = async (file: string) => {
+  const bufferFile = Buffer.from(file, "base64")
+  const newFile = Jimp.read(bufferFile, (err: any, res: any) => {
+    if (err) throw new Error(err);
+    res.quality(5).write("resized.jpg");
+  });
+  return newFile
+};
 
 export const addPost = async (formData: any) => {
     const content = formData.get("content")
