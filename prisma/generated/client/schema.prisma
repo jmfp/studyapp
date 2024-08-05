@@ -26,6 +26,7 @@ model Post {
   //reposts     Int       @default(0)
   comments  String[] //ids of comment objects
   pictures  String   @default("") //TODO: add support for multiple images
+  video     String   @default("")
   link      String   @default("")
   //author   User      @relation(fields: [authorId], references: [id])
   //authorId String    @db.ObjectId

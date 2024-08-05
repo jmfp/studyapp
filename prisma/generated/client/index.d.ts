@@ -1305,6 +1305,7 @@ export namespace Prisma {
     createdAt: Date | null
     updatedAt: Date | null
     pictures: string | null
+    video: string | null
     link: string | null
   }
 
@@ -1316,6 +1317,7 @@ export namespace Prisma {
     createdAt: Date | null
     updatedAt: Date | null
     pictures: string | null
+    video: string | null
     link: string | null
   }
 
@@ -1329,6 +1331,7 @@ export namespace Prisma {
     likes: number
     comments: number
     pictures: number
+    video: number
     link: number
     _all: number
   }
@@ -1342,6 +1345,7 @@ export namespace Prisma {
     createdAt?: true
     updatedAt?: true
     pictures?: true
+    video?: true
     link?: true
   }
 
@@ -1353,6 +1357,7 @@ export namespace Prisma {
     createdAt?: true
     updatedAt?: true
     pictures?: true
+    video?: true
     link?: true
   }
 
@@ -1366,6 +1371,7 @@ export namespace Prisma {
     likes?: true
     comments?: true
     pictures?: true
+    video?: true
     link?: true
     _all?: true
   }
@@ -1452,6 +1458,7 @@ export namespace Prisma {
     likes: string[]
     comments: string[]
     pictures: string
+    video: string
     link: string
     _count: PostCountAggregateOutputType | null
     _min: PostMinAggregateOutputType | null
@@ -1482,6 +1489,7 @@ export namespace Prisma {
     likes?: boolean
     comments?: boolean
     pictures?: boolean
+    video?: boolean
     link?: boolean
   }, ExtArgs["result"]["post"]>
 
@@ -1496,6 +1504,7 @@ export namespace Prisma {
     likes?: boolean
     comments?: boolean
     pictures?: boolean
+    video?: boolean
     link?: boolean
   }
 
@@ -1513,6 +1522,7 @@ export namespace Prisma {
       likes: string[]
       comments: string[]
       pictures: string
+      video: string
       link: string
     }, ExtArgs["result"]["post"]>
     composites: {}
@@ -1915,6 +1925,7 @@ export namespace Prisma {
     readonly likes: FieldRef<"Post", 'String[]'>
     readonly comments: FieldRef<"Post", 'String[]'>
     readonly pictures: FieldRef<"Post", 'String'>
+    readonly video: FieldRef<"Post", 'String'>
     readonly link: FieldRef<"Post", 'String'>
   }
     
@@ -6709,6 +6720,7 @@ export namespace Prisma {
     likes: 'likes',
     comments: 'comments',
     pictures: 'pictures',
+    video: 'video',
     link: 'link'
   };
 
@@ -6889,6 +6901,7 @@ export namespace Prisma {
     likes?: StringNullableListFilter<"Post">
     comments?: StringNullableListFilter<"Post">
     pictures?: StringFilter<"Post"> | string
+    video?: StringFilter<"Post"> | string
     link?: StringFilter<"Post"> | string
   }
 
@@ -6902,6 +6915,7 @@ export namespace Prisma {
     likes?: SortOrder
     comments?: SortOrder
     pictures?: SortOrder
+    video?: SortOrder
     link?: SortOrder
   }
 
@@ -6918,6 +6932,7 @@ export namespace Prisma {
     likes?: StringNullableListFilter<"Post">
     comments?: StringNullableListFilter<"Post">
     pictures?: StringFilter<"Post"> | string
+    video?: StringFilter<"Post"> | string
     link?: StringFilter<"Post"> | string
   }, "id">
 
@@ -6931,6 +6946,7 @@ export namespace Prisma {
     likes?: SortOrder
     comments?: SortOrder
     pictures?: SortOrder
+    video?: SortOrder
     link?: SortOrder
     _count?: PostCountOrderByAggregateInput
     _max?: PostMaxOrderByAggregateInput
@@ -6950,6 +6966,7 @@ export namespace Prisma {
     likes?: StringNullableListFilter<"Post">
     comments?: StringNullableListFilter<"Post">
     pictures?: StringWithAggregatesFilter<"Post"> | string
+    video?: StringWithAggregatesFilter<"Post"> | string
     link?: StringWithAggregatesFilter<"Post"> | string
   }
 
@@ -7250,6 +7267,7 @@ export namespace Prisma {
     likes?: PostCreatelikesInput | string[]
     comments?: PostCreatecommentsInput | string[]
     pictures?: string
+    video?: string
     link?: string
   }
 
@@ -7263,6 +7281,7 @@ export namespace Prisma {
     likes?: PostCreatelikesInput | string[]
     comments?: PostCreatecommentsInput | string[]
     pictures?: string
+    video?: string
     link?: string
   }
 
@@ -7275,6 +7294,7 @@ export namespace Prisma {
     likes?: PostUpdatelikesInput | string[]
     comments?: PostUpdatecommentsInput | string[]
     pictures?: StringFieldUpdateOperationsInput | string
+    video?: StringFieldUpdateOperationsInput | string
     link?: StringFieldUpdateOperationsInput | string
   }
 
@@ -7287,6 +7307,7 @@ export namespace Prisma {
     likes?: PostUpdatelikesInput | string[]
     comments?: PostUpdatecommentsInput | string[]
     pictures?: StringFieldUpdateOperationsInput | string
+    video?: StringFieldUpdateOperationsInput | string
     link?: StringFieldUpdateOperationsInput | string
   }
 
@@ -7300,6 +7321,7 @@ export namespace Prisma {
     likes?: PostCreatelikesInput | string[]
     comments?: PostCreatecommentsInput | string[]
     pictures?: string
+    video?: string
     link?: string
   }
 
@@ -7312,6 +7334,7 @@ export namespace Prisma {
     likes?: PostUpdatelikesInput | string[]
     comments?: PostUpdatecommentsInput | string[]
     pictures?: StringFieldUpdateOperationsInput | string
+    video?: StringFieldUpdateOperationsInput | string
     link?: StringFieldUpdateOperationsInput | string
   }
 
@@ -7324,6 +7347,7 @@ export namespace Prisma {
     likes?: PostUpdatelikesInput | string[]
     comments?: PostUpdatecommentsInput | string[]
     pictures?: StringFieldUpdateOperationsInput | string
+    video?: StringFieldUpdateOperationsInput | string
     link?: StringFieldUpdateOperationsInput | string
   }
 
@@ -7671,6 +7695,7 @@ export namespace Prisma {
     likes?: SortOrder
     comments?: SortOrder
     pictures?: SortOrder
+    video?: SortOrder
     link?: SortOrder
   }
 
@@ -7682,6 +7707,7 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     pictures?: SortOrder
+    video?: SortOrder
     link?: SortOrder
   }
 
@@ -7693,6 +7719,7 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     pictures?: SortOrder
+    video?: SortOrder
     link?: SortOrder
   }
 

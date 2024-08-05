@@ -3,6 +3,7 @@ import { getSession } from '@/app/auth/auth'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import Image from 'next/image'
+import ReactPlayer from 'react-player'
 
 export default async function UserPage({params}: {params:{id: string}}) {
     const user = await getUser()
@@ -22,6 +23,9 @@ export default async function UserPage({params}: {params:{id: string}}) {
                         width={200}
                         height={200}
                       />
+                    }
+                    {post.video === '' ? <span/> : 
+                      <ReactPlayer url={decodeURIComponent(post.video)} />
                     }
                     </div>
               ))

@@ -14,6 +14,8 @@ import { getSession } from "./auth/auth";
 import { redirect } from "next/navigation";
 import { GiHearts } from "react-icons/gi";
 import { TiCamera } from "react-icons/ti";
+import ReactPlayer from 'react-player'
+import { BsCameraVideoFill } from "react-icons/bs";
 
 export const revalidate = 30
 
@@ -96,6 +98,10 @@ export default async function Home() {
                   <TiCamera/>
                 </label>
                 <input type="file" name="pictures" accept=".jpeg, .jpg, .png .gif"/>
+                <label htmlFor="video">
+                <BsCameraVideoFill />
+                </label>
+                <input type="file" name="video" accept=".mp4"/>
                 <Button type="submit">Post</Button>
               </div>
             </form>

@@ -1,3 +1,4 @@
+import { BsCameraVideoFill } from 'react-icons/bs';
 'use server'
 
 import { getSession } from "@/app/auth/auth"
@@ -32,18 +33,33 @@ export const addPost = async (formData: any) => {
     const content = formData.get("content")
     const userId = formData.get("userId")
     const pictures = formData.get("pictures")
-    let newPictures = pictures
+    const video = formData.get("video")
+    //ensuring that if there is no video or image the data sent to db is a blank string
+    let newVideo: any = ""
+    let newPictures: any = ""
+    if(pictures.name !== 'undefined'){
+        newPictures = pictures
+    }
+    if(video.name !== 'undefined'){
+        newVideo = video
+    }
     console.log(pictures)
     if (newPictures.name !== 'undefined'){
         const base64 = await toBase64(newPictures)
         newPictures = base64
         //console.log(base64)
     }
+    if (newVideo.name !== 'undefined'){
+        const base64 = await toBase64(newVideo)
+        newVideo = base64
+        //console.log(base64)
+    }
     const new_post = await prisma.post.create({
         data:{
             content,
             userId,
-            pictures: newPictures? newPictures : ""
+            pictures: newPictures,
+            video: newVideo
         }
     })
 
