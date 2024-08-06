@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import Image from 'next/image'
 import ReactPlayer from 'react-player'
+import Base64VideoPlayer from '@/app/components/video/Video'
 
 export default async function UserPage({params}: {params:{id: string}}) {
     const user = await getUser()
@@ -25,7 +26,7 @@ export default async function UserPage({params}: {params:{id: string}}) {
                       />
                     }
                     {post.video === '' ? <span/> : 
-                      <ReactPlayer url={decodeURIComponent(post.video)} />
+                      <Base64VideoPlayer base64String={decodeURIComponent(post.video)} />
                     }
                     </div>
               ))

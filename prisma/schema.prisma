@@ -72,6 +72,7 @@ model User {
   friends     String[]  @db.ObjectId
   messages    String[]  @db.ObjectId
   profilePic  String    @default("")
+  likedPosts  String[]  @db.ObjectId @default([""])
 }
 
 model FriendRequest {

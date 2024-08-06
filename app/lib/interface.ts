@@ -19,3 +19,11 @@ export interface blogPost{
     slug: string,
     content: string
 }
+
+export interface post{
+    friendId: string,
+    pic: string,
+    content: string,
+    pictures: string,
+    likes: []
+}

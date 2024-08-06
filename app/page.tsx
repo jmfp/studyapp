@@ -16,17 +16,19 @@ import { GiHearts } from "react-icons/gi";
 import { TiCamera } from "react-icons/ti";
 import ReactPlayer from 'react-player'
 import { BsCameraVideoFill } from "react-icons/bs";
+import Post from "./components/post/Post";
+import { post } from '@/app/lib/interface';
 
 export const revalidate = 30
 
 //design interface for post return
-export interface post{
-  image?: string,
-  description: string,
-  content: string,
-  profilePic: string,
-  likes: number
-}
+//export interface post{
+//  image?: string,
+//  description: string,
+//  content: string,
+//  profilePic: string,
+//  likes: number
+//}
 
 //prisma client
 export const prisma = new PrismaClient()
@@ -108,26 +110,9 @@ export default async function Home() {
           </div>
           
           <div className='display: flex flex-col m-auto w-full border h-[vh] gap-4'>
-            {newFeed.length ? newFeed.map((post: any, idx: number) =>(
+            {newFeed.length ? newFeed.map((post: post, idx: number) =>(
               <div className="display: flex flex-col m-auto w-full h-60 border border-green-500 rounded-lg gap-4">
-                <div className="display: flex">
-                  <Link href={`user/${post.friendId}`}>
-                    <Image 
-                      src={post.pic}
-                      alt="User pic"
-                      width={200}
-                      height={200}
-                      className="m-auto mb-6 border border-green-400 rounded-full h-[100px] w-[100px] object-cover"
-                    />
-                  </Link>
-                  <p>{post.content}</p>
-                </div>
-                <div className="display: flex items-center text-center justify-between border-t border-green-400">
-                  <div className="display: flex text-center items-center gap-2 m-auto">
-                    <GiHearts className="text-green-400"/>
-                    <p>{post.likes.length}</p>
-                  </div>
-                </div>
+                <Post post={post}/>
               </div>
             )) : <span/>}
           </div>
