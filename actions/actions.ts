@@ -1,13 +1,9 @@
-import { BsCameraVideoFill } from 'react-icons/bs';
 'use server'
 
 import { getSession } from "@/app/auth/auth"
 import { PrismaClient } from "@/prisma/generated/client"
 import { revalidatePath } from "next/cache"
 import { redirect, RedirectType } from "next/navigation"
-import nextBase64 from 'next-base64';
-import { NextResponse } from "next/server"
-import fs from "node:fs/promises";
 import Jimp from 'jimp'
 
 const prisma = new PrismaClient()
@@ -44,12 +40,12 @@ export const addPost = async (formData: any) => {
         newVideo = video
     }
     console.log(pictures)
-    if (newPictures.name !== 'undefined'){
+    if (newPictures.name !== undefined){
         const base64 = await toBase64(newPictures)
         newPictures = base64
         //console.log(base64)
     }
-    if (newVideo.name !== 'undefined'){
+    if (newVideo.name !== undefined){
         const base64 = await toBase64(newVideo)
         newVideo = base64
         //console.log(base64)
@@ -91,6 +87,18 @@ export async function validateUser(user: any){
         console.log(error.message)
     }
     return false
+}
+
+export async function getSuggestedUsers(){
+    try {
+        //TODO: add logic to curate suggested friends based on shared interests
+        const res = await prisma.user.findMany({
+            take: 5
+        })
+        return res
+    } catch (error: any) {
+        console.log(error.message)
+    }
 }
 
 export async function sendFriendRequest(user: string, receiver: string){
@@ -386,6 +394,7 @@ export const getFeedPosts = async(id: any) =>{
                 likes: friendLatestPost?.likes,
                 friendId: friendObject?.id,
                 comments: friendLatestPost?.comments,
+                pictures: friendLatestPost?.pictures
             }
             data.push(friendPost)
         }

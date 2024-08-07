@@ -18,6 +18,7 @@ import ReactPlayer from 'react-player'
 import { BsCameraVideoFill } from "react-icons/bs";
 import Post from "./components/post/Post";
 import { post } from '@/app/lib/interface';
+import SuggestedFriends from "./components/container/Sidebar";
 
 export const revalidate = 30
 
@@ -109,15 +110,15 @@ export default async function Home() {
             </form>
           </div>
           
-          <div className='display: flex flex-col m-auto w-full border h-[vh] gap-4'>
+          <div className='display: flex flex-col m-3 w-full border h-[vh] gap-4 '>
             {newFeed.length ? newFeed.map((post: post, idx: number) =>(
               <div className="display: flex flex-col m-auto w-full h-60 border border-green-500 rounded-lg gap-4">
                 <Post post={post}/>
               </div>
             )) : <span/>}
           </div>
-
         </div>
+        <SuggestedFriends />
       </div>
   );
 }

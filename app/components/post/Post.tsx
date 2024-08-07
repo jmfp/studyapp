@@ -6,11 +6,11 @@ import { getUserObject } from '@/actions/actions';
 
 export default async function Post({post}:{post: post}) {
     const user = await getUserObject(post.friendId)
-    console.log(user)
+    console.log(post)
   return (
     <div className="display: flex flex-col m-auto w-full h-60 border border-green-500 rounded-lg gap-4">
       <div className="display: flex">
-        <div className='display: flex flex-col items-center'>
+        <div className='display: flex flex-col items-center h-full'>
             <Link href={`user/${post.friendId}`}>
               <Image 
                 src={post.pic}
@@ -24,14 +24,17 @@ export default async function Post({post}:{post: post}) {
                 {user?.username}
             </div>
         </div>
-        <p>{post.content}</p>
-        {post.pictures === '' ? <span/> : 
-              <Image src={`/${decodeURIComponent(post.pictures)}`}
+        <div className="display: flex flex-col m-auto">
+            <p>{post.content}</p>
+            {post.pictures === undefined ? <span/> : 
+              <Image src={decodeURIComponent(post.pictures)}
                 alt='picture'
                 width={200}
                 height={200}
+                className='rounded-lg h-[300px] w-[300px]'
               />
             }
+        </div>
       </div>
       <div className="display: flex items-center text-center justify-between border-t border-green-400">
         <div className="display: flex text-center items-center gap-2 m-auto">
