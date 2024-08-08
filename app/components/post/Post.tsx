@@ -36,8 +36,8 @@ export default async function Post({post}:{post: post}) {
             }
         </div>
       </div>
-      <div className="display: flex items-center text-center justify-between border-t border-green-400">
-        <div className="display: flex text-center items-center gap-2 m-auto">
+      <div className="display: flex items-center text-center justify-between border-t border-primary">
+        <div className="display: flex lg:h-10 text-center items-center m-auto">
           <GiHearts className={``}/>
           <p>{post.likes.length}</p>
         </div>

@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { getSession, login, logout } from "../auth/auth"
+import Link from "next/link"
 
 export default async function SignIn() {
     const session = await getSession()
@@ -24,6 +25,10 @@ export default async function SignIn() {
                 <Button type="submit">Logout</Button>
             </form>
         }
+        <div className="display: flex">
+            <p>{`No Account? `}</p> 
+            <Link href={"/signup"} className="text-primary"> Sign Up</Link>
+        </div>
     </div>
   )
 }

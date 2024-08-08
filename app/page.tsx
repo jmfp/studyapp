@@ -88,7 +88,7 @@ export default async function Home() {
 
         <div className="display: flex flex-col m-auto w-[80%]">
 
-          <div className="display: flex flex-col m-auto w-[100%] h-100 border border-green-500 rounded-lg">
+          <div className="display: flex flex-col m-auto w-[90%] h-100 border border-primary rounded-lg">
             <form action={async (formData: FormData) =>{
               'use server'
               formData.append('userId', `${user?.id}`)
@@ -96,7 +96,7 @@ export default async function Home() {
               await addPost(formData)
             }}>
               <textarea className="resize-none w-full h-full rounded-tl-lg rounded-tr-lg text-primary p-6" name="content" placeholder="Add a New Post"/>
-              <div className="display: flex justify-evenly border-t border-green-500 p-6">
+              <div className="display: flex justify-evenly border-t border-primary p-6">
                 <label htmlFor="pictures">
                   <TiCamera className="cursor-pointer">
                   <input className="display: hidden" type="file" name="pictures" accept=".jpeg, .jpg, .png .gif"/>
@@ -111,9 +111,9 @@ export default async function Home() {
             </form>
           </div>
           
-          <div className='display: flex flex-col m-3 w-full h-[vh] gap-4 '>
+          <div className='display: flex flex-col mt-4 w-full'>
             {newFeed.length ? newFeed.map((post: post, idx: number) =>(
-              <div className="display: flex flex-col m-auto w-full h-60 gap-4">
+              <div className="display: flex flex-col m-auto w-full min-h-20 max-h-60 gap-4">
                 <Post post={post}/>
               </div>
             )) : <span/>}
