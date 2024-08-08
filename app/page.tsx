@@ -95,24 +95,25 @@ export default async function Home() {
               //console.log(formData)
               await addPost(formData)
             }}>
-              <textarea name="content" placeholder="Add a New Post"/>
+              <textarea className="resize-none w-full h-full rounded-tl-lg rounded-tr-lg text-primary p-6" name="content" placeholder="Add a New Post"/>
               <div className="display: flex justify-evenly border-t border-green-500 p-6">
                 <label htmlFor="pictures">
-                  <TiCamera/>
+                  <TiCamera className="cursor-pointer">
+                  <input className="display: hidden" type="file" name="pictures" accept=".jpeg, .jpg, .png .gif"/>
+                  </TiCamera>
                 </label>
-                <input type="file" name="pictures" accept=".jpeg, .jpg, .png .gif"/>
-                <label htmlFor="video">
+               {/* <label htmlFor="video">
                 <BsCameraVideoFill />
                 </label>
-                <input type="file" name="video" accept=".mp4"/>
+                <input type="file" name="video" accept=".mp4"/>*/}
                 <Button type="submit">Post</Button>
               </div>
             </form>
           </div>
           
-          <div className='display: flex flex-col m-3 w-full border h-[vh] gap-4 '>
+          <div className='display: flex flex-col m-3 w-full h-[vh] gap-4 '>
             {newFeed.length ? newFeed.map((post: post, idx: number) =>(
-              <div className="display: flex flex-col m-auto w-full h-60 border border-green-500 rounded-lg gap-4">
+              <div className="display: flex flex-col m-auto w-full h-60 gap-4">
                 <Post post={post}/>
               </div>
             )) : <span/>}

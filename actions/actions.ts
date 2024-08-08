@@ -103,13 +103,19 @@ export async function getSuggestedUsers(){
 
 export async function sendFriendRequest(user: string, receiver: string){
     try {
-        const newRequest = await prisma.friendRequest.create({
-            data:{
-                userId: user,
-                receiverId: receiver
-            }
-        })
-        console.log(newRequest)
+        const sendingUser = await prisma.user.findUnique({where: {
+            id: user
+        }})
+        console.log(sendingUser)
+        //only send request if the user and receiver aren't already friends or if sender and receiver aren't the same
+        if(!sendingUser?.friends.includes(receiver) && user !== receiver){
+            const newRequest = await prisma.friendRequest.create({
+                data:{
+                    userId: user,
+                    receiverId: receiver
+                }
+            })
+        }
     } catch (error: any) {
         console.log(error.message)
     }
@@ -387,14 +393,15 @@ export const getFeedPosts = async(id: any) =>{
         for(const idx in friends){
             //console.log(user)
             const friendObject = await prisma.user.findUnique({where: {id: friends[Number(idx)]}})
-            const friendLatestPost = await prisma.post.findFirst({where:{userId: friends[Number(idx)]}})
+            const friendLatestPost = await prisma.post.findMany({where:{userId: friends[Number(idx)]}})
+            console.log(friendLatestPost)
             const friendPost = {
                 pic: friendObject?.profilePic,
-                content: friendLatestPost?.content,
-                likes: friendLatestPost?.likes,
+                content: friendLatestPost[friendLatestPost.length-1].content,
+                likes: friendLatestPost[friendLatestPost.length-1].likes,
                 friendId: friendObject?.id,
-                comments: friendLatestPost?.comments,
-                pictures: friendLatestPost?.pictures
+                comments: friendLatestPost[friendLatestPost.length-1].comments,
+                pictures: friendLatestPost[friendLatestPost.length-1].pictures
             }
             data.push(friendPost)
         }

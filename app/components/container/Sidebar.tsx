@@ -17,7 +17,7 @@ export default async function SuggestedFriends() {
                         width={200}
                         height={200}
                         alt={`${user.username}'s Profile Picture`}
-                        className='border rounded-full border-green-400 w-12 h-12'
+                        className='border rounded-full border-green-400 w-12 h-12 object-cover'
                         />
                         <p className="text-primary m-auto">{user.username}</p>
                         <form action={async () =>{
