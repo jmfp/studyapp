@@ -19,7 +19,7 @@ export default function Signup() {
         </div>
         <div className="display: flex m-auto">
             <p>Already have an account? </p>
-            <a className="text-green-400" href="/signin">Sign In</a>
+            <a className="text-green-400" href="/signin">{` Sign In`}</a>
         </div>
     </div>
   )

@@ -8,7 +8,7 @@ export default async function Post({post}:{post: post}) {
     const user = await getUserObject(post.friendId)
     console.log(post)
   return (
-    <div className="display: flex flex-col m-auto w-[90%] h-30 border border-green-500 rounded-lg gap-4">
+    <div className="display: flex flex-col m-auto mt-3 w-[90%] h-30 border border-primary rounded-lg gap-4">
       <div className="display: flex flex-col h-full m-3">
         <div className='display: flex flex-row m-3'>
             <Link href={`user/${post.friendId}`}>
@@ -25,7 +25,7 @@ export default async function Post({post}:{post: post}) {
             </div>
         </div>
         <div className="display: flex flex-col m-auto overflow-y-hidden">
-            <p>{post.content}</p>
+            <p className={``}>{post.content}</p>
             {post.pictures === undefined ? <span/> : 
               <Image src={decodeURIComponent(post.pictures)}
                 alt='picture'

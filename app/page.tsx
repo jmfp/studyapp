@@ -62,14 +62,14 @@ export default async function Home() {
 
   return (
       <div className='display: flex w-[100%] justify-space-between mb-14'>
-        <div className="display: flex flex-col border-r border-b border-b-green-400 h-full border-r-green-400 w-[15%]">
+        <div className="display: flex flex-col w-[15%]">
           <Link href={`/user/${userObject}`}>
             <Image
               src={user?.profilePic !== "" ? `${user?.profilePic}` : "https://images.unsplash.com/photo-1720975945110-6278215f280d?q=80&w=3269&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"}
               alt="User Icon"
               width={200}
               height={200}
-              className="m-auto mb-6 border border-green-400 rounded-full h-[100px] w-[100px] object-cover"
+              className="m-auto mb-6 border border-primary rounded-full sm:h-[12px] sm:w-[12px] sm:ml-3 lg:h-[100px] lg:w-[100px] object-cover"
             />
           </Link>
           <Link href={"/characters"}>
@@ -98,9 +98,8 @@ export default async function Home() {
               <textarea className="resize-none w-full h-full rounded-tl-lg rounded-tr-lg text-primary p-6" name="content" placeholder="Add a New Post"/>
               <div className="display: flex justify-evenly border-t border-primary p-6">
                 <label htmlFor="pictures">
-                  <TiCamera className="cursor-pointer">
+                  <TiCamera className="cursor-pointer"/>
                   <input className="display: hidden" type="file" name="pictures" accept=".jpeg, .jpg, .png .gif"/>
-                  </TiCamera>
                 </label>
                {/* <label htmlFor="video">
                 <BsCameraVideoFill />
@@ -113,13 +112,13 @@ export default async function Home() {
           
           <div className='display: flex flex-col mt-4 w-full'>
             {newFeed.length ? newFeed.map((post: post, idx: number) =>(
-              <div className="display: flex flex-col m-auto w-full min-h-20 max-h-60 gap-4">
+              <div className="display: flex flex-col m-auto w-full min-h-20 max-h-60">
                 <Post post={post}/>
               </div>
             )) : <span/>}
           </div>
         </div>
-        <SuggestedFriends />
+          <SuggestedFriends />
       </div>
   );
 }

@@ -8,14 +8,17 @@ export default async function SignIn() {
   return (
     <div className="display: flex flex-col items-center justify-center">
         {!session ? 
-
-            <form className="display: flex flex-col m-auto border border-green-400 rounded-lg w-[80%] h-full p-6 gap-2" action={async (formData: FormData) => {
+            <form className="display: flex flex-col m-auto border border-primary rounded-lg w-[80%] h-full p-6 gap-2" action={async (formData: FormData) => {
                 'use server'
                 await login(formData)
             }}>
                 <input name="email" type="email" placeholder="E-mail"/>
                 <input name="password" type="password" placeholder="Password"/>
                 <Button type="submit">Sign In</Button>
+                <div className="display: flex m-auto">
+                    <p>{`No Account? `}</p> 
+                    <a href={"/signup"} className="text-primary"> Sign Up</a>
+                </div>
             </form>
         :
             <form action={async (formData: FormData) => {
@@ -25,10 +28,6 @@ export default async function SignIn() {
                 <Button type="submit">Logout</Button>
             </form>
         }
-        <div className="display: flex">
-            <p>{`No Account? `}</p> 
-            <Link href={"/signup"} className="text-primary"> Sign Up</Link>
-        </div>
     </div>
   )
 }

@@ -162,11 +162,19 @@ exports.Prisma.UserScalarFieldEnum = {
   subscribed: 'subscribed',
   friends: 'friends',
   messages: 'messages',
-  profilePic: 'profilePic'
+  profilePic: 'profilePic',
+  likedPosts: 'likedPosts'
 };
 
 exports.Prisma.FriendRequestScalarFieldEnum = {
   id: 'id',
+  userId: 'userId',
+  receiverId: 'receiverId'
+};
+
+exports.Prisma.MessageScalarFieldEnum = {
+  id: 'id',
+  content: 'content',
   userId: 'userId',
   receiverId: 'receiverId'
 };
@@ -188,7 +196,8 @@ exports.Prisma.ModelName = {
   Comment: 'Comment',
   Character: 'Character',
   User: 'User',
-  FriendRequest: 'FriendRequest'
+  FriendRequest: 'FriendRequest',
+  Message: 'Message'
 };
 
 /**

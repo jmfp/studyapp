@@ -72,10 +72,18 @@ model User {
   friends    String[] @db.ObjectId
   messages   String[] @db.ObjectId
   profilePic String   @default("")
+  likedPosts String[] @default([""]) @db.ObjectId
 }
 
 model FriendRequest {
   id         String @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String @db.ObjectId //id of user sending request
+  receiverId String @db.ObjectId //id of user receiving request
+}
+
+model Message {
+  id         String @id @default(auto()) @map("_id") @db.ObjectId
+  content    String
   userId     String @db.ObjectId //id of user sending request
   receiverId String @db.ObjectId //id of user receiving request
 }

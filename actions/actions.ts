@@ -101,6 +101,37 @@ export async function getSuggestedUsers(){
     }
 }
 
+export async function sendMessage(user: string, receiver: string, content: string){
+    try {
+        //TODO: paginate messages when the total number exceeds a certain amount
+        const res = await prisma.message.create({
+            data:{
+                content, 
+                userId: user,
+                receiverId: receiver
+            }
+        })
+        return res
+    } catch (error: any) {
+        console.log(error.message)
+    }
+}
+
+export async function getMessages(user: string, receiver: string){
+    try {
+        //TODO: paginate messages when the total number exceeds a certain amount
+        const res = await prisma.message.findMany({
+            where: {
+                userId: user,
+                receiverId: receiver
+            }
+        })
+        return res
+    } catch (error: any) {
+        console.log(error.message)
+    }
+}
+
 export async function sendFriendRequest(user: string, receiver: string){
     try {
         const sendingUser = await prisma.user.findUnique({where: {
