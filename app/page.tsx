@@ -61,7 +61,7 @@ export default async function Home() {
   //console.log(feed)
 
   return (
-      <div className='display: flex w-[100%] justify-space-between mb-14'>
+      <div className='display: flex w-[100%] h-full justify-space-between mb-14'>
         <div className="display: flex flex-col w-[15%]">
           <Link href={`/user/${userObject}`}>
             <Image

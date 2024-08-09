@@ -404,9 +404,11 @@ export const getAllPosts = async() => {
 
 export const getUserPosts = async(id: any) => {
     revalidatePath('/admin/dashboard')
-    return await prisma.post.findMany({where: {
+    const posts = await prisma.post.findMany({where: {
         userId: id
     }})
+    
+    return posts
 }
 
 export const getLatestPost = async(id: any) =>{
