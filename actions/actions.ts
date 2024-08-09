@@ -237,7 +237,6 @@ export const deleteCharacter = async (id: string) => {
                 id
             }
         })
-
         const user = await prisma.user.findUnique({where:
             {
                 id: character?.userId?.toString()
