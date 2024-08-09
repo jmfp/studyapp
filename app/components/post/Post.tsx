@@ -20,7 +20,7 @@ export default async function Post({post}:{post: post}) {
                 className="m-auto mt-3 ml-3 border border-green-400 rounded-full h-[50px] w-[50px] object-cover"
               />
             </Link>
-            <div className='text-green-500 lg:mt-6 lg:ml-3'>
+            <div className='text-primary lg:mt-6 lg:ml-3'>
                 {user?.username}
             </div>
         </div>

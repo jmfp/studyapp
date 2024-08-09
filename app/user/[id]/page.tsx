@@ -8,6 +8,7 @@ import Base64VideoPlayer from '@/app/components/video/Video'
 import Post from '@/app/components/post/Post'
 import { post } from '@/app/lib/interface'
 import { FaUserFriends } from "react-icons/fa";
+import { ParallaxHero } from '@/app/components/images/image'
 
 export default async function UserPage({params}: {params:{id: string}}) {
     const user = await getUser()
@@ -17,21 +18,26 @@ export default async function UserPage({params}: {params:{id: string}}) {
     console.log(friends?.length)
   return (
     <div>
-      <Image 
-        src={"https://images.unsplash.com/photo-1427501482951-3da9b725be23?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"}
-        alt=""
-        height={1080}
-        width={1920}
-        className='object-cover h-60 w-full'
-      />
-      <div className='display: flex justify-center w-full h-60'>
-        <Image 
+       <ParallaxHero style='p-48' height={60} image="https://images.unsplash.com/photo-1427501482951-3da9b725be23?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D">
+
+       <Image 
           src={"https://images.unsplash.com/photo-1427501482951-3da9b725be23?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"}
           alt=""
           height={1080}
           width={1920}
           className='object-cover h-24 w-24 m-auto border border-primary rounded-full '
         />
+       </ParallaxHero>
+      {/*<div className="display:flex items-center justify-center h-60 mb-12 bg-fixed bg-center bg-cover bg-image">
+      <Image 
+        src={"https://images.unsplash.com/photo-1427501482951-3da9b725be23?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"}
+        alt=""
+        height={1080}
+        width={1920}
+        className='display:flex items-center justify-center h-60 mb-12 object-cover object-center w-full'
+      />
+      </div>*/}
+      <div className='display: flex justify-center w-full h-60 mt-14'>
         <form action={async (formData: FormData) =>{
           'use server'
           if(user !== params.id){

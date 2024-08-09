@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import {Parallax, ParallaxBanner} from 'react-scroll-parallax'
+import { ReactNode } from "react";
 
 export default function ParallaxImage(props: {image: string, alt:string, width:number, height:number, style:string, text:string}){
     return(
@@ -10,5 +11,23 @@ export default function ParallaxImage(props: {image: string, alt:string, width:n
                 <h1 className="text-8xl text-white font-thin text-center">{props.text}</h1>
             </div>
         </ParallaxBanner>
+    )
+}
+
+export async function ParallaxHero(props:{image: string, height: number, children?: ReactNode, style?: string}) {
+    return(
+        <div className={`h-${props.height}`}>
+            <div
+            className={`relative h-${props.height} w-full bg-cover mb-3 bg-center bg-fixed bg-no-repeat`}
+            style={{
+              backgroundImage: `url(${decodeURI(props.image)})`,
+            }}
+        >
+            <div className={`${props.style}`}>
+                {props.children}
+            </div>
+        </div>
+            
+        </div>
     )
 }
