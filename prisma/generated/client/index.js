@@ -179,7 +179,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/Users/jesseprice/Development/next_SAAS/jessethedev/prisma/generated/client",
+      "value": "/Users/jesseprice/Development/socialmedia/nextjs_saas/prisma/generated/client",
       "fromEnvVar": null
     },
     "config": {
