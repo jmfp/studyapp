@@ -22,7 +22,7 @@ export default async function UserPage({params}: {params:{id: string}}) {
        <ParallaxHero style='p-48' height={60} image="https://images.unsplash.com/photo-1427501482951-3da9b725be23?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D">
 
        <Image 
-          src={`${decodeURI(pageUser?.profilePic) || pageUser?.profilePic}`}
+          src={`${pageUser?.profilePic}`}
           alt=""
           height={1080}
           width={1920}
@@ -51,7 +51,7 @@ export default async function UserPage({params}: {params:{id: string}}) {
       <div className="display: flex flex-col overflow-y-scroll">
           {!userPosts? <span/> : 
               userPosts.map((post: any, index: number) => {
-                const newPost = {
+                const newPost: any = {
                   friendId: params.id,
                   pic: pageUser?.profilePic,
                   content: post.content,

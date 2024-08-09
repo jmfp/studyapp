@@ -26,7 +26,7 @@ export default async function SuggestedFriends() {
                             'use server'
                             await sendFriendRequest(userId, user.id)
                         }}>
-                            {friends?.includes(user.id) ? <span className="w-12"/>:
+                            {friends?.includes(user.id) || userId === user.id? <p className="w-12 m-auto text-center">✅</p>:
                                 <Button type='submit'>Add</Button>
                             }
                         </form>

@@ -26,7 +26,7 @@ export default async function Post({post}:{post: post}) {
         </div>
         <div className="display: flex flex-col m-auto overflow-y-hidden">
             <p className={``}>{post.content}</p>
-            {post.pictures === undefined ? <span/> : 
+            {post.pictures === undefined || post.pictures === "" ? <span/> : 
               <Image src={decodeURIComponent(post.pictures)}
                 alt='picture'
                 width={200}
