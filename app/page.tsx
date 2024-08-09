@@ -96,16 +96,17 @@ export default async function Home() {
               await addPost(formData)
             }}>
               <textarea className="resize-none w-full h-full rounded-tl-lg rounded-tr-lg text-primary p-6" name="content" placeholder="Add a New Post"/>
-              <div className="display: flex justify-evenly border-t border-primary p-6">
-                <label htmlFor="pictures">
-                  <TiCamera className="cursor-pointer"/>
-                  <input className="display: hidden" type="file" name="pictures" accept=".jpeg, .jpg, .png .gif"/>
+              <div className="display: flex flex-col justify-between border-t border-primary p-6 h-full">
+                {/*<label htmlFor="pictures">
                 </label>
+                <TiCamera className="cursor-pointer"/>*/}
+                <TiCamera className="h-12 text-4xl"/>
+                <input type="file" name="pictures" accept=".jpeg, .jpg, .png"/>
                {/* <label htmlFor="video">
                 <BsCameraVideoFill />
                 </label>
                 <input type="file" name="video" accept=".mp4"/>*/}
-                <Button type="submit">Post</Button>
+                <Button className='mt-3' type="submit">Post</Button>
               </div>
             </form>
           </div>
