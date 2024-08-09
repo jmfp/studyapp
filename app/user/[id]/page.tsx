@@ -12,9 +12,8 @@ import { ParallaxHero } from '@/app/components/images/image'
 
 export default async function UserPage({params}: {params:{id: string}}) {
     const user = await getUser()
-    console.log(user)
     const userPosts = await getUserPosts(params.id)
-    const friends = await getUserFriends(user)
+    //const friends = await getUserFriends(user)
     //const userObject = await getUserObject(user)
     const pageUser = await getUserObject(params.id)
     console.log(userPosts)
@@ -33,7 +32,7 @@ export default async function UserPage({params}: {params:{id: string}}) {
        <div className='display: flex justify-center ml-36 mt-6 items-center'>
        <p className="text-primary ml-6">{pageUser?.username}</p>
        <FaUserFriends className="text-primary mx-3"/>
-        <p>{friends?.length}</p>
+        <p>{pageUser?.friends.length}</p>
        </div>
       <div className='display: flex justify-center w-full h-60 mt-14'>
         <form action={async (formData: FormData) =>{
@@ -42,7 +41,7 @@ export default async function UserPage({params}: {params:{id: string}}) {
             await sendFriendRequest(user, params.id)
           }
         }}>
-          {friends?.includes(params.id) || user === params.id ? 
+          {pageUser?.friends.includes(user) || user === params.id ? 
           <p className='text-primary'>{`You and ${pageUser?.username} are friends.`}</p>:
             <Button type="submit">Add Friend</Button>
           }
