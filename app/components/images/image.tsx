@@ -10,11 +10,10 @@ export async function ParallaxHero(props:{image: string, height: number, childre
               paddingTop: `${props.height}%`
             }}
         >
-            <div className={`absolute lg:top-64 sm:top-6 md:top-6 ${props.style}`}>
-                {props.children}
+                <div className={`absolute lg:top-64 max-md:top-12 max-sm:top-6 md:top-6 ${props.style}`}>
+                    {props.children}
+                </div>
             </div>
-        </div>
-            
         </div>
     )
 }

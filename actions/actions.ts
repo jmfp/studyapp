@@ -38,7 +38,6 @@ export const addPost = async (formData: any) => {
     //if(video.name !== 'undefined'){
     //    newVideo = video
     //}
-    console.log(pictures)
     if (newPictures.name !== undefined){
         const base64 = await toBase64(newPictures)
         newPictures = base64
@@ -137,7 +136,6 @@ export async function sendFriendRequest(user: string, receiver: string){
         const sendingUser = await prisma.user.findUnique({where: {
             id: user
         }})
-        console.log(sendingUser)
         //only send request if the user and receiver aren't already friends or if sender and receiver aren't the same
         if(!sendingUser?.friends.includes(receiver) && user !== receiver){
             const newRequest = await prisma.friendRequest.create({
@@ -426,7 +424,6 @@ export const getFeedPosts = async(id: any) =>{
             //console.log(user)
             const friendObject = await prisma.user.findUnique({where: {id: friends[Number(idx)]}})
             const friendLatestPost = await prisma.post.findMany({where:{userId: friends[Number(idx)]}})
-            console.log(friendLatestPost)
             const friendPost = {
                 pic: friendObject?.profilePic,
                 content: friendLatestPost[friendLatestPost.length-1].content,
@@ -439,6 +436,5 @@ export const getFeedPosts = async(id: any) =>{
         }
     }
     await buildFeed()
-    console.log(data)
     return data
 }

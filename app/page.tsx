@@ -45,7 +45,6 @@ export default async function Home() {
   const user = await prisma.user.findUnique({where: {
     email: session.user.email
   }})
-  console.log(user?.id)
   const posts = await prisma.post.findMany({where:{
     userId: user?.id
   }})
@@ -86,7 +85,6 @@ export default async function Home() {
             <form action={async (formData: FormData) =>{
               'use server'
               formData.append('userId', `${user?.id}`)
-              //console.log(formData)
               await addPost(formData)
             }}>
               <textarea className="resize-none w-full h-full rounded-tl-lg rounded-tr-lg text-primary p-6" name="content" placeholder="Add a New Post"/>
@@ -107,7 +105,7 @@ export default async function Home() {
           
           <div className='display: flex flex-col mt-4 w-full'>
             {newFeed.length ? newFeed.map((post: post, idx: number) =>(
-              <div key={idx} className="display: flex flex-col m-auto w-full min-h-20 max-h-60">
+              <div key={idx} className="display: flex flex-col mt-3 m-auto w-full min-h-20">
                 <Post post={post}/>
               </div>
             )) : <span/>}

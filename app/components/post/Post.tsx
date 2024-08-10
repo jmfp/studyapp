@@ -6,7 +6,6 @@ import { getUserObject } from '@/actions/actions';
 
 export default async function Post({post}:{post: post}) {
     const user = await getUserObject(post.friendId)
-    console.log(post)
   return (
     <div className="display: flex flex-col m-auto mt-3 w-[90%] h-30 border border-primary rounded-lg gap-4">
       <div className="display: flex flex-col h-full m-3">
