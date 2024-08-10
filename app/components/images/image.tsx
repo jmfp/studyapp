@@ -18,7 +18,7 @@ export async function ParallaxHero(props:{image: string, height: number, childre
     return(
         <div className={`h-${props.height}`}>
             <div
-            className={`relative h-${props.height} w-full bg-cover mb-3 bg-center bg-fixed bg-no-repeat`}
+            className={`relative h-[${props.height}px] w-full bg-cover mb-3 bg-center bg-fixed bg-no-repeat`}
             style={{
               backgroundImage: `url(${decodeURI(props.image)})`,
             }}
