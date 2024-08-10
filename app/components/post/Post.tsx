@@ -24,7 +24,7 @@ export default async function Post({post}:{post: post}) {
                 {user?.username}
             </div>
         </div>
-        <div className="display: flex flex-col m-auto overflow-y-hidden">
+        <div className="display: flex flex-col m-auto overflow-y-hidden items-center">
             <p className={``}>{post.content}</p>
             {post.pictures === undefined || post.pictures === "" ? <span/> : 
               <Image src={decodeURIComponent(post.pictures)}

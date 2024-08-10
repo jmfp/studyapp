@@ -18,8 +18,8 @@ export default async function UserPage({params}: {params:{id: string}}) {
     const pageUser = await getUserObject(params.id)
     console.log(userPosts)
   return (
-    <div>
-       <ParallaxHero style='p-48' height={60} image="https://images.unsplash.com/photo-1427501482951-3da9b725be23?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D">
+    <div className='display: flex flex-col h-full'>
+       <ParallaxHero height={50} image="https://images.unsplash.com/photo-1427501482951-3da9b725be23?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D">
 
        <Image 
           src={`${pageUser?.profilePic}`}
@@ -49,7 +49,8 @@ export default async function UserPage({params}: {params:{id: string}}) {
         </form>
       </div>
       <div className="display: flex flex-col overflow-y-scroll">
-          {!userPosts? <span/> : 
+          {!userPosts? 
+            <span/> : 
               userPosts.map((post: any, idx: number) => {
                 const newPost: any = {
                   friendId: params.id,

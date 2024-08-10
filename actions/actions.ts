@@ -74,6 +74,7 @@ export async function signUp(formData: FormData){
         username
       }
     })
+    redirect("/")
   }
 
 export async function validateUser(user: any){
