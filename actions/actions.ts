@@ -81,7 +81,6 @@ export async function validateUser(user: any){
     try {
         const res = await prisma.user.findUnique({where:{email:user.email}})
         if (res && user.password === res.password){
-            redirect("/")
             return (true)
         }
     } catch (error: any) {
