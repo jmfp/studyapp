@@ -49,15 +49,10 @@ export default async function Home() {
     userId: user?.id
   }})
   let feed: any = []
-  //user?.friends.map(async (friend:any, idx:number) =>{
-  //  feed.push(await prisma.post.findFirst({where:{userId: user?.friends[idx]}}))
-  //})
   feed.push(await prisma.post.findFirst({where:{userId: user?.friends[0]}}))
 
   //get feed for user
   const newFeed = await getFeedPosts(user?.id)
-  //console.log(newFeed)
-  //console.log(feed)
 
   return (
       <div className='display: flex w-[100%] h-full justify-space-between mb-14'>
@@ -89,15 +84,8 @@ export default async function Home() {
             }}>
               <textarea className="resize-none w-full h-full rounded-tl-lg rounded-tr-lg text-primary p-6" name="content" placeholder="Add a New Post"/>
               <div className="display: flex flex-col justify-between border-t border-primary p-6 h-full">
-                {/*<label htmlFor="pictures">
-                </label>
-                <TiCamera className="cursor-pointer"/>*/}
                 <TiCamera className="h-12 text-4xl"/>
                 <input type="file" name="pictures" accept=".jpeg, .jpg, .png"/>
-               {/* <label htmlFor="video">
-                <BsCameraVideoFill />
-                </label>
-                <input type="file" name="video" accept=".mp4"/>*/}
                 <Button className='mt-3' type="submit">Post</Button>
               </div>
             </form>
