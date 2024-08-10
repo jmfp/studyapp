@@ -1,5 +1,5 @@
+import { signUp } from "@/actions/actions";
 import { Button } from "@/components/ui/button";
-import { signUp } from "../auth/auth";
 
 export default function Signup() {
     const formData = new FormData();

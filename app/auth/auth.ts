@@ -3,9 +3,11 @@ import { NextResponse, NextRequest } from "next/server";
 import { SignJWT, jwtVerify } from "jose";
 import { redirect } from "next/navigation";
 import { validateUser } from "@/actions/actions";
+import { PrismaClient } from "@/prisma/generated/client";
 
 const secretKey = process.env.JWT_SECRET;
 const key = new TextEncoder().encode(secretKey);
+const prismadb = new PrismaClient
 
 export async function encrypt(payload: any) {
     return await new SignJWT(payload)
@@ -26,7 +28,7 @@ export async function encrypt(payload: any) {
     const email = formData.get("email") as string
     const password = formData.get("password") as string
     const username = formData.get("username") as string
-    const newUser = await global.prismadb.user.create({
+    const newUser = await prismadb.user.create({
       data:{
         email,
         password,

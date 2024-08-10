@@ -67,10 +67,10 @@ model User {
   email       String    @unique
   password    String
   username    String    @unique
-  characters  String[]  @db.ObjectId//array of id's of objects for users characters
+  characters  String[]  @db.ObjectId @default([])//array of id's of objects for users characters
   subscribed  Boolean   @default(false)
-  friends     String[]  @db.ObjectId
-  messages    String[]  @db.ObjectId
+  friends     String[]  @db.ObjectId @default([])
+  messages    String[]  @db.ObjectId @default([])
   profilePic  String    @default("")
   likedPosts  String[]  @db.ObjectId @default([])
 }
