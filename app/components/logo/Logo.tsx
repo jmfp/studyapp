@@ -9,7 +9,7 @@ const Logo = () =>{
         <Link
           href="/"
         >
-          <p>Dungeons<span className="text-green-400">&</span>Dragons</p>
+          <p>Social<span className="text-primary">Site</span></p>
         </Link>
         </div>
     );
