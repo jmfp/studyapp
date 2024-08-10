@@ -32,7 +32,7 @@ export const revalidate = 30
 //}
 
 //prisma client
-export const prisma = new PrismaClient()
+const prisma = new PrismaClient()
 
 export default async function Home() {
   //const posts = await fetchPosts()
