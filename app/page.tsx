@@ -113,7 +113,7 @@ export default async function Home() {
           
           <div className='display: flex flex-col mt-4 w-full'>
             {newFeed.length ? newFeed.map((post: post, idx: number) =>(
-              <div className="display: flex flex-col m-auto w-full min-h-20 max-h-60">
+              <div key={idx} className="display: flex flex-col m-auto w-full min-h-20 max-h-60">
                 <Post post={post}/>
               </div>
             )) : <span/>}

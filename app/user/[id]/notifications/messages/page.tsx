@@ -6,7 +6,7 @@ export default async function NewMessage() {
   return (
     <div>
         <form action={async (formdata: FormData) => {
-            'user server'
+            'use server'
             await sendMessage( "", "", `${formdata.get("content")}`)
         }}>
             <textarea name='content' placeholder='Write Message'/>

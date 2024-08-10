@@ -19,7 +19,7 @@ export default async function Copybutton({id}:{id:string}) {
   )
 }
 
-export async function ClientButton(text: string, func: any){
+export function ClientButton(text: string, func: any){
     <Button type='button' onClick={(e) => func(e)}>{text}</Button>
 }
 

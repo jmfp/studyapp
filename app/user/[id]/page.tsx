@@ -1,4 +1,4 @@
-import { getUser, getUserPosts, sendFriendRequest, fromBase64, getUserFriends, getUserObject } from '@/actions/actions'
+import { getUser, getUserPosts, sendFriendRequest, getUserFriends, getUserObject } from '@/actions/actions'
 import { getSession } from '@/app/auth/auth'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
@@ -50,7 +50,7 @@ export default async function UserPage({params}: {params:{id: string}}) {
       </div>
       <div className="display: flex flex-col overflow-y-scroll">
           {!userPosts? <span/> : 
-              userPosts.map((post: any, index: number) => {
+              userPosts.map((post: any, idx: number) => {
                 const newPost: any = {
                   friendId: params.id,
                   pic: pageUser?.profilePic,
@@ -59,7 +59,7 @@ export default async function UserPage({params}: {params:{id: string}}) {
                   likes: post.likes
                 }
                 return(
-                  <Post post={
+                  <Post key={idx} post={
                     newPost
                   }/>
                 )

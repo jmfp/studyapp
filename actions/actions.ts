@@ -4,7 +4,6 @@ import { getSession } from "@/app/auth/auth"
 import { PrismaClient } from "@/prisma/generated/client"
 import { revalidatePath } from "next/cache"
 import { redirect, RedirectType } from "next/navigation"
-import Jimp from 'jimp'
 
 const prisma = new PrismaClient()
 
@@ -16,14 +15,14 @@ const toBase64 = async (file: File) => {
     return finalString
   };
 
-export const fromBase64 = async (file: string) => {
-  const bufferFile = Buffer.from(file, "base64")
-  const newFile = Jimp.read(bufferFile, (err: any, res: any) => {
-    if (err) throw new Error(err);
-    res.quality(5).write("resized.jpg");
-  });
-  return newFile
-};
+//export const fromBase64 = async (file: string) => {
+//  const bufferFile = Buffer.from(file, "base64")
+//  const newFile = Jimp.read(bufferFile, (err: any, res: any) => {
+//    if (err) throw new Error(err);
+//    res.quality(5).write("resized.jpg");
+//  });
+//  return newFile
+//};
 
 export const addPost = async (formData: any) => {
     const content = formData.get("content")

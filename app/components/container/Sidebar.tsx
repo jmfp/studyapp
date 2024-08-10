@@ -14,7 +14,7 @@ export default async function SuggestedFriends() {
         <div>
             {!users ? <span/> : 
                 users.map((user: any, idx: number) => (
-                    <div className="display: flex m-3 text-center">
+                    <div key={idx} className="display: flex m-3 text-center">
                         <Image src={user.profilePic}
                         width={200}
                         height={200}

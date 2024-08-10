@@ -13,8 +13,8 @@ export default async function Notifications({params} : {params:{id: string}}) {
     <div>
         <div className="display: flex flex-col h-[vh] w-[vw]">
             {!friendRequests?<span/>:
-                friendRequests.map((request: any, index: number) =>(
-                    <div className="display: flex border border-green-400 rounded-lg">
+                friendRequests.map((request: any, idx: number) =>(
+                    <div key={idx} className="display: flex border border-green-400 rounded-lg">
                         <div>
                             <p>{`${request.userId} sent a friend request`}</p>
                         </div>
