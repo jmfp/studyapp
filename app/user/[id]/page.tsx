@@ -27,28 +27,31 @@ export default async function UserPage({params}: {params:{id: string}}) {
           height={1080}
           width={1920}
           className='object-cover h-24 w-24 m-6 border border-primary rounded-full '
-        />
-       </ParallaxHero>
-       <div className='display: flex justify-center ml-36 mt-6 items-center'>
-       <p className="text-primary ml-6">{pageUser?.username}</p>
-       <FaUserFriends className="text-primary mx-3"/>
-        <p>{pageUser?.friends.length}</p>
-       </div>
-      <div className='display: flex justify-center w-full h-60 mt-14'>
-        <form action={async (formData: FormData) =>{
-          'use server'
-          if(user !== params.id){
-            await sendFriendRequest(user, params.id)
-          }
-        }}>
-          {pageUser?.friends.includes(user) || user === params.id ? 
-          <p className='text-primary'>{`You and ${pageUser?.username} are friends.`}</p>:
-            <Button type="submit">Add Friend</Button>
-          }
           
-        </form>
-      </div>
-      <div className="display: flex flex-col overflow-y-scroll">
+        />
+
+       <div className='display: flex ml-3  md:mt-12 items-center'>
+          <p className="text-primary ml-6">{pageUser?.username}</p>
+          <FaUserFriends className="text-primary mx-3"/>
+          <p>{pageUser?.friends.length}</p>
+       </div>
+
+        <div className='display: flex justify-center w-full h-60 m-2'>
+          <form action={async (formData: FormData) =>{
+            'use server'
+            if(user !== params.id){
+              await sendFriendRequest(user, params.id)
+            }
+          }}>
+            {pageUser?.friends.includes(user) || user === params.id ? 
+            <p className='text-primary'>{`You and ${pageUser?.username} are friends.`}</p>:
+              <Button type="submit">Add Friend</Button>
+            }
+
+          </form>
+        </div>
+       </ParallaxHero>
+      <div className="display: flex flex-col sm:top-36 m-auto overflow-y-scroll">
           {!userPosts? 
             <span/> : 
               userPosts.map((post: any, idx: number) => {

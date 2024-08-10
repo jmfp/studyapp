@@ -72,12 +72,6 @@ export default async function Home() {
               className="m-auto mb-6 border border-primary rounded-full sm:h-[12px] sm:w-[12px] sm:ml-3 lg:h-[100px] lg:w-[100px] object-cover"
             />
           </Link>
-          <Link href={"/characters"}>
-            <MenuItem icon={GiIciclesAura} text="Characters"/>
-          </Link>
-          <Link href={"/campaign"}>
-            <MenuItem icon={GiDiceTwentyFacesTwenty} text="Campaigns"/>
-          </Link>
           <Link href={"/signin"}>
             <MenuItem icon={BiLogOut} text="Logout"/>
           </Link>

@@ -2,6 +2,7 @@ import { getSuggestedUsers, getUser, getUserFriends, sendFriendRequest } from '@
 import React from 'react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 
 export default async function SuggestedFriends() {
     const userId = await getUser()
@@ -15,12 +16,14 @@ export default async function SuggestedFriends() {
             {!users ? <span/> : 
                 users.map((user: any, idx: number) => (
                     <div key={idx} className="display: flex m-3 text-center">
-                        <Image src={user.profilePic}
-                        width={200}
-                        height={200}
-                        alt={`${user.username}'s Profile Picture`}
-                        className='border rounded-full border-primary w-12 h-12 object-cover'
-                        />
+                        <Link href={`/user/${user.id}`}>
+                            <Image src={user.profilePic}
+                            width={200}
+                            height={200}
+                            alt={`${user.username}'s Profile Picture`}
+                            className='border rounded-full border-primary w-12 h-12 object-cover'
+                            />
+                        </Link>
                         <p className="text-primary m-auto">{user.username}</p>
                         <form action={async () =>{
                             'use server'
