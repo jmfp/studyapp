@@ -5,7 +5,7 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   var session = await getSession()
   await updateSession(request)
-  if(!session){
+  if(!session && path !== '/signin'){
     return NextResponse.redirect(new URL('/signin', request.url))
   }
 }
