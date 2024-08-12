@@ -43,15 +43,13 @@ export async function login(formData: FormData){
     try {
       const valid = await validateUser(user)
       console.log(valid)
-      if(valid){
-        //create the session
-        const expires = new Date(Date.now() + 3600 * 1000)
-        const session = await encrypt({user, expires})
-  
-        //save the session in a cookie
-        cookies().set('session', session, {expires, httpOnly: true});
-        //NextResponse.redirect("/")
-      }
+      //create the session
+      const expires = new Date(Date.now() + 3600 * 1000)
+      const session = await encrypt({user, expires})
+
+      //save the session in a cookie
+      cookies().set('session', session, {expires, httpOnly: true});
+      //NextResponse.redirect("/")
       
     } catch (error: any) {
       console.log(error)
