@@ -47,7 +47,7 @@ export async function login(formData: FormData){
         const session = await encrypt({user, expires})
   
         //save the session in a cookie
-        cookies().set('session', session, {expires, httpOnly: false});
+        cookies().set('session', session, {expires, httpOnly: true});
       }
       
     } catch (error: any) {
