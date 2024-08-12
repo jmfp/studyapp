@@ -40,16 +40,17 @@ export async function encrypt(payload: any) {
 export async function login(formData: FormData){
     //verify credentials and get user
     const user = {email: formData.get('email'), password: formData.get('password')};
+    if(await validateUser(user)){
+      //create the session
+      const expires = new Date(Date.now() + 3600 * 1000)
+      const session = await encrypt({user, expires})
+
+      //save the session in a cookie
+      cookies().set('session', session, {expires, httpOnly: false});
+    }
     try {
-      if(await validateUser(user)){
-        //create the session
-        const expires = new Date(Date.now() + 3600 * 1000)
-        const session = await encrypt({user, expires})
-  
-        //save the session in a cookie
-        cookies().set('session', session, {expires, httpOnly: false});
-        redirect("/")
-      }
+      redirect("/")
+      
     } catch (error: any) {
       console.log(error.message)
     }
