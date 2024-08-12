@@ -32,7 +32,7 @@ export const revalidate = 30
 //}
 
 //prisma client
-//const prisma = new PrismaClient()
+const prisma = new PrismaClient()
 
 export default async function Home() {
   //const posts = await fetchPosts()
@@ -51,7 +51,7 @@ export default async function Home() {
   //  userId: user?.id
   //}})
   let feed: any = []
-  //feed.push(await prisma.post.findFirst({where:{userId: user?.friends[0]}}))
+  feed.push(await prisma.post.findFirst({where:{userId: user?.friends[0]}}))
 
   //get feed for user
   const newFeed = await getFeedPosts(user?.id)
