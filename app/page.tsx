@@ -9,7 +9,7 @@ import {PrismaClient} from "@/prisma/generated/client"
 import MenuItem from "./components/menu/menu";
 import { GiIciclesAura, GiDiceTwentyFacesTwenty } from "react-icons/gi";
 import { BiLogOut } from "react-icons/bi";
-import { addPost, getFeedPosts, getLatestPost, getUser, getUserFriends } from "@/actions/actions";
+import { addPost, getFeedPosts, getLatestPost, getUser, getUserFriends, getUserObject } from "@/actions/actions";
 import { getSession } from "./auth/auth";
 import { redirect } from "next/navigation";
 import { GiHearts } from "react-icons/gi";
@@ -42,12 +42,14 @@ export default async function Home() {
     redirect("/signin")
   }
   const userObject = await getUser()
-  const user = await prisma.user.findUnique({where: {
-    email: session.user.email
-  }})
-  const posts = await prisma.post.findMany({where:{
-    userId: user?.id
-  }})
+  console.log(userObject)
+  const user = await getUserObject(userObject)
+  //const user = await prisma.user.findUnique({where: {
+  //  email: session.user.email
+  //}})
+  //const posts = await prisma.post.findMany({where:{
+  //  userId: user?.id
+  //}})
   let feed: any = []
   feed.push(await prisma.post.findFirst({where:{userId: user?.friends[0]}}))
 
