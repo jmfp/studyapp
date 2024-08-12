@@ -51,7 +51,7 @@ export async function login(formData: FormData){
       }
       
     } catch (error: any) {
-      console.log(error.message)
+      console.log(error)
     }
     redirect("/")
 }
