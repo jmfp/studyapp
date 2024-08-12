@@ -77,7 +77,7 @@ export async function signUp(formData: FormData){
   }
 
 export async function validateUser(user: any){
-    console.log(`user info is ${user}`)
+    console.log(user)
     try {
         const res = await prisma.user.findUnique({where:{email:user.email}})
         if (res && user.password === res.password){
