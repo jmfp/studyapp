@@ -28,7 +28,6 @@ async function SocialLinks(){
   let friendRequests = null
   if(session){
     user = await getUser()
-    console.log(`user is ${user}`)
     //const userObject = await getUserObject(user)
     //TODO: add list and schema for notificationo type on the database that are just a string of notifications for a current user
     friendRequests = await getFriendRequest(user)

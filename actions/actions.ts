@@ -77,10 +77,10 @@ export async function signUp(formData: FormData){
   }
 
 export async function validateUser(user: any){
-    console.log(user)
     try {
         const res = await prisma.user.findUnique({where:{email:user.email}})
         if (res && user.password === res.password){
+            console.log(res)
             return (true)
         }
     } catch (error: any) {
@@ -158,6 +158,7 @@ export const getFriendRequest = async (id: string) =>{
         if(res.length >0){
             return res
         }
+        return null
     } catch (error: any) {
         console.log(error.message)
     }
