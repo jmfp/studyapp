@@ -4,6 +4,7 @@ import { ModeToggle } from "../../button/ModeToggle";
 import Logo from "../../logo/Logo";
 import { VscBell } from "react-icons/vsc";
 import { getFriendRequest, getUser, getUserObject } from "@/actions/actions";
+import { getSession } from "@/app/auth/auth";
 
 const NavBar = async () =>{
     return(
@@ -22,12 +23,16 @@ const NavBar = async () =>{
 
 async function SocialLinks(){
   
-  const user = await getUser()
-  console.log(`user is ${user}`)
-  const userObject = await getUserObject(user)
-  //TODO: add list and schema for notificationo type on the database that are just a string of notifications for a current user
-  const friendRequests = await getFriendRequest(user)
-  console.log(friendRequests)
+  const session = await getSession()
+  let user = null
+  let friendRequests = null
+  if(session){
+    user = await getUser()
+    console.log(`user is ${user}`)
+    //const userObject = await getUserObject(user)
+    //TODO: add list and schema for notificationo type on the database that are just a string of notifications for a current user
+    friendRequests = await getFriendRequest(user)
+  }
   return(
     <div className="flex items-center gap-2">
       {!user ? <span/> : 
