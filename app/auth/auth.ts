@@ -48,12 +48,13 @@ export async function login(formData: FormData){
   
         //save the session in a cookie
         cookies().set('session', session, {expires, httpOnly: true});
+        NextResponse.redirect("/")
       }
       
     } catch (error: any) {
       console.log(error)
     }
-    redirect("/")
+    //redirect("/")
 }
 
 export async function logout(){

@@ -6,7 +6,9 @@ export async function middleware(request: NextRequest) {
   var session = await getSession()
   await updateSession(request)
   if(!session && path !== '/signin'){
-    return NextResponse.redirect(new URL('/signin', request.url))
+    return NextResponse.rewrite(new URL('/signin', request.url), {
+      status: 303,
+  })
   }
 }
 
