@@ -43,7 +43,7 @@ export default async function Home() {
   }
   const userObject = await getUser()
   console.log(userObject)
-  const user = await getUserObject(userObject)
+  const user = await getUserObject('66b6b7daeb7f7c4a9bc6ee78')
   //const user = await prisma.user.findUnique({where: {
   //  email: session.user.email
   //}})
