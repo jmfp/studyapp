@@ -40,7 +40,7 @@ async function SocialLinks(){
           <div className="display: flex ">
           <VscBell className="h-6 w-6 static">
           </VscBell>
-          {friendRequests?.length !==0 ?
+          {friendRequests ?
             <div className="bg-red-500 rounded-full h-2 w-2 static"/>
           :
             <span className="h-2 w-2 static"/>

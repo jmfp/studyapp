@@ -155,7 +155,9 @@ export async function sendFriendRequest(user: string, receiver: string){
 export const getFriendRequest = async (id: string) =>{
     try {
         const res = await prisma.friendRequest.findMany({where:{receiverId: id}})
-        return res
+        if(res.length >0){
+            return res
+        }
     } catch (error: any) {
         console.log(error.message)
     }
