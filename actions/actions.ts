@@ -207,6 +207,7 @@ export async function getUser(){
     try {
         const session = await getSession()
         const email = session.user.email
+        console.log(`email is ${email}`)
         const res = await prisma.user.findUnique({where: {email}})
         return JSON.parse(`${JSON.stringify(res?.id)}`)
     } catch (error: any) {
