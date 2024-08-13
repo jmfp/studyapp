@@ -41,6 +41,7 @@ export default async function Home() {
   if (!session){
     redirect("/signin")
   }
+  console.log(session)
   const userObject = await getUser()
   console.log(userObject)
   const user = await getUserObject(userObject)
