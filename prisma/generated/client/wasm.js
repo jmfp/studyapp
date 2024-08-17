@@ -112,20 +112,6 @@ Prisma.NullTypes = {
  * Enums
  */
 
-exports.Prisma.PostScalarFieldEnum = {
-  id: 'id',
-  content: 'content',
-  userId: 'userId',
-  published: 'published',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  likes: 'likes',
-  comments: 'comments',
-  pictures: 'pictures',
-  video: 'video',
-  link: 'link'
-};
-
 exports.Prisma.LikeScalarFieldEnum = {
   id: 'id',
   userId: 'userId'
@@ -142,25 +128,31 @@ exports.Prisma.UserScalarFieldEnum = {
   email: 'email',
   password: 'password',
   username: 'username',
-  characters: 'characters',
   subscribed: 'subscribed',
-  friends: 'friends',
-  messages: 'messages',
-  profilePic: 'profilePic',
-  likedPosts: 'likedPosts'
+  courses: 'courses'
 };
 
-exports.Prisma.FriendRequestScalarFieldEnum = {
+exports.Prisma.CourseScalarFieldEnum = {
   id: 'id',
-  userId: 'userId',
-  receiverId: 'receiverId'
+  course_name: 'course_name',
+  sections: 'sections'
 };
 
-exports.Prisma.MessageScalarFieldEnum = {
+exports.Prisma.InformationScalarFieldEnum = {
   id: 'id',
   content: 'content',
-  userId: 'userId',
-  receiverId: 'receiverId'
+  question: 'question'
+};
+
+exports.Prisma.QuestionScalarFieldEnum = {
+  id: 'id',
+  question: 'question',
+  answers: 'answers'
+};
+
+exports.Prisma.SectionScalarFieldEnum = {
+  id: 'id',
+  questions: 'questions'
 };
 
 exports.Prisma.SortOrder = {
@@ -175,12 +167,13 @@ exports.Prisma.QueryMode = {
 
 
 exports.Prisma.ModelName = {
-  Post: 'Post',
   Like: 'Like',
   Comment: 'Comment',
   User: 'User',
-  FriendRequest: 'FriendRequest',
-  Message: 'Message'
+  Course: 'Course',
+  Information: 'Information',
+  Question: 'Question',
+  Section: 'Section'
 };
 
 /**

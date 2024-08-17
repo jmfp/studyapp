@@ -10,8 +10,8 @@ const inter = Inter({ subsets: ["latin"] });
 const nunito = Nunito({subsets: ["latin"]});
 
 export const metadata: Metadata = {
-  title: "Social Media",
-  description: "Social Media",
+  title: "Study",
+  description: "Study",
 };
 
 export default function RootLayout({

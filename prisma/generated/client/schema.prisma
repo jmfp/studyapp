@@ -14,25 +14,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Post {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  content   String
-  userId    String
-  //image       String
-  published Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  likes     String[] //ids of the likes for the content
-  //reposts     Int       @default(0)
-  comments  String[] //ids of comment objects
-  pictures  String   @default("") //TODO: add support for multiple images
-  video     String   @default("")
-  link      String   @default("")
-  //author   User      @relation(fields: [authorId], references: [id])
-  //authorId String    @db.ObjectId
-  //comments Comment[]
-}
-
 model Like {
   id     String @id @default(auto()) @map("_id") @db.ObjectId
   userId String //id of user that liked the content
@@ -47,27 +28,33 @@ model Comment {
 }
 
 model User {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  email      String   @unique
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  email      String  @unique
   password   String
-  username   String   @unique
-  characters String[] @default([]) @db.ObjectId //array of id's of objects for users characters
-  subscribed Boolean  @default(false)
-  friends    String[] @default([]) @db.ObjectId
-  messages   String[] @default([]) @db.ObjectId
-  profilePic String   @default("")
-  likedPosts String[] @default([]) @db.ObjectId
+  username   String  @unique
+  subscribed Boolean @default(false)
+  courses    Json[]  @default([]) //ids of all courses user is in and their progress in each course
 }
 
-model FriendRequest {
-  id         String @id @default(auto()) @map("_id") @db.ObjectId
-  userId     String @db.ObjectId //id of user sending request
-  receiverId String @db.ObjectId //id of user receiving request
+model Course {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  course_name String
+  sections    String[] @default([])
 }
 
-model Message {
-  id         String @id @default(auto()) @map("_id") @db.ObjectId
-  content    String
-  userId     String @db.ObjectId //id of user sending request
-  receiverId String @db.ObjectId //id of user receiving request
+model Information {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  content  String
+  question String //id of question after information is provided
+}
+
+model Question {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  question String
+  answers  Json[] //answer text and which answer is correct
+}
+
+model Section {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  questions String[] @default([]) //ids of questions
 }
