@@ -137,22 +137,6 @@ exports.Prisma.CommentScalarFieldEnum = {
   likes: 'likes'
 };
 
-exports.Prisma.CharacterScalarFieldEnum = {
-  id: 'id',
-  name: 'name',
-  level: 'level',
-  exp: 'exp',
-  race: 'race',
-  pclass: 'pclass',
-  background: 'background',
-  backstory: 'backstory',
-  equipment: 'equipment',
-  languages: 'languages',
-  finished: 'finished',
-  image: 'image',
-  userId: 'userId'
-};
-
 exports.Prisma.UserScalarFieldEnum = {
   id: 'id',
   email: 'email',
@@ -194,7 +178,6 @@ exports.Prisma.ModelName = {
   Post: 'Post',
   Like: 'Like',
   Comment: 'Comment',
-  Character: 'Character',
   User: 'User',
   FriendRequest: 'FriendRequest',
   Message: 'Message'

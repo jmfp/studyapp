@@ -46,22 +46,6 @@ model Comment {
   //replies     String[]
 }
 
-model Character {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  name       String
-  level      Int     @default(1)
-  exp        Int     @default(0)
-  race       String
-  pclass     String
-  background String
-  backstory  String
-  equipment  Json[] //all equipment in the characters inventory
-  languages  Json[] //all languages known by character
-  finished   Boolean @default(false) //ensures the character creation process is finished
-  image      String?
-  userId     String? @db.ObjectId
-}
-
 model User {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
   email      String   @unique
