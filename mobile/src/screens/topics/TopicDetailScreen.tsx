@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  ActivityIndicator, Alert, TextInput, Modal,
+  ActivityIndicator, Alert, TextInput, Modal, Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -13,6 +13,87 @@ import type { TopicsStackParamList, Card } from '../../types';
 
 type Nav = NativeStackNavigationProp<TopicsStackParamList, 'TopicDetail'>;
 type Route = RouteProp<TopicsStackParamList, 'TopicDetail'>;
+
+function AnimatedCard({ card, index, onFlip, isFlipped, onDelete }: {
+  card: Card; index: number; isFlipped: boolean;
+  onFlip: () => void; onDelete: () => void;
+}) {
+  const entranceAnim = useRef(new Animated.Value(0)).current;
+  const flipAnim = useRef(new Animated.Value(0)).current;
+  const pressScale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.spring(entranceAnim, {
+      toValue: 1, tension: 55, friction: 8,
+      delay: index * 60,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  useEffect(() => {
+    Animated.spring(flipAnim, {
+      toValue: isFlipped ? 1 : 0,
+      tension: 50, friction: 6, useNativeDriver: true,
+    }).start();
+  }, [isFlipped]);
+
+  const handlePressIn = () => Animated.spring(pressScale, { toValue: 0.97, tension: 200, friction: 5, useNativeDriver: true }).start();
+  const handlePressOut = () => Animated.spring(pressScale, { toValue: 1, tension: 200, friction: 5, useNativeDriver: true }).start();
+
+  const frontRotate = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
+  const backRotate = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['180deg', '360deg'] });
+  const accuracy = card.timesReviewed > 0 ? Math.round((card.timesCorrect / card.timesReviewed) * 100) : null;
+
+  return (
+    <Animated.View style={{
+      opacity: entranceAnim,
+      transform: [
+        { translateY: entranceAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) },
+        { scale: Animated.multiply(pressScale, entranceAnim.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1] })) },
+      ],
+      marginBottom: spacing.sm,
+    }}>
+      <TouchableOpacity
+        style={styles.cardOuter}
+        onPress={onFlip}
+        onLongPress={onDelete}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        activeOpacity={1}
+      >
+        {/* Front face */}
+        <Animated.View style={[styles.cardFace, styles.cardFront, { transform: [{ rotateY: frontRotate }] }]}>
+          <View style={styles.cardTopRow}>
+            <View style={styles.cardSide}><Text style={styles.cardSideText}>QUESTION</Text></View>
+            {accuracy !== null && (
+              <Text style={[styles.accuracyText, { color: accuracy >= 70 ? colors.success : accuracy >= 40 ? colors.warning : colors.error }]}>
+                {accuracy}%
+              </Text>
+            )}
+          </View>
+          <Text style={styles.cardText}>{card.question}</Text>
+          {card.timesReviewed > 0 && (
+            <Text style={styles.cardMeta}>Reviewed {card.timesReviewed}× · tap to flip</Text>
+          )}
+          {card.timesReviewed === 0 && (
+            <Text style={styles.cardMeta}>Tap to flip</Text>
+          )}
+        </Animated.View>
+
+        {/* Back face */}
+        <Animated.View style={[styles.cardFace, styles.cardBack, { transform: [{ rotateY: backRotate }] }]}>
+          <View style={styles.cardTopRow}>
+            <View style={[styles.cardSide, { backgroundColor: colors.primary + '30' }]}>
+              <Text style={[styles.cardSideText, { color: colors.primaryLight }]}>ANSWER</Text>
+            </View>
+          </View>
+          <Text style={[styles.cardText, { color: colors.primaryLight }]}>{card.answer}</Text>
+          <Text style={styles.cardMeta}>Long press to delete</Text>
+        </Animated.View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
 
 export default function TopicDetailScreen() {
   const navigation = useNavigation<Nav>();
@@ -29,6 +110,19 @@ export default function TopicDetailScreen() {
   const [answer, setAnswer] = useState('');
   const [flippedCards, setFlippedCards] = useState<Set<string>>(new Set());
 
+  const headerAnim = useRef(new Animated.Value(0)).current;
+  const modalAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.spring(headerAnim, { toValue: 1, tension: 60, friction: 8, useNativeDriver: true }).start();
+  }, []);
+
+  const openModal = () => {
+    setShowModal(true);
+    modalAnim.setValue(0);
+    Animated.spring(modalAnim, { toValue: 1, tension: 55, friction: 8, useNativeDriver: true }).start();
+  };
+
   const handleCreate = async () => {
     if (!question.trim() || !answer.trim()) {
       Alert.alert('Error', 'Both question and answer are required');
@@ -44,7 +138,7 @@ export default function TopicDetailScreen() {
   };
 
   const handleDelete = (card: Card) => {
-    Alert.alert('Delete Card', 'Are you sure you want to delete this card?', [
+    Alert.alert('Delete Card', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: () => deleteCard({ id: card._id, topicId }) },
     ]);
@@ -60,7 +154,10 @@ export default function TopicDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <Animated.View style={[styles.header, {
+        opacity: headerAnim,
+        transform: [{ translateY: headerAnim.interpolate({ inputRange: [0, 1], outputRange: [-16, 0] }) }],
+      }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
@@ -68,12 +165,15 @@ export default function TopicDetailScreen() {
           <Text style={styles.topicEmoji}>{topic?.emoji || '📚'}</Text>
           <Text style={styles.title}>{topicTitle}</Text>
         </View>
-        <TouchableOpacity style={styles.addBtn} onPress={() => setShowModal(true)}>
+        <TouchableOpacity style={styles.addBtn} onPress={openModal}>
           <Ionicons name="add" size={22} color={colors.white} />
         </TouchableOpacity>
-      </View>
+      </Animated.View>
 
-      <View style={styles.metaRow}>
+      <Animated.View style={[styles.metaRow, {
+        opacity: headerAnim,
+        transform: [{ translateX: headerAnim.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) }],
+      }]}>
         <View style={[styles.metaChip, { backgroundColor: (topic?.color || colors.primary) + '20' }]}>
           <Ionicons name="layers-outline" size={14} color={topic?.color || colors.primary} />
           <Text style={[styles.metaText, { color: topic?.color || colors.primary }]}>{cards?.length || 0} cards</Text>
@@ -87,7 +187,7 @@ export default function TopicDetailScreen() {
             <Text style={styles.quizBtnText}>Start Quiz</Text>
           </TouchableOpacity>
         )}
-      </View>
+      </Animated.View>
 
       {isLoading ? (
         <ActivityIndicator color={colors.primary} style={{ marginTop: 80 }} />
@@ -96,55 +196,36 @@ export default function TopicDetailScreen() {
           <Text style={{ fontSize: 56 }}>🃏</Text>
           <Text style={styles.emptyTitle}>No cards yet</Text>
           <Text style={styles.emptySubtitle}>Add your first flashcard to this topic</Text>
-          <TouchableOpacity style={styles.emptyBtn} onPress={() => setShowModal(true)}>
+          <TouchableOpacity style={styles.emptyBtn} onPress={openModal}>
             <Text style={styles.emptyBtnText}>Add Card</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-          <Text style={styles.tapHint}>Tap a card to reveal the answer</Text>
-          {cards?.map((card) => {
-            const isFlipped = flippedCards.has(card._id);
-            const accuracy = card.timesReviewed > 0 ? Math.round((card.timesCorrect / card.timesReviewed) * 100) : null;
-            return (
-              <TouchableOpacity
-                key={card._id}
-                style={[styles.card, isFlipped && styles.cardFlipped]}
-                onPress={() => toggleFlip(card._id)}
-                onLongPress={() => handleDelete(card)}
-                activeOpacity={0.9}
-              >
-                <View style={styles.cardHeader}>
-                  <View style={[styles.cardSide, { backgroundColor: isFlipped ? colors.primary + '20' : colors.surfaceElevated }]}>
-                    <Text style={styles.cardSideText}>{isFlipped ? 'ANSWER' : 'QUESTION'}</Text>
-                  </View>
-                  {accuracy !== null && (
-                    <Text style={[styles.accuracyText, { color: accuracy >= 70 ? colors.success : accuracy >= 40 ? colors.warning : colors.error }]}>
-                      {accuracy}% accuracy
-                    </Text>
-                  )}
-                </View>
-                <Text style={[styles.cardText, isFlipped && { color: colors.primaryLight }]}>
-                  {isFlipped ? card.answer : card.question}
-                </Text>
-                {card.timesReviewed > 0 && (
-                  <View style={styles.cardStats}>
-                    <Text style={styles.cardStatText}>Reviewed {card.timesReviewed}x</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          })}
+          <Text style={styles.tapHint}>Tap a card to flip · Long press to delete</Text>
+          {cards?.map((card, i) => (
+            <AnimatedCard
+              key={card._id}
+              card={card}
+              index={i}
+              isFlipped={flippedCards.has(card._id)}
+              onFlip={() => toggleFlip(card._id)}
+              onDelete={() => handleDelete(card)}
+            />
+          ))}
           <View style={{ height: 100 }} />
         </ScrollView>
       )}
 
       <Modal visible={showModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <Animated.View style={[styles.modalContent, {
+            transform: [{ translateY: modalAnim.interpolate({ inputRange: [0, 1], outputRange: [60, 0] }) }],
+            opacity: modalAnim,
+          }]}>
             <View style={styles.modalHandle} />
             <Text style={styles.modalTitle}>New Flashcard</Text>
-            <Text style={styles.modalSubtitle}>For: {topicTitle}</Text>
+            <Text style={styles.modalSubtitle}>{topicTitle}</Text>
 
             <Text style={styles.inputLabel}>QUESTION (FRONT)</Text>
             <TextInput
@@ -179,7 +260,7 @@ export default function TopicDetailScreen() {
                 {creating ? <ActivityIndicator color={colors.white} /> : <Text style={styles.createText}>Add Card</Text>}
               </TouchableOpacity>
             </View>
-          </View>
+          </Animated.View>
         </View>
       </Modal>
     </View>
@@ -208,20 +289,25 @@ const styles = StyleSheet.create({
   emptyBtn: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
   emptyBtnText: { ...typography.h4, color: colors.white },
   list: { paddingHorizontal: spacing.lg, paddingTop: spacing.xs },
-  tapHint: { ...typography.small, textAlign: 'center', marginBottom: spacing.md, color: colors.textMuted },
-  card: {
-    backgroundColor: colors.surface, borderRadius: radius.lg,
-    padding: spacing.lg, marginBottom: spacing.sm,
-    borderWidth: 1, borderColor: colors.border, ...shadow.sm,
+  tapHint: { ...typography.small, textAlign: 'center', marginBottom: spacing.md, color: colors.textMuted, fontSize: 12 },
+  cardOuter: {
+    height: 160, backgroundColor: colors.surface,
+    borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    ...shadow.sm,
   },
-  cardFlipped: { borderColor: colors.primary + '50', backgroundColor: colors.surfaceElevated },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
-  cardSide: { paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.full },
-  cardSideText: { fontSize: 11, fontWeight: '700', color: colors.textMuted, letterSpacing: 0.8 },
+  cardFace: {
+    position: 'absolute', width: '100%', height: '100%',
+    borderRadius: radius.lg, padding: spacing.lg,
+    backfaceVisibility: 'hidden',
+  },
+  cardFront: { backgroundColor: colors.surface },
+  cardBack: { backgroundColor: colors.surfaceElevated, borderWidth: 1, borderColor: colors.primary + '30' },
+  cardTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
+  cardSide: { backgroundColor: colors.surfaceElevated, borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 3 },
+  cardSideText: { fontSize: 10, fontWeight: '700', color: colors.textMuted, letterSpacing: 1 },
   accuracyText: { fontSize: 12, fontWeight: '600' },
-  cardText: { ...typography.body, lineHeight: 24, fontSize: 16 },
-  cardStats: { marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
-  cardStatText: { ...typography.small, fontSize: 11 },
+  cardText: { ...typography.body, lineHeight: 22, fontSize: 15, flex: 1 },
+  cardMeta: { ...typography.small, fontSize: 11, marginTop: 4 },
   modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
   modalContent: { backgroundColor: colors.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.lg, paddingBottom: 40 },
   modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginBottom: spacing.md },
@@ -230,8 +316,7 @@ const styles = StyleSheet.create({
   inputLabel: { ...typography.label, marginBottom: spacing.xs },
   textArea: {
     backgroundColor: colors.background, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
-    paddingHorizontal: spacing.md, paddingVertical: spacing.md, ...typography.body, color: colors.textPrimary,
-    minHeight: 90,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.md, ...typography.body, color: colors.textPrimary, minHeight: 90,
   },
   modalActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
   cancelBtn: { flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, paddingVertical: spacing.md, alignItems: 'center' },

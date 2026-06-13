@@ -1,11 +1,13 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { colors, spacing, radius, typography, shadow } from '../../theme';
 import type { QuizStackParamList } from '../../types';
+
+const { width } = Dimensions.get('window');
 
 type Nav = NativeStackNavigationProp<QuizStackParamList, 'QuizResult'>;
 type Route = RouteProp<QuizStackParamList, 'QuizResult'>;
@@ -15,122 +17,232 @@ export default function QuizResultScreen() {
   const route = useRoute<Route>();
   const { score, correct, wrong, total, topicId } = route.params;
 
+  const [displayScore, setDisplayScore] = useState(0);
+
+  // Animation refs
+  const emojiScale = useRef(new Animated.Value(0)).current;
+  const emojiRotate = useRef(new Animated.Value(0)).current;
+  const titleAnim = useRef(new Animated.Value(0)).current;
+  const circleAnim = useRef(new Animated.Value(0)).current;
+  const stat1Anim = useRef(new Animated.Value(0)).current;
+  const stat2Anim = useRef(new Animated.Value(0)).current;
+  const stat3Anim = useRef(new Animated.Value(0)).current;
+  const messageAnim = useRef(new Animated.Value(0)).current;
+  const btn1Anim = useRef(new Animated.Value(0)).current;
+  const btn2Anim = useRef(new Animated.Value(0)).current;
+  const ringAnim = useRef(new Animated.Value(0)).current;
+  const bgPulse = useRef(new Animated.Value(1)).current;
+
   const getGrade = () => {
-    if (score >= 90) return { label: 'Excellent!', emoji: '🏆', color: colors.accent };
-    if (score >= 70) return { label: 'Great Job!', emoji: '🌟', color: colors.success };
-    if (score >= 50) return { label: 'Good Effort', emoji: '👍', color: colors.warning };
-    return { label: 'Keep Practicing', emoji: '💪', color: colors.error };
+    if (score >= 90) return { label: 'Outstanding!', emoji: '🏆', color: colors.accent };
+    if (score >= 70) return { label: 'Great job!', emoji: '🌟', color: colors.success };
+    if (score >= 50) return { label: 'Good effort', emoji: '👍', color: colors.warning };
+    return { label: 'Keep going!', emoji: '💪', color: colors.error };
   };
 
   const grade = getGrade();
 
-  const circumference = 2 * Math.PI * 54;
-  const strokeDash = (score / 100) * circumference;
+  useEffect(() => {
+    // Score counter
+    let frame = 0;
+    const totalFrames = 60;
+    const timer = setInterval(() => {
+      frame++;
+      const progress = frame / totalFrames;
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplayScore(Math.round(eased * score));
+      if (frame >= totalFrames) clearInterval(timer);
+    }, 16);
+
+    // Staggered entrance cascade
+    Animated.sequence([
+      // Emoji bounces in
+      Animated.parallel([
+        Animated.spring(emojiScale, { toValue: 1, tension: 60, friction: 5, useNativeDriver: true }),
+        Animated.timing(emojiRotate, { toValue: 1, duration: 600, useNativeDriver: true }),
+      ]),
+      // Title fades up
+      Animated.spring(titleAnim, { toValue: 1, tension: 70, friction: 8, useNativeDriver: true }),
+      // Score ring expands
+      Animated.spring(circleAnim, { toValue: 1, tension: 50, friction: 7, useNativeDriver: true }),
+      // Stats cascade in
+      Animated.stagger(120, [
+        Animated.spring(stat1Anim, { toValue: 1, tension: 70, friction: 8, useNativeDriver: true }),
+        Animated.spring(stat2Anim, { toValue: 1, tension: 70, friction: 8, useNativeDriver: true }),
+        Animated.spring(stat3Anim, { toValue: 1, tension: 70, friction: 8, useNativeDriver: true }),
+      ]),
+      // Message + buttons
+      Animated.stagger(100, [
+        Animated.spring(messageAnim, { toValue: 1, tension: 60, friction: 8, useNativeDriver: true }),
+        Animated.spring(btn1Anim, { toValue: 1, tension: 60, friction: 8, useNativeDriver: true }),
+        Animated.spring(btn2Anim, { toValue: 1, tension: 60, friction: 8, useNativeDriver: true }),
+      ]),
+    ]).start();
+
+    // Ring pulse for high scores
+    if (score >= 70) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(ringAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
+          Animated.timing(ringAnim, { toValue: 0, duration: 1200, useNativeDriver: true }),
+        ])
+      ).start();
+    }
+
+    // Background glow pulse for perfect/great scores
+    if (score >= 90) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(bgPulse, { toValue: 1.04, duration: 1500, useNativeDriver: true }),
+          Animated.timing(bgPulse, { toValue: 1, duration: 1500, useNativeDriver: true }),
+        ])
+      ).start();
+    }
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const emojiRotateDeg = emojiRotate.interpolate({ inputRange: [0, 0.2, 0.4, 0.6, 0.8, 1], outputRange: ['-20deg', '15deg', '-10deg', '8deg', '-4deg', '0deg'] });
+  const ringOpacity = ringAnim.interpolate({ inputRange: [0, 1], outputRange: [0.6, 0.1] });
+  const ringScale = ringAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.5] });
+
+  const animatedSlideUp = (anim: Animated.Value) => ({
+    opacity: anim,
+    transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [30, 0] }) }],
+  });
+
+  const StatBox = ({ anim, icon, value, label, color }: { anim: Animated.Value; icon: string; value: number; label: string; color: string }) => (
+    <Animated.View style={[styles.statBox, { borderColor: color + '40' }, animatedSlideUp(anim)]}>
+      <Ionicons name={icon as any} size={26} color={color} />
+      <Text style={[styles.statNum, { color }]}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </Animated.View>
+  );
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.resultCard}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      {/* Emoji */}
+      <Animated.View style={[styles.emojiContainer, {
+        transform: [{ scale: emojiScale }, { rotate: emojiRotateDeg }, { scale: bgPulse }],
+      }]}>
         <Text style={styles.gradeEmoji}>{grade.emoji}</Text>
-        <Text style={styles.gradeLabel}>{grade.label}</Text>
+      </Animated.View>
 
-        <View style={styles.scoreContainer}>
-          <View style={styles.scoreCircle}>
-            <Text style={[styles.scoreNumber, { color: grade.color }]}>{score}%</Text>
-            <Text style={styles.scoreLabel}>Score</Text>
-          </View>
-        </View>
+      {/* Title */}
+      <Animated.Text style={[styles.gradeLabel, animatedSlideUp(titleAnim)]}>
+        {grade.label}
+      </Animated.Text>
 
-        <View style={styles.statsGrid}>
-          <View style={[styles.statBox, { borderColor: colors.success + '40' }]}>
-            <Ionicons name="checkmark-circle" size={28} color={colors.success} />
-            <Text style={styles.statNum}>{correct}</Text>
-            <Text style={styles.statTxt}>Correct</Text>
-          </View>
-          <View style={[styles.statBox, { borderColor: colors.error + '40' }]}>
-            <Ionicons name="close-circle" size={28} color={colors.error} />
-            <Text style={styles.statNum}>{wrong}</Text>
-            <Text style={styles.statTxt}>Wrong</Text>
-          </View>
-          <View style={[styles.statBox, { borderColor: colors.primary + '40' }]}>
-            <Ionicons name="layers" size={28} color={colors.primary} />
-            <Text style={styles.statNum}>{total}</Text>
-            <Text style={styles.statTxt}>Total</Text>
-          </View>
+      {/* Score circle */}
+      <Animated.View style={[styles.scoreSection, {
+        transform: [{ scale: circleAnim }],
+        opacity: circleAnim,
+      }]}>
+        {/* Pulsing ring for good scores */}
+        {score >= 70 && (
+          <Animated.View style={[styles.pulsingRing, {
+            borderColor: grade.color,
+            opacity: ringOpacity,
+            transform: [{ scale: ringScale }],
+          }]} />
+        )}
+        <View style={[styles.scoreCircle, { borderColor: grade.color }]}>
+          <Text style={[styles.scoreNumber, { color: grade.color }]}>{displayScore}</Text>
+          <Text style={styles.scorePct}>%</Text>
+          <Text style={styles.scoreLabel}>Score</Text>
         </View>
+      </Animated.View>
 
-        <View style={styles.messageBox}>
-          <Text style={styles.messageText}>
-            {score >= 70
-              ? 'Your spaced repetition schedule has been updated. Well done!'
-              : 'Cards you got wrong will appear again sooner to help you master them.'}
-          </Text>
-        </View>
+      {/* Stats */}
+      <View style={styles.statsGrid}>
+        <StatBox anim={stat1Anim} icon="checkmark-circle" value={correct} label="Correct" color={colors.success} />
+        <StatBox anim={stat2Anim} icon="close-circle" value={wrong} label="Wrong" color={colors.error} />
+        <StatBox anim={stat3Anim} icon="layers" value={total} label="Total" color={colors.primary} />
       </View>
 
-      <View style={styles.actions}>
-        <TouchableOpacity
-          style={styles.primaryAction}
-          onPress={() => navigation.replace('QuizSession', { topicId, topicTitle: '' })}
-        >
-          <Ionicons name="refresh" size={20} color={colors.white} />
-          <Text style={styles.primaryActionText}>Study Again</Text>
-        </TouchableOpacity>
+      {/* Message */}
+      <Animated.View style={[styles.messageBox, animatedSlideUp(messageAnim)]}>
+        <Text style={styles.messageText}>
+          {score >= 90
+            ? '🔥 Perfect! Your spaced repetition schedule has been optimised.'
+            : score >= 70
+            ? '✨ Nice work! Cards you got right won\'t appear as soon next time.'
+            : '📖 Cards you missed will be scheduled for sooner review to help you master them.'}
+        </Text>
+      </Animated.View>
 
+      {/* Buttons */}
+      <Animated.View style={animatedSlideUp(btn1Anim)}>
+        <TouchableOpacity
+          style={[styles.primaryAction, { backgroundColor: grade.color }]}
+          onPress={() => navigation.replace('QuizSession', { topicId, topicTitle: '' })}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="refresh" size={20} color={colors.background} />
+          <Text style={[styles.primaryActionText, { color: colors.background }]}>Study Again</Text>
+        </TouchableOpacity>
+      </Animated.View>
+
+      <Animated.View style={animatedSlideUp(btn2Anim)}>
         <TouchableOpacity
           style={styles.secondaryAction}
           onPress={() => navigation.navigate('QuizSelect')}
+          activeOpacity={0.8}
         >
-          <Text style={styles.secondaryActionText}>Choose Topic</Text>
+          <Text style={styles.secondaryActionText}>Choose another topic</Text>
         </TouchableOpacity>
-      </View>
+      </Animated.View>
 
-      <View style={{ height: 80 }} />
+      <View style={{ height: 60 }} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  content: { paddingHorizontal: spacing.lg, paddingTop: 80 },
-  resultCard: {
-    backgroundColor: colors.surface, borderRadius: radius.xl,
-    padding: spacing.xl, alignItems: 'center',
-    borderWidth: 1, borderColor: colors.border, ...shadow.lg,
+  content: { paddingHorizontal: spacing.lg, paddingTop: 80, alignItems: 'center' },
+  emojiContainer: { marginBottom: spacing.sm },
+  gradeEmoji: { fontSize: 80 },
+  gradeLabel: { ...typography.h1, marginBottom: spacing.xl, textAlign: 'center' },
+  scoreSection: { alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xl },
+  pulsingRing: {
+    position: 'absolute',
+    width: 170, height: 170, borderRadius: 85,
+    borderWidth: 2,
   },
-  gradeEmoji: { fontSize: 64, marginBottom: spacing.sm },
-  gradeLabel: { ...typography.h2, marginBottom: spacing.xl },
-  scoreContainer: { marginBottom: spacing.xl },
   scoreCircle: {
-    width: 140, height: 140, borderRadius: 70,
-    backgroundColor: colors.background, borderWidth: 6, borderColor: colors.primary,
+    width: 150, height: 150, borderRadius: 75,
+    backgroundColor: colors.surface, borderWidth: 5,
     alignItems: 'center', justifyContent: 'center',
+    ...shadow.lg,
   },
-  scoreNumber: { fontSize: 40, fontWeight: '800' },
-  scoreLabel: { ...typography.small },
-  statsGrid: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg, width: '100%' },
+  scoreNumber: { fontSize: 48, fontWeight: '900', lineHeight: 52 },
+  scorePct: { position: 'absolute', top: 28, right: 26, fontSize: 18, fontWeight: '700', color: colors.textSecondary },
+  scoreLabel: { ...typography.small, marginTop: 2 },
+  statsGrid: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md, width: '100%' },
   statBox: {
-    flex: 1, backgroundColor: colors.background, borderRadius: radius.lg,
+    flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg,
     padding: spacing.md, alignItems: 'center', gap: spacing.xs,
-    borderWidth: 1,
+    borderWidth: 1.5,
   },
-  statNum: { ...typography.h3 },
-  statTxt: { ...typography.small },
+  statNum: { fontSize: 26, fontWeight: '800' },
+  statLabel: { ...typography.small },
   messageBox: {
-    backgroundColor: colors.background, borderRadius: radius.md,
-    padding: spacing.md, width: '100%',
+    backgroundColor: colors.surface, borderRadius: radius.lg,
+    padding: spacing.lg, marginBottom: spacing.lg,
+    borderWidth: 1, borderColor: colors.border, width: '100%',
   },
-  messageText: { ...typography.bodyMuted, textAlign: 'center', lineHeight: 22 },
-  actions: { gap: spacing.sm, marginTop: spacing.lg },
+  messageText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', lineHeight: 24 },
   primaryAction: {
-    backgroundColor: colors.primary, borderRadius: radius.full,
-    paddingVertical: spacing.md + 2, flexDirection: 'row',
-    alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
-    ...shadow.md,
+    borderRadius: radius.full,
+    paddingVertical: spacing.md + 4, paddingHorizontal: spacing.xxl,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: spacing.sm, marginBottom: spacing.sm, ...shadow.md, width: width - spacing.lg * 2,
   },
-  primaryActionText: { ...typography.h4, color: colors.white },
+  primaryActionText: { fontSize: 17, fontWeight: '700' },
   secondaryAction: {
     borderWidth: 1, borderColor: colors.border, borderRadius: radius.full,
-    paddingVertical: spacing.md, alignItems: 'center',
+    paddingVertical: spacing.md, alignItems: 'center', width: width - spacing.lg * 2,
   },
   secondaryActionText: { ...typography.body, color: colors.textSecondary },
 });

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  ActivityIndicator, Alert, TextInput, Modal,
+  ActivityIndicator, Alert, TextInput, Modal, Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -29,6 +29,68 @@ const LANGUAGES = [
   { code: 'other', label: 'Other', flag: '🌐' },
 ];
 
+function AnimatedTopicCard({ topic, index, onPress, onLongPress }: {
+  topic: Topic; index: number;
+  onPress: () => void; onLongPress: () => void;
+}) {
+  const anim = useRef(new Animated.Value(0)).current;
+  const pressScale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.spring(anim, {
+      toValue: 1, tension: 60, friction: 8,
+      delay: index * 70,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  const handlePressIn = () => {
+    Animated.spring(pressScale, { toValue: 0.96, tension: 200, friction: 5, useNativeDriver: true }).start();
+  };
+  const handlePressOut = () => {
+    Animated.spring(pressScale, { toValue: 1, tension: 200, friction: 5, useNativeDriver: true }).start();
+  };
+
+  return (
+    <Animated.View style={[{
+      opacity: anim,
+      transform: [
+        { translateX: anim.interpolate({ inputRange: [0, 1], outputRange: [-30, 0] }) },
+        { scale: pressScale },
+      ],
+    }]}>
+      <TouchableOpacity
+        style={[styles.topicCard, { borderLeftColor: topic.color, borderLeftWidth: 4 }]}
+        onPress={onPress}
+        onLongPress={onLongPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        activeOpacity={1}
+      >
+        <View style={[styles.emojiContainer, { backgroundColor: topic.color + '20' }]}>
+          <Text style={styles.emoji}>{topic.emoji}</Text>
+        </View>
+        <View style={styles.topicInfo}>
+          <Text style={styles.topicTitle}>{topic.title}</Text>
+          {topic.description ? <Text style={styles.topicDesc} numberOfLines={1}>{topic.description}</Text> : null}
+          <View style={styles.topicMeta}>
+            <View style={styles.metaChip}>
+              <Ionicons name="layers-outline" size={12} color={colors.textMuted} />
+              <Text style={styles.metaText}>{topic.cardCount} cards</Text>
+            </View>
+            <View style={styles.metaChip}>
+              <Text style={styles.metaText}>
+                {LANGUAGES.find((l) => l.code === topic.language)?.flag || '🌐'} {topic.language.toUpperCase()}
+              </Text>
+            </View>
+          </View>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
 export default function TopicListScreen() {
   const navigation = useNavigation<Nav>();
   const { data: topics, isLoading } = useGetTopicsQuery();
@@ -40,6 +102,23 @@ export default function TopicListScreen() {
   const [selectedEmoji, setSelectedEmoji] = useState('📚');
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
   const [selectedLang, setSelectedLang] = useState('en');
+
+  const headerAnim = useRef(new Animated.Value(0)).current;
+  const addBtnAnim = useRef(new Animated.Value(0)).current;
+  const modalContentAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.stagger(80, [
+      Animated.spring(headerAnim, { toValue: 1, tension: 60, friction: 8, useNativeDriver: true }),
+      Animated.spring(addBtnAnim, { toValue: 1, tension: 80, friction: 6, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  const openModal = () => {
+    setShowModal(true);
+    modalContentAnim.setValue(0);
+    Animated.spring(modalContentAnim, { toValue: 1, tension: 55, friction: 8, useNativeDriver: true }).start();
+  };
 
   const handleCreate = async () => {
     if (!title.trim()) { Alert.alert('Error', 'Topic title is required'); return; }
@@ -62,10 +141,20 @@ export default function TopicListScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>My Topics</Text>
-        <TouchableOpacity style={styles.addBtn} onPress={() => setShowModal(true)}>
-          <Ionicons name="add" size={24} color={colors.white} />
-        </TouchableOpacity>
+        <Animated.Text style={[styles.title, {
+          opacity: headerAnim,
+          transform: [{ translateY: headerAnim.interpolate({ inputRange: [0, 1], outputRange: [-16, 0] }) }],
+        }]}>
+          My Topics
+        </Animated.Text>
+        <Animated.View style={{
+          transform: [{ scale: addBtnAnim }],
+          opacity: addBtnAnim,
+        }}>
+          <TouchableOpacity style={styles.addBtn} onPress={openModal}>
+            <Ionicons name="add" size={24} color={colors.white} />
+          </TouchableOpacity>
+        </Animated.View>
       </View>
 
       {isLoading ? (
@@ -75,39 +164,20 @@ export default function TopicListScreen() {
           <Text style={{ fontSize: 64 }}>📚</Text>
           <Text style={styles.emptyTitle}>No topics yet</Text>
           <Text style={styles.emptySubtitle}>Create your first topic to get started</Text>
-          <TouchableOpacity style={styles.emptyBtn} onPress={() => setShowModal(true)}>
+          <TouchableOpacity style={styles.emptyBtn} onPress={openModal}>
             <Text style={styles.emptyBtnText}>Create Topic</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-          {topics?.map((topic) => (
-            <TouchableOpacity
+          {topics?.map((topic, i) => (
+            <AnimatedTopicCard
               key={topic._id}
-              style={[styles.topicCard, { borderLeftColor: topic.color, borderLeftWidth: 4 }]}
+              topic={topic}
+              index={i}
               onPress={() => navigation.navigate('TopicDetail', { topicId: topic._id, topicTitle: topic.title })}
               onLongPress={() => handleDelete(topic)}
-            >
-              <View style={[styles.emojiContainer, { backgroundColor: topic.color + '20' }]}>
-                <Text style={styles.emoji}>{topic.emoji}</Text>
-              </View>
-              <View style={styles.topicInfo}>
-                <Text style={styles.topicTitle}>{topic.title}</Text>
-                {topic.description ? <Text style={styles.topicDesc} numberOfLines={1}>{topic.description}</Text> : null}
-                <View style={styles.topicMeta}>
-                  <View style={styles.metaChip}>
-                    <Ionicons name="layers-outline" size={12} color={colors.textMuted} />
-                    <Text style={styles.metaText}>{topic.cardCount} cards</Text>
-                  </View>
-                  <View style={styles.metaChip}>
-                    <Text style={styles.metaText}>
-                      {LANGUAGES.find((l) => l.code === topic.language)?.flag || '🌐'} {topic.language.toUpperCase()}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-            </TouchableOpacity>
+            />
           ))}
           <View style={{ height: 100 }} />
         </ScrollView>
@@ -115,7 +185,10 @@ export default function TopicListScreen() {
 
       <Modal visible={showModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <Animated.View style={[styles.modalContent, {
+            transform: [{ translateY: modalContentAnim.interpolate({ inputRange: [0, 1], outputRange: [60, 0] }) }],
+            opacity: modalContentAnim,
+          }]}>
             <View style={styles.modalHandle} />
             <Text style={styles.modalTitle}>New Topic</Text>
 
@@ -181,7 +254,7 @@ export default function TopicListScreen() {
                 {creating ? <ActivityIndicator color={colors.white} /> : <Text style={styles.createText}>Create</Text>}
               </TouchableOpacity>
             </View>
-          </View>
+          </Animated.View>
         </View>
       </Modal>
     </View>
@@ -196,7 +269,7 @@ const styles = StyleSheet.create({
   },
   title: { ...typography.h1 },
   addBtn: {
-    width: 44, height: 44, borderRadius: radius.full,
+    width: 46, height: 46, borderRadius: radius.full,
     backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
     ...shadow.md,
   },
@@ -205,7 +278,7 @@ const styles = StyleSheet.create({
   emptySubtitle: { ...typography.bodyMuted, textAlign: 'center', marginTop: spacing.sm, marginBottom: spacing.xl },
   emptyBtn: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
   emptyBtnText: { ...typography.h4, color: colors.white },
-  list: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+  list: { paddingHorizontal: spacing.lg, paddingTop: spacing.xs },
   topicCard: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
     backgroundColor: colors.surface, borderRadius: radius.lg,
