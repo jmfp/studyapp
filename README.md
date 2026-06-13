@@ -1,36 +1,89 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# FlashStudy
 
-## Getting Started
+A full-stack spaced-repetition flashcard study app.
 
-First, run the development server:
+## Structure
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+/api      — Express + Mongoose REST API (MVC)
+/mobile   — React Native (Expo) TypeScript app with RTK Query
+/ui       — UI design references
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Topics** — Create study topics with custom emoji, color & language
+- **Flashcards** — Add question/answer cards; supports any language/script
+- **Quiz Mode** — Flip cards to reveal answers, mark correct/wrong
+- **Spaced Repetition** — SM-2 algorithm schedules reviews automatically
+- **Analytics** — Accuracy, streaks, weekly activity, weakest cards
+- **Dark UI** — Purple/violet primary, neon-green accents
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+---
 
-## Learn More
+## API (`/api`)
 
-To learn more about Next.js, take a look at the following resources:
+### Stack
+- Express 4 + TypeScript
+- Mongoose 8 (MongoDB)
+- JWT auth (bcryptjs)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Run
+```bash
+cd api
+cp .env.example .env   # set MONGODB_URI + JWT_SECRET
+npm install
+npm run dev            # port 5000
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+### Endpoints
+```
+POST   /api/auth/register
+POST   /api/auth/login
+GET    /api/auth/me
 
-## Deploy on Vercel
+GET    /api/topics
+POST   /api/topics
+PUT    /api/topics/:id
+DELETE /api/topics/:id
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+GET    /api/topics/:topicId/cards
+GET    /api/topics/:topicId/cards/due
+POST   /api/topics/:topicId/cards
+PUT    /api/topics/:topicId/cards/:id
+DELETE /api/topics/:topicId/cards/:id
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+POST   /api/topics/:topicId/sessions
+POST   /api/sessions/:sessionId/reviews
+POST   /api/sessions/:sessionId/complete
+GET    /api/topics/:topicId/sessions
+GET    /api/analytics?topicId=
+```
+
+---
+
+## Mobile (`/mobile`)
+
+### Stack
+- Expo SDK 56 + React Native 0.85
+- TypeScript
+- Redux Toolkit + RTK Query
+- React Navigation v7 (native stack + bottom tabs)
+
+### Run
+```bash
+cd mobile
+npm install
+# Set EXPO_PUBLIC_API_URL in .env
+npx expo start
+```
+
+### Screens
+- **Home** — Dashboard: streak, accuracy, weekly bar chart, weak cards
+- **Topics** — List + create topics (emoji, color, language picker)
+- **Topic Detail** — View/add/flip cards
+- **Quiz Select** — Pick topic to study
+- **Quiz Session** — Flip card → mark correct/wrong (animated)
+- **Quiz Result** — Score, grade, stats
+- **Analytics** — Per-topic or global: accuracy, activity chart, weak cards, session history
+- **Profile** — User stats + sign out
