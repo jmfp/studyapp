@@ -31,12 +31,17 @@ export interface Card {
   question: string;
   answer: string;
   language: string;
+  // SM-2 fields
+  repetitions: number;
+  easeFactor: number;
+  interval: number;
+  isMature: boolean;
+  qualityHistory: number[];
+  // Stats
   timesReviewed: number;
   timesCorrect: number;
   timesWrong: number;
   lastReviewedAt?: string;
-  easeFactor: number;
-  interval: number;
   nextReviewAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -54,11 +59,43 @@ export interface ReviewSession {
   score: number;
 }
 
+export interface SM2Result {
+  newInterval: number;
+  newEaseFactor: number;
+  nextReviewAt: string;
+  nextReviewLabel: string;
+  repetitions: number;
+}
+
+export interface SubmitReviewResponse {
+  session: ReviewSession;
+  sm2Result: SM2Result;
+}
+
+// SM-2 quality rating 0-5
+// 0 = complete blackout
+// 1 = wrong; correct remembered on seeing
+// 2 = wrong; easy to recall once seen
+// 3 = correct; required serious effort (Hard)
+// 4 = correct; after hesitation (Good)
+// 5 = perfect recall (Easy)
+export type ReviewQuality = 0 | 1 | 2 | 3 | 4 | 5;
+
+export interface QualityOption {
+  quality: ReviewQuality;
+  label: string;
+  sublabel: string;
+  color: string;
+  emoji: string;
+  isCorrect: boolean; // quality >= 3
+}
+
 export interface DailyActivity {
   date: string;
   sessions: number;
   cardsReviewed: number;
   accuracy: number;
+  avgQuality: number;
 }
 
 export interface WeakCard {
@@ -66,6 +103,35 @@ export interface WeakCard {
   question: string;
   accuracy: number;
   timesReviewed: number;
+  easeFactor: number;
+  interval: number;
+  avgQuality: number;
+}
+
+export interface StrongCard {
+  _id: string;
+  question: string;
+  easeFactor: number;
+  interval: number;
+  accuracy: number;
+}
+
+export interface QualityDistribution {
+  quality: number;
+  count: number;
+  label: string;
+}
+
+export interface CardStates {
+  new: number;
+  young: number;
+  mature: number;
+  total: number;
+}
+
+export interface ForecastDay {
+  date: string;
+  dueCount: number;
 }
 
 export interface Analytics {
@@ -75,14 +141,18 @@ export interface Analytics {
   totalWrong: number;
   overallAccuracy: number;
   averageScore: number;
+  retentionRate: number;
+  avgQuality: number;
   streakDays: number;
   dueToday: number;
+  cardStates: CardStates;
+  qualityDistribution: QualityDistribution[];
   dailyActivity: DailyActivity[];
+  forecast: ForecastDay[];
   recentSessions: ReviewSession[];
   weakCards: WeakCard[];
+  strongCards: StrongCard[];
 }
-
-export type ReviewResult = 'correct' | 'wrong';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -95,11 +165,11 @@ export type AuthStackParamList = {
 };
 
 export type MainTabParamList = {
-  Home: undefined;
-  Topics: undefined;
-  Quiz: undefined;
-  Analytics: undefined;
-  Profile: undefined;
+  HomeTab: undefined;
+  TopicsTab: undefined;
+  QuizTab: undefined;
+  AnalyticsTab: undefined;
+  ProfileTab: undefined;
 };
 
 export type TopicsStackParamList = {
@@ -114,5 +184,9 @@ export type TopicsStackParamList = {
 export type QuizStackParamList = {
   QuizSelect: undefined;
   QuizSession: { topicId: string; topicTitle: string };
-  QuizResult: { sessionId: string; topicId: string; score: number; correct: number; wrong: number; total: number };
+  QuizResult: {
+    sessionId: string; topicId: string;
+    score: number; correct: number; wrong: number; total: number;
+    avgQuality: number;
+  };
 };

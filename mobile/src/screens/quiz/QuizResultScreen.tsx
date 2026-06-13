@@ -15,7 +15,7 @@ type Route = RouteProp<QuizStackParamList, 'QuizResult'>;
 export default function QuizResultScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const { score, correct, wrong, total, topicId } = route.params;
+  const { score, correct, wrong, total, topicId, avgQuality } = route.params;
 
   const [displayScore, setDisplayScore] = useState(0);
 
@@ -162,12 +162,18 @@ export default function QuizResultScreen() {
 
       {/* Message */}
       <Animated.View style={[styles.messageBox, animatedSlideUp(messageAnim)]}>
+        <View style={styles.avgQualityRow}>
+          <Text style={styles.avgQualityLabel}>Avg. recall quality</Text>
+          <Text style={[styles.avgQualityValue, { color: avgQuality >= 4 ? colors.accent : avgQuality >= 3 ? colors.success : colors.warning }]}>
+            {avgQuality ?? '—'} / 5
+          </Text>
+        </View>
         <Text style={styles.messageText}>
           {score >= 90
-            ? '🔥 Perfect! Your spaced repetition schedule has been optimised.'
+            ? '🔥 Perfect! Cards are scheduled further out. Keep this up!'
             : score >= 70
-            ? '✨ Nice work! Cards you got right won\'t appear as soon next time.'
-            : '📖 Cards you missed will be scheduled for sooner review to help you master them.'}
+            ? '✨ Nice work! SM-2 has adjusted each card\'s next review date based on your ratings.'
+            : '📖 Missed cards have been reset and will reappear sooner. That\'s how you build memory.'}
         </Text>
       </Animated.View>
 
@@ -230,8 +236,11 @@ const styles = StyleSheet.create({
   messageBox: {
     backgroundColor: colors.surface, borderRadius: radius.lg,
     padding: spacing.lg, marginBottom: spacing.lg,
-    borderWidth: 1, borderColor: colors.border, width: '100%',
+    borderWidth: 1, borderColor: colors.border, width: '100%', gap: spacing.sm,
   },
+  avgQualityRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
+  avgQualityLabel: { ...typography.small, color: colors.textSecondary },
+  avgQualityValue: { fontSize: 16, fontWeight: '800' },
   messageText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', lineHeight: 24 },
   primaryAction: {
     borderRadius: radius.full,

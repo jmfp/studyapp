@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { RootState } from '../store';
-import type { Topic, Card, ReviewSession, Analytics } from '../types';
+import type { Topic, Card, ReviewSession, Analytics, SubmitReviewResponse, ReviewQuality } from '../types';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -75,7 +75,7 @@ export const api = createApi({
     startSession: builder.mutation<ReviewSession, string>({
       query: (topicId) => ({ url: `/topics/${topicId}/sessions`, method: 'POST' }),
     }),
-    submitReview: builder.mutation<ReviewSession, { sessionId: string; cardId: string; result: 'correct' | 'wrong'; timeSpentMs: number }>({
+    submitReview: builder.mutation<SubmitReviewResponse, { sessionId: string; cardId: string; quality: ReviewQuality; timeSpentMs: number }>({
       query: ({ sessionId, ...body }) => ({ url: `/sessions/${sessionId}/reviews`, method: 'POST', body }),
     }),
     completeSession: builder.mutation<ReviewSession, string>({

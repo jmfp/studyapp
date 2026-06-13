@@ -1,16 +1,9 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import ReviewSession from '../models/ReviewSession';
 import Card from '../models/Card';
-import mongoose from 'mongoose';
-
-const SM2 = (easeFactor: number, interval: number, result: 'correct' | 'wrong') => {
-  if (result === 'wrong') {
-    return { easeFactor: Math.max(1.3, easeFactor - 0.2), interval: 1 };
-  }
-  const newInterval = interval === 1 ? 6 : Math.round(interval * easeFactor);
-  const newEase = easeFactor + 0.1;
-  return { easeFactor: newEase, interval: newInterval };
-};
+import { sm2, sessionScore, intervalLabel } from '../utils/sm2';
+import type { ReviewQuality } from '../models/ReviewSession';
 
 export const startSession = async (req: Request, res: Response) => {
   try {
@@ -27,44 +20,85 @@ export const submitReview = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId;
     const { sessionId } = req.params;
-    const { cardId, result, timeSpentMs } = req.body;
+    const { cardId, quality, timeSpentMs } = req.body as {
+      cardId: string;
+      quality: ReviewQuality;
+      timeSpentMs: number;
+    };
 
-    if (!cardId || !result) return res.status(400).json({ message: 'cardId and result required' });
+    if (cardId === undefined || quality === undefined)
+      return res.status(400).json({ message: 'cardId and quality (0-5) required' });
+
+    if (quality < 0 || quality > 5 || !Number.isInteger(quality))
+      return res.status(400).json({ message: 'quality must be an integer 0-5' });
 
     const card = await Card.findOne({ _id: cardId, userId });
     if (!card) return res.status(404).json({ message: 'Card not found' });
 
-    const { easeFactor, interval } = SM2(card.easeFactor, card.interval, result);
-    const nextReview = new Date();
-    nextReview.setDate(nextReview.getDate() + interval);
+    const prevEF = card.easeFactor;
+    const prevInterval = card.interval;
+
+    const result = sm2({
+      quality,
+      repetitions: card.repetitions,
+      easeFactor: card.easeFactor,
+      interval: card.interval,
+    });
+
+    const isCorrect = quality >= 3;
+    const updatedHistory = [...card.qualityHistory.slice(-19), quality];
 
     await Card.findByIdAndUpdate(cardId, {
+      repetitions: result.repetitions,
+      easeFactor: result.easeFactor,
+      interval: result.interval,
+      nextReviewAt: result.nextReviewAt,
+      lastReviewedAt: new Date(),
+      isMature: result.interval >= 21,
       $inc: {
         timesReviewed: 1,
-        timesCorrect: result === 'correct' ? 1 : 0,
-        timesWrong: result === 'wrong' ? 1 : 0,
+        timesCorrect: isCorrect ? 1 : 0,
+        timesWrong: isCorrect ? 0 : 1,
       },
-      lastReviewedAt: new Date(),
-      easeFactor,
-      interval,
-      nextReviewAt: nextReview,
+      qualityHistory: updatedHistory,
     });
 
     const session = await ReviewSession.findOneAndUpdate(
       { _id: sessionId, userId },
       {
-        $push: { reviews: { cardId, result, timeSpentMs: timeSpentMs || 0, reviewedAt: new Date() } },
+        $push: {
+          reviews: {
+            cardId,
+            quality,
+            timeSpentMs: timeSpentMs || 0,
+            previousInterval: prevInterval,
+            newInterval: result.interval,
+            previousEaseFactor: prevEF,
+            newEaseFactor: result.easeFactor,
+            reviewedAt: new Date(),
+          },
+        },
         $inc: {
           totalCards: 1,
-          correctCount: result === 'correct' ? 1 : 0,
-          wrongCount: result === 'wrong' ? 1 : 0,
+          correctCount: isCorrect ? 1 : 0,
+          wrongCount: isCorrect ? 0 : 1,
         },
       },
       { new: true }
     );
 
     if (!session) return res.status(404).json({ message: 'Session not found' });
-    res.json(session);
+
+    res.json({
+      session,
+      sm2Result: {
+        newInterval: result.interval,
+        newEaseFactor: result.easeFactor,
+        nextReviewAt: result.nextReviewAt,
+        nextReviewLabel: intervalLabel(result.interval),
+        repetitions: result.repetitions,
+      },
+    });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err });
   }
@@ -77,15 +111,14 @@ export const completeSession = async (req: Request, res: Response) => {
     const session = await ReviewSession.findOne({ _id: sessionId, userId });
     if (!session) return res.status(404).json({ message: 'Session not found' });
 
-    const score = session.totalCards > 0
-      ? Math.round((session.correctCount / session.totalCards) * 100)
-      : 0;
+    const qualities = session.reviews.map((r) => r.quality);
+    const score = sessionScore(qualities);
 
     const updated = await ReviewSession.findByIdAndUpdate(
       sessionId,
       { completedAt: new Date(), score },
       { new: true }
-    ).populate('topicId', 'title');
+    ).populate('topicId', 'title emoji color');
 
     res.json(updated);
   } catch (err) {
@@ -117,6 +150,7 @@ export const getAnalytics = async (req: Request, res: Response) => {
 
     const sessions = await ReviewSession.find(matchStage).sort({ completedAt: -1 });
 
+    // ─── Basic totals ─────────────────────────────────────────────────────────
     const totalSessions = sessions.length;
     const totalCardsReviewed = sessions.reduce((s, r) => s + r.totalCards, 0);
     const totalCorrect = sessions.reduce((s, r) => s + r.correctCount, 0);
@@ -124,6 +158,20 @@ export const getAnalytics = async (req: Request, res: Response) => {
     const overallAccuracy = totalCardsReviewed > 0 ? Math.round((totalCorrect / totalCardsReviewed) * 100) : 0;
     const averageScore = totalSessions > 0 ? Math.round(sessions.reduce((s, r) => s + r.score, 0) / totalSessions) : 0;
 
+    // ─── Quality distribution (how often each quality was given) ─────────────
+    const allQualities = sessions.flatMap((s) => s.reviews.map((r) => r.quality));
+    const qualityDistribution = [0, 1, 2, 3, 4, 5].map((q) => ({
+      quality: q,
+      count: allQualities.filter((x) => x === q).length,
+      label: ['Blackout', 'Bad', 'Hard (seen)', 'Hard', 'Good', 'Easy'][q],
+    }));
+
+    // ─── Average quality over time (trend) ────────────────────────────────────
+    const avgQuality = allQualities.length > 0
+      ? +((allQualities as number[]).reduce((a, b) => a + b, 0) / allQualities.length).toFixed(2)
+      : 0;
+
+    // ─── 7-day daily activity ─────────────────────────────────────────────────
     const last7Days = Array.from({ length: 7 }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - (6 - i));
@@ -131,82 +179,129 @@ export const getAnalytics = async (req: Request, res: Response) => {
     });
 
     const dailyActivity = last7Days.map((day) => {
-      const daySessions = sessions.filter((s) => {
-        const sd = s.completedAt?.toISOString().split('T')[0];
-        return sd === day;
-      });
+      const daySessions = sessions.filter((s) => s.completedAt?.toISOString().split('T')[0] === day);
+      const dayQualities = daySessions.flatMap((s) => s.reviews.map((r) => r.quality));
       return {
         date: day,
         sessions: daySessions.length,
         cardsReviewed: daySessions.reduce((s, r) => s + r.totalCards, 0),
-        accuracy: daySessions.length > 0
-          ? Math.round(daySessions.reduce((s, r) => s + r.score, 0) / daySessions.length)
+        accuracy: daySessions.length > 0 ? Math.round(daySessions.reduce((s, r) => s + r.score, 0) / daySessions.length) : 0,
+        avgQuality: dayQualities.length > 0
+          ? +((dayQualities as number[]).reduce((a, b) => a + b, 0) / dayQualities.length).toFixed(1)
           : 0,
       };
     });
 
-    const recentSessions = sessions.slice(0, 10).map((s) => ({
-      _id: s._id,
-      topicId: s.topicId,
-      score: s.score,
-      totalCards: s.totalCards,
-      correctCount: s.correctCount,
-      wrongCount: s.wrongCount,
-      completedAt: s.completedAt,
-    }));
+    // ─── Card-level stats ─────────────────────────────────────────────────────
+    const cardQuery = topicId ? { userId, topicId: new mongoose.Types.ObjectId(topicId as string) } : { userId };
+    const allCards = await Card.find(cardQuery).select(
+      'question timesReviewed timesCorrect timesWrong easeFactor interval repetitions isMature nextReviewAt qualityHistory'
+    );
 
-    const cardStats = await Card.find(topicId
-      ? { userId, topicId: topicId as string }
-      : { userId }
-    ).select('question timesReviewed timesCorrect timesWrong easeFactor nextReviewAt');
+    const reviewedCards = allCards.filter((c) => c.timesReviewed > 0);
+    const matureCards = allCards.filter((c) => c.isMature).length;
+    const youngCards = reviewedCards.filter((c) => !c.isMature).length;
+    const newCards = allCards.filter((c) => c.timesReviewed === 0).length;
 
-    const weakCards = cardStats
-      .filter((c) => c.timesReviewed > 0)
-      .sort((a, b) => {
-        const aRate = a.timesCorrect / a.timesReviewed;
-        const bRate = b.timesCorrect / b.timesReviewed;
-        return aRate - bRate;
-      })
-      .slice(0, 5)
+    // ─── Due cards ───────────────────────────────────────────────────────────
+    const now = new Date();
+    const dueToday = allCards.filter((c) => !c.nextReviewAt || c.nextReviewAt <= now).length;
+
+    // ─── Weak cards (lowest accuracy, reviewed at least 3 times) ────────────
+    const weakCards = reviewedCards
+      .filter((c) => c.timesReviewed >= 3)
       .map((c) => ({
         _id: c._id,
         question: c.question,
         accuracy: Math.round((c.timesCorrect / c.timesReviewed) * 100),
         timesReviewed: c.timesReviewed,
+        easeFactor: +c.easeFactor.toFixed(2),
+        interval: c.interval,
+        avgQuality: c.qualityHistory.length > 0
+          ? +(c.qualityHistory.reduce((a, b) => a + b, 0) / c.qualityHistory.length).toFixed(1)
+          : 0,
+      }))
+      .sort((a, b) => a.accuracy - b.accuracy)
+      .slice(0, 8);
+
+    // ─── Strongest cards (highest EF, mature) ────────────────────────────────
+    const strongCards = reviewedCards
+      .filter((c) => c.isMature)
+      .sort((a, b) => b.easeFactor - a.easeFactor)
+      .slice(0, 5)
+      .map((c) => ({
+        _id: c._id,
+        question: c.question,
+        easeFactor: +c.easeFactor.toFixed(2),
+        interval: c.interval,
+        accuracy: Math.round((c.timesCorrect / c.timesReviewed) * 100),
       }));
 
-    const dueToday = cardStats.filter((c) => {
-      if (!c.nextReviewAt) return true;
-      return c.nextReviewAt <= new Date();
-    }).length;
+    // ─── Retention rate (% of reviews that were quality >= 3) ───────────────
+    const retentionRate = totalCardsReviewed > 0 ? Math.round((totalCorrect / totalCardsReviewed) * 100) : 0;
 
-    const streakDays = (() => {
-      let streak = 0;
-      const today = new Date().toISOString().split('T')[0];
-      const sessionDays = [...new Set(sessions.map((s) => s.completedAt?.toISOString().split('T')[0]))].sort().reverse();
-      for (let i = 0; i < sessionDays.length; i++) {
-        const expected = new Date();
-        expected.setDate(expected.getDate() - i);
-        const exp = expected.toISOString().split('T')[0];
-        if (sessionDays[i] === exp || (i === 0 && sessionDays[0] === today)) {
-          streak++;
-        } else break;
-      }
-      return streak;
-    })();
+    // ─── Forecast: cards due per day for next 7 days ─────────────────────────
+    const forecast = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      d.setHours(23, 59, 59, 999);
+      const startOfDay = new Date(d);
+      startOfDay.setHours(0, 0, 0, 0);
+      return {
+        date: startOfDay.toISOString().split('T')[0],
+        dueCount: allCards.filter((c) => {
+          if (!c.nextReviewAt) return i === 0;
+          return c.nextReviewAt >= startOfDay && c.nextReviewAt <= d;
+        }).length,
+      };
+    });
+
+    // ─── Study streak ─────────────────────────────────────────────────────────
+    const sessionDays = [
+      ...new Set(sessions.map((s) => s.completedAt?.toISOString().split('T')[0])),
+    ]
+      .filter(Boolean)
+      .sort()
+      .reverse() as string[];
+
+    let streakDays = 0;
+    for (let i = 0; i < sessionDays.length; i++) {
+      const expected = new Date();
+      expected.setDate(expected.getDate() - i);
+      const exp = expected.toISOString().split('T')[0];
+      if (sessionDays[i] === exp) streakDays++;
+      else break;
+    }
 
     res.json({
+      // Totals
       totalSessions,
       totalCardsReviewed,
       totalCorrect,
       totalWrong,
       overallAccuracy,
       averageScore,
+      retentionRate,
+      avgQuality,
       streakDays,
       dueToday,
+      // Card states (like Anki)
+      cardStates: { new: newCards, young: youngCards, mature: matureCards, total: allCards.length },
+      // Distribution
+      qualityDistribution,
       dailyActivity,
-      recentSessions,
+      forecast,
+      recentSessions: sessions.slice(0, 10).map((s) => ({
+        _id: s._id,
+        topicId: s.topicId,
+        score: s.score,
+        totalCards: s.totalCards,
+        correctCount: s.correctCount,
+        wrongCount: s.wrongCount,
+        completedAt: s.completedAt,
+      })),
       weakCards,
+      strongCards,
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err });

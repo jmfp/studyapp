@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,
-  Animated, Alert, Dimensions, PanResponder, Vibration,
+  Animated, Alert, Dimensions, PanResponder, Vibration, ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -12,14 +12,38 @@ import {
   useGetDueCardsQuery, useStartSessionMutation,
   useSubmitReviewMutation, useCompleteSessionMutation,
 } from '../../services/api';
-import type { QuizStackParamList } from '../../types';
+import type { QuizStackParamList, ReviewQuality, QualityOption } from '../../types';
 
 type Nav = NativeStackNavigationProp<QuizStackParamList, 'QuizSession'>;
 type Route = RouteProp<QuizStackParamList, 'QuizSession'>;
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const CARD_WIDTH = width - spacing.lg * 2;
-const SWIPE_THRESHOLD = width * 0.3;
+const SWIPE_THRESHOLD = width * 0.28;
+
+// SM-2 quality options shown after flipping
+const QUALITY_OPTIONS: QualityOption[] = [
+  {
+    quality: 0, label: 'Blackout', sublabel: 'No idea', emoji: '💀',
+    color: '#FF1744', isCorrect: false,
+  },
+  {
+    quality: 2, label: 'Wrong', sublabel: 'Saw it, knew it', emoji: '😕',
+    color: '#FF6D00', isCorrect: false,
+  },
+  {
+    quality: 3, label: 'Hard', sublabel: 'Got it, barely', emoji: '😓',
+    color: '#FFD740', isCorrect: true,
+  },
+  {
+    quality: 5, label: 'Easy', sublabel: 'Perfect recall', emoji: '⚡',
+    color: '#00E676', isCorrect: true,
+  },
+];
+
+// Maps swipe direction to quality for gesture shortcuts
+const SWIPE_RIGHT_QUALITY: ReviewQuality = 4; // Good
+const SWIPE_LEFT_QUALITY: ReviewQuality = 1;  // Wrong
 
 export default function QuizSessionScreen() {
   const navigation = useNavigation<Nav>();
@@ -39,156 +63,143 @@ export default function QuizSessionScreen() {
   const [correct, setCorrect] = useState(0);
   const [wrong, setWrong] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [resultOverlay, setResultOverlay] = useState<'correct' | 'wrong' | null>(null);
+  const [lastSm2, setLastSm2] = useState<{ label: string; quality: number } | null>(null);
+  const [qualityScores, setQualityScores] = useState<number[]>([]);
 
-  // Animations
+  // Animation refs
   const flipAnim = useRef(new Animated.Value(0)).current;
-  const cardEntrance = useRef(new Animated.Value(0)).current;
   const cardTranslateX = useRef(new Animated.Value(0)).current;
-  const cardTranslateY = useRef(new Animated.Value(0)).current;
+  const cardTranslateY = useRef(new Animated.Value(60)).current;
   const cardRotation = useRef(new Animated.Value(0)).current;
-  const cardScale = useRef(new Animated.Value(1)).current;
-  const cardOpacity = useRef(new Animated.Value(1)).current;
+  const cardScale = useRef(new Animated.Value(0.92)).current;
+  const cardOpacity = useRef(new Animated.Value(0)).current;
   const shakeAnim = useRef(new Animated.Value(0)).current;
-  const correctBtnScale = useRef(new Animated.Value(1)).current;
-  const wrongBtnScale = useRef(new Animated.Value(1)).current;
-  const resultOverlayOpacity = useRef(new Animated.Value(0)).current;
-  const resultOverlayScale = useRef(new Animated.Value(0.5)).current;
   const buttonsAnim = useRef(new Animated.Value(0)).current;
+  const sm2LabelAnim = useRef(new Animated.Value(0)).current;
   const progressWidth = useRef(new Animated.Value(0)).current;
   const startScreenAnim = useRef(new Animated.Value(0)).current;
   const headerAnim = useRef(new Animated.Value(0)).current;
+  const resultOverlayOpacity = useRef(new Animated.Value(0)).current;
+  const resultOverlayScale = useRef(new Animated.Value(0.3)).current;
+  const [resultColor, setResultColor] = useState(colors.success);
+  const [resultEmoji, setResultEmoji] = useState('⚡');
 
   useEffect(() => {
-    Animated.spring(startScreenAnim, { toValue: 1, tension: 60, friction: 8, useNativeDriver: true }).start();
+    Animated.spring(startScreenAnim, { toValue: 1, tension: 55, friction: 8, useNativeDriver: true }).start();
   }, []);
 
-  const animateCardEntrance = useCallback(() => {
-    cardEntrance.setValue(0);
-    cardTranslateX.setValue(0);
-    cardTranslateY.setValue(80);
-    cardOpacity.setValue(0);
-    cardScale.setValue(0.9);
+  const animateCardIn = useCallback(() => {
     flipAnim.setValue(0);
-
+    cardTranslateX.setValue(0);
+    cardTranslateY.setValue(60);
+    cardScale.setValue(0.9);
+    cardOpacity.setValue(0);
+    cardRotation.setValue(0);
+    buttonsAnim.setValue(0);
     Animated.parallel([
-      Animated.spring(cardEntrance, { toValue: 1, tension: 70, friction: 9, useNativeDriver: true }),
-      Animated.spring(cardTranslateY, { toValue: 0, tension: 70, friction: 9, useNativeDriver: true }),
-      Animated.spring(cardScale, { toValue: 1, tension: 70, friction: 9, useNativeDriver: true }),
-      Animated.timing(cardOpacity, { toValue: 1, duration: 250, useNativeDriver: true }),
+      Animated.spring(cardTranslateY, { toValue: 0, tension: 65, friction: 8, useNativeDriver: true }),
+      Animated.spring(cardScale, { toValue: 1, tension: 65, friction: 8, useNativeDriver: true }),
+      Animated.timing(cardOpacity, { toValue: 1, duration: 220, useNativeDriver: true }),
     ]).start();
-  }, [cardEntrance, cardTranslateX, cardTranslateY, cardScale, cardOpacity, flipAnim]);
-
-  const animateProgressBar = useCallback((index: number, total: number) => {
-    Animated.spring(progressWidth, {
-      toValue: total > 0 ? (index / total) * 100 : 0,
-      tension: 40, friction: 8, useNativeDriver: false,
-    }).start();
-  }, [progressWidth]);
+  }, []);
 
   useEffect(() => {
     if (isStarted && dueCards) {
-      animateCardEntrance();
-      animateProgressBar(currentIndex, dueCards.length);
-
+      animateCardIn();
       Animated.spring(headerAnim, { toValue: 1, tension: 60, friction: 8, useNativeDriver: true }).start();
+      Animated.spring(progressWidth, {
+        toValue: dueCards.length > 0 ? (currentIndex / dueCards.length) * 100 : 0,
+        tension: 40, friction: 8, useNativeDriver: false,
+      }).start();
     }
   }, [isStarted, currentIndex]);
 
   const flipCard = () => {
     if (isFlipped || isSubmitting) return;
-    Animated.spring(flipAnim, {
-      toValue: 1, tension: 50, friction: 6, useNativeDriver: true,
-    }).start(() => {
+    Animated.spring(flipAnim, { toValue: 1, tension: 45, friction: 6, useNativeDriver: true }).start(() => {
       setIsFlipped(true);
-      // Buttons slide up
-      buttonsAnim.setValue(0);
-      Animated.spring(buttonsAnim, { toValue: 1, tension: 60, friction: 7, useNativeDriver: true }).start();
+      Animated.spring(buttonsAnim, { toValue: 1, tension: 55, friction: 7, useNativeDriver: true }).start();
     });
   };
 
   const shakeCard = () => {
-    shakeAnim.setValue(0);
     Animated.sequence([
-      Animated.timing(shakeAnim, { toValue: 10, duration: 60, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: -10, duration: 60, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: 8, duration: 60, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: -8, duration: 60, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: 5, duration: 60, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: 0, duration: 60, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 12, duration: 55, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -12, duration: 55, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 8, duration: 55, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -8, duration: 55, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 4, duration: 55, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 0, duration: 55, useNativeDriver: true }),
     ]).start();
   };
 
-  const showResultOverlay = (result: 'correct' | 'wrong') => {
-    setResultOverlay(result);
+  const showResultBubble = (color: string, emoji: string) => {
+    setResultColor(color);
+    setResultEmoji(emoji);
     resultOverlayOpacity.setValue(0);
-    resultOverlayScale.setValue(0.4);
+    resultOverlayScale.setValue(0.3);
     Animated.parallel([
-      Animated.spring(resultOverlayScale, { toValue: 1, tension: 100, friction: 6, useNativeDriver: true }),
-      Animated.timing(resultOverlayOpacity, { toValue: 1, duration: 150, useNativeDriver: true }),
+      Animated.spring(resultOverlayScale, { toValue: 1, tension: 100, friction: 5, useNativeDriver: true }),
+      Animated.timing(resultOverlayOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
     ]).start();
   };
 
   const exitCard = (direction: 'left' | 'right', callback: () => void) => {
-    const xTarget = direction === 'right' ? width * 1.2 : -width * 1.2;
-    const rotation = direction === 'right' ? 20 : -20;
+    const xTarget = direction === 'right' ? width * 1.3 : -width * 1.3;
     Animated.parallel([
-      Animated.timing(cardTranslateX, { toValue: xTarget, duration: 350, useNativeDriver: true }),
-      Animated.timing(cardRotation, { toValue: rotation, duration: 350, useNativeDriver: true }),
-      Animated.timing(cardOpacity, { toValue: 0, duration: 300, useNativeDriver: true }),
-      Animated.timing(cardScale, { toValue: 0.85, duration: 300, useNativeDriver: true }),
+      Animated.timing(cardTranslateX, { toValue: xTarget, duration: 320, useNativeDriver: true }),
+      Animated.timing(cardRotation, { toValue: direction === 'right' ? 18 : -18, duration: 320, useNativeDriver: true }),
+      Animated.timing(cardOpacity, { toValue: 0, duration: 260, useNativeDriver: true }),
+      Animated.timing(cardScale, { toValue: 0.88, duration: 260, useNativeDriver: true }),
     ]).start(callback);
   };
 
-  const pulseBtnPress = (anim: Animated.Value, callback: () => void) => {
-    Animated.sequence([
-      Animated.spring(anim, { toValue: 0.88, tension: 200, friction: 5, useNativeDriver: true }),
-      Animated.spring(anim, { toValue: 1, tension: 200, friction: 5, useNativeDriver: true }),
-    ]).start(callback);
-  };
-
-  const startQuiz = async () => {
-    try {
-      const session = await startSession(topicId).unwrap();
-      setSessionId(session._id);
-      setIsStarted(true);
-      setCardStartTime(Date.now());
-    } catch {
-      Alert.alert('Error', 'Failed to start quiz session');
-    }
-  };
-
-  const handleResult = async (result: 'correct' | 'wrong') => {
+  const handleQuality = async (quality: ReviewQuality) => {
     if (!sessionId || !dueCards || isSubmitting) return;
     const card = dueCards[currentIndex];
     const timeSpentMs = Date.now() - cardStartTime;
     setIsSubmitting(true);
 
-    const btnAnim = result === 'correct' ? correctBtnScale : wrongBtnScale;
-    pulseBtnPress(btnAnim, () => {});
+    const opt = QUALITY_OPTIONS.find((o) => o.quality === quality) || QUALITY_OPTIONS[1];
+    const isCorrect = quality >= 3;
 
-    if (result === 'wrong') {
-      Vibration.vibrate(80);
+    if (!isCorrect) {
+      Vibration.vibrate(60);
       shakeCard();
     }
 
-    showResultOverlay(result);
-    if (result === 'correct') setCorrect((c) => c + 1);
+    showResultBubble(opt.color, opt.emoji);
+    if (isCorrect) setCorrect((c) => c + 1);
     else setWrong((w) => w + 1);
+    setQualityScores((qs) => [...qs, quality]);
 
-    // Short pause to show overlay, then exit card
     setTimeout(() => {
-      exitCard(result === 'correct' ? 'right' : 'left', async () => {
-        setResultOverlay(null);
+      exitCard(isCorrect ? 'right' : 'left', async () => {
+        resultOverlayOpacity.setValue(0);
         try {
-          await submitReview({ sessionId, cardId: card._id, result, timeSpentMs }).unwrap();
+          const resp = await submitReview({ sessionId, cardId: card._id, quality, timeSpentMs }).unwrap();
+          setLastSm2({ label: resp.sm2Result.nextReviewLabel, quality });
+
+          // Show next-review label briefly
+          sm2LabelAnim.setValue(0);
+          Animated.sequence([
+            Animated.spring(sm2LabelAnim, { toValue: 1, tension: 70, friction: 8, useNativeDriver: true }),
+            Animated.delay(1200),
+            Animated.timing(sm2LabelAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+          ]).start();
+
           const nextIndex = currentIndex + 1;
           if (nextIndex >= dueCards.length) {
+            const allQ = [...qualityScores, quality];
+            const avgQ = allQ.reduce((a, b) => a + b, 0) / allQ.length;
             const session = await completeSession(sessionId).unwrap();
             navigation.replace('QuizResult', {
               sessionId: session._id, topicId,
-              score: session.score, correct: session.correctCount,
-              wrong: session.wrongCount, total: session.totalCards,
+              score: session.score,
+              correct: session.correctCount,
+              wrong: session.wrongCount,
+              total: session.totalCards,
+              avgQuality: +avgQ.toFixed(1),
             });
           } else {
             setIsFlipped(false);
@@ -202,23 +213,21 @@ export default function QuizSessionScreen() {
           setIsSubmitting(false);
         }
       });
-    }, 400);
+    }, 380);
   };
 
-  // Pan responder for swipe gesture on flipped card
   const panResponder = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gesture) =>
-        Math.abs(gesture.dx) > 10 && Math.abs(gesture.dx) > Math.abs(gesture.dy),
-      onPanResponderMove: (_, gesture) => {
-        cardTranslateX.setValue(gesture.dx);
-        cardRotation.setValue(gesture.dx / 15);
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 12 && Math.abs(g.dx) > Math.abs(g.dy),
+      onPanResponderMove: (_, g) => {
+        cardTranslateX.setValue(g.dx);
+        cardRotation.setValue(g.dx / 16);
       },
-      onPanResponderRelease: (_, gesture) => {
-        if (gesture.dx > SWIPE_THRESHOLD) {
-          handleResult('correct');
-        } else if (gesture.dx < -SWIPE_THRESHOLD) {
-          handleResult('wrong');
+      onPanResponderRelease: (_, g) => {
+        if (g.dx > SWIPE_THRESHOLD && isFlipped) {
+          handleQuality(SWIPE_RIGHT_QUALITY);
+        } else if (g.dx < -SWIPE_THRESHOLD && isFlipped) {
+          handleQuality(SWIPE_LEFT_QUALITY);
         } else {
           Animated.parallel([
             Animated.spring(cardTranslateX, { toValue: 0, tension: 80, friction: 7, useNativeDriver: true }),
@@ -229,26 +238,23 @@ export default function QuizSessionScreen() {
     })
   ).current;
 
-  // Derived animation values
   const frontRotate = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
   const backRotate = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['180deg', '360deg'] });
   const cardRotateDeg = cardRotation.interpolate({ inputRange: [-30, 0, 30], outputRange: ['-30deg', '0deg', '30deg'] });
-  const swipeCorrectOpacity = cardTranslateX.interpolate({ inputRange: [20, 80], outputRange: [0, 1], extrapolate: 'clamp' });
-  const swipeWrongOpacity = cardTranslateX.interpolate({ inputRange: [-80, -20], outputRange: [1, 0], extrapolate: 'clamp' });
+  const swipeRightOpacity = cardTranslateX.interpolate({ inputRange: [20, 80], outputRange: [0, 1], extrapolate: 'clamp' });
+  const swipeLeftOpacity = cardTranslateX.interpolate({ inputRange: [-80, -20], outputRange: [1, 0], extrapolate: 'clamp' });
 
-  if (isLoading) {
-    return <View style={styles.center}><ActivityIndicator color={colors.primary} size="large" /></View>;
-  }
+  if (isLoading) return <View style={s.center}><ActivityIndicator color={colors.primary} size="large" /></View>;
 
   if (!dueCards || dueCards.length === 0) {
     return (
-      <View style={styles.center}>
-        <Animated.View style={{ transform: [{ scale: startScreenAnim }] }}>
-          <Text style={{ fontSize: 72, textAlign: 'center' }}>🎉</Text>
-          <Text style={styles.noCardsTitle}>All caught up!</Text>
-          <Text style={styles.noCardsSubtitle}>No cards due. Come back later!</Text>
-          <TouchableOpacity style={styles.backBtn2} onPress={() => navigation.goBack()}>
-            <Text style={styles.backBtnText}>Go Back</Text>
+      <View style={s.center}>
+        <Animated.View style={{ transform: [{ scale: startScreenAnim }], alignItems: 'center' }}>
+          <Text style={{ fontSize: 72 }}>🎉</Text>
+          <Text style={s.noCardsTitle}>All caught up!</Text>
+          <Text style={s.noCardsSub}>No cards due. Your schedule is on track.</Text>
+          <TouchableOpacity style={s.backBtn2} onPress={() => navigation.goBack()}>
+            <Text style={s.backBtnText}>Go Back</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -257,36 +263,56 @@ export default function QuizSessionScreen() {
 
   if (!isStarted) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBack}>
+      <View style={s.container}>
+        <View style={s.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={s.headerBack}>
             <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
         </View>
-        <Animated.View style={[styles.startContent, {
-          opacity: startScreenAnim,
-          transform: [{ translateY: startScreenAnim.interpolate({ inputRange: [0, 1], outputRange: [40, 0] }) }],
-        }]}>
-          <View style={styles.startIconBg}>
+        <Animated.ScrollView
+          contentContainerStyle={s.startContent}
+          style={{ opacity: startScreenAnim, transform: [{ translateY: startScreenAnim.interpolate({ inputRange: [0, 1], outputRange: [40, 0] }) }] }}
+        >
+          <View style={s.startIconBg}>
             <Ionicons name="flash" size={52} color={colors.primary} />
           </View>
-          <Text style={styles.startTitle}>Ready to study?</Text>
-          <Text style={styles.startTopic}>{topicTitle}</Text>
+          <Text style={s.startTitle}>Ready?</Text>
+          <Text style={s.startTopic}>{topicTitle}</Text>
 
-          <View style={styles.startStatsBox}>
-            <Text style={styles.startStatNum}>{dueCards.length}</Text>
-            <Text style={styles.startStatLabel}>Cards Due</Text>
+          <View style={s.startStatsBox}>
+            <Text style={s.startStatNum}>{dueCards.length}</Text>
+            <Text style={s.startStatLabel}>Cards Due</Text>
           </View>
 
-          <Text style={styles.startHint}>
-            Tap the card to flip it.{'\n'}Swipe right ✓ or left ✗ — or use the buttons.
-          </Text>
+          <View style={s.ratingGuide}>
+            <Text style={s.ratingGuideTitle}>After flipping each card, rate your recall:</Text>
+            {QUALITY_OPTIONS.map((opt) => (
+              <View key={opt.quality} style={s.ratingRow}>
+                <View style={[s.ratingDot, { backgroundColor: opt.color + '30', borderColor: opt.color }]}>
+                  <Text style={s.ratingEmoji}>{opt.emoji}</Text>
+                </View>
+                <View style={s.ratingInfo}>
+                  <Text style={[s.ratingLabel, { color: opt.color }]}>{opt.label}</Text>
+                  <Text style={s.ratingSub}>{opt.sublabel}</Text>
+                </View>
+                <Text style={s.ratingQ}>q={opt.quality}</Text>
+              </View>
+            ))}
+            <Text style={s.swipeTip}>💡 Swipe right = Good · Swipe left = Wrong</Text>
+          </View>
 
-          <TouchableOpacity style={styles.startBtn} onPress={startQuiz} activeOpacity={0.85}>
-            <Text style={styles.startBtnText}>Begin</Text>
+          <TouchableOpacity style={s.startBtn} onPress={async () => {
+            try {
+              const session = await startSession(topicId).unwrap();
+              setSessionId(session._id);
+              setIsStarted(true);
+              setCardStartTime(Date.now());
+            } catch { Alert.alert('Error', 'Failed to start session'); }
+          }}>
+            <Text style={s.startBtnText}>Begin</Text>
             <Ionicons name="arrow-forward" size={20} color={colors.white} />
           </TouchableOpacity>
-        </Animated.View>
+        </Animated.ScrollView>
       </View>
     );
   }
@@ -294,44 +320,53 @@ export default function QuizSessionScreen() {
   const card = dueCards[currentIndex];
 
   return (
-    <View style={styles.container}>
+    <View style={s.container}>
       {/* Header */}
-      <Animated.View style={[styles.header, {
+      <Animated.View style={[s.header, {
         opacity: headerAnim,
         transform: [{ translateY: headerAnim.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) }],
       }]}>
-        <TouchableOpacity onPress={() => {
-          Alert.alert('Quit Quiz', 'Progress will be saved for answered cards.', [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Quit', style: 'destructive', onPress: () => navigation.goBack() },
-          ]);
-        }} style={styles.headerBack}>
+        <TouchableOpacity onPress={() => Alert.alert('Quit?', 'Answered cards are already saved.', [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Quit', style: 'destructive', onPress: () => navigation.goBack() },
+        ])} style={s.headerBack}>
           <Ionicons name="close" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
 
-        <View style={styles.progressContainer}>
-          <View style={styles.progressTrack}>
-            <Animated.View style={[styles.progressFill, {
+        <View style={s.progressContainer}>
+          <View style={s.progressTrack}>
+            <Animated.View style={[s.progressFill, {
               width: progressWidth.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }),
             }]} />
           </View>
-          <Text style={styles.progressText}>{currentIndex + 1} / {dueCards.length}</Text>
+          <Text style={s.progressText}>{currentIndex + 1} / {dueCards.length}</Text>
         </View>
 
-        <View style={styles.scoreRow}>
-          <Animated.View style={[styles.scorePill, styles.correctPill]}>
-            <Text style={styles.correctCount}>✓ {correct}</Text>
-          </Animated.View>
-          <Animated.View style={[styles.scorePill, styles.wrongPill]}>
-            <Text style={styles.wrongCount}>✗ {wrong}</Text>
-          </Animated.View>
+        <View style={s.scoreRow}>
+          <View style={s.scorePill}>
+            <Text style={s.correctCount}>✓ {correct}</Text>
+          </View>
+          <View style={[s.scorePill, { backgroundColor: colors.error + '20' }]}>
+            <Text style={s.wrongCount}>✗ {wrong}</Text>
+          </View>
         </View>
       </Animated.View>
 
+      {/* SM-2 next review toast */}
+      {lastSm2 && (
+        <Animated.View style={[s.sm2Toast, {
+          opacity: sm2LabelAnim,
+          transform: [{ translateY: sm2LabelAnim.interpolate({ inputRange: [0, 1], outputRange: [-10, 0] }) }],
+        }]}>
+          <Ionicons name="time-outline" size={13} color={colors.textMuted} />
+          <Text style={s.sm2ToastText}>Next review: <Text style={{ color: colors.primary }}>{lastSm2.label}</Text></Text>
+        </Animated.View>
+      )}
+
       {/* Card */}
-      <View style={styles.cardArea}>
+      <View style={s.cardArea}>
         <Animated.View
-          style={[styles.cardWrapper, {
+          style={[s.cardWrapper, {
             opacity: cardOpacity,
             transform: [
               { translateX: Animated.add(cardTranslateX, shakeAnim) },
@@ -342,107 +377,77 @@ export default function QuizSessionScreen() {
           }]}
           {...(isFlipped ? panResponder.panHandlers : {})}
         >
-          {/* Swipe indicators */}
-          <Animated.View style={[styles.swipeIndicator, styles.swipeCorrect, { opacity: swipeCorrectOpacity }]}>
-            <Text style={styles.swipeIndicatorText}>✓ GOT IT</Text>
+          {/* Swipe hints */}
+          <Animated.View style={[s.swipeHintRight, { opacity: swipeRightOpacity }]}>
+            <Text style={[s.swipeHintText, { color: colors.success }]}>👍 GOOD</Text>
           </Animated.View>
-          <Animated.View style={[styles.swipeIndicator, styles.swipeWrong, { opacity: swipeWrongOpacity }]}>
-            <Text style={styles.swipeIndicatorText}>✗ NOPE</Text>
+          <Animated.View style={[s.swipeHintLeft, { opacity: swipeLeftOpacity }]}>
+            <Text style={[s.swipeHintText, { color: colors.error }]}>✗ WRONG</Text>
           </Animated.View>
 
           {/* Front */}
-          <Animated.View style={[styles.flashCard, styles.cardFront, { transform: [{ rotateY: frontRotate }] }]}>
-            <TouchableOpacity style={styles.cardInner} onPress={flipCard} activeOpacity={0.95}>
-              <View style={styles.cardTopRow}>
-                <View style={styles.cardSideTag}>
-                  <Text style={styles.cardSideText}>QUESTION</Text>
-                </View>
-                <Text style={styles.cardNumber}>{currentIndex + 1}</Text>
+          <Animated.View style={[s.flashCard, s.cardFront, { transform: [{ rotateY: frontRotate }] }]}>
+            <TouchableOpacity style={s.cardInner} onPress={flipCard} activeOpacity={0.95}>
+              <View style={s.cardTopRow}>
+                <View style={s.cardTag}><Text style={s.cardTagText}>QUESTION</Text></View>
+                <Text style={s.cardNum}>{currentIndex + 1}/{dueCards.length}</Text>
               </View>
-              <Text style={styles.cardQuestion}>{card.question}</Text>
-              <View style={styles.tapHintRow}>
+              <Text style={s.questionText}>{card.question}</Text>
+              <View style={s.tapHintRow}>
                 <Ionicons name="hand-left-outline" size={14} color={colors.textMuted} />
-                <Text style={styles.tapHintText}>Tap to flip</Text>
+                <Text style={s.tapHintText}>Tap to flip</Text>
               </View>
             </TouchableOpacity>
           </Animated.View>
 
           {/* Back */}
-          <Animated.View style={[styles.flashCard, styles.cardBack, { transform: [{ rotateY: backRotate }] }]}>
-            <View style={styles.cardInner}>
-              <View style={styles.cardTopRow}>
-                <View style={[styles.cardSideTag, { backgroundColor: colors.primary + '30' }]}>
-                  <Text style={[styles.cardSideText, { color: colors.primaryLight }]}>ANSWER</Text>
+          <Animated.View style={[s.flashCard, s.cardBack, { transform: [{ rotateY: backRotate }] }]}>
+            <View style={s.cardInner}>
+              <View style={s.cardTopRow}>
+                <View style={[s.cardTag, { backgroundColor: colors.primary + '30' }]}>
+                  <Text style={[s.cardTagText, { color: colors.primaryLight }]}>ANSWER</Text>
                 </View>
-                <Text style={styles.swipeHint}>swipe or tap below</Text>
+                <Text style={s.swipeGestureTip}>swipe or rate below</Text>
               </View>
-              <Text style={styles.cardAnswer}>{card.answer}</Text>
+              <Text style={s.answerText}>{card.answer}</Text>
             </View>
           </Animated.View>
         </Animated.View>
 
-        {/* Result overlay icon */}
-        {resultOverlay && (
-          <Animated.View style={[styles.resultOverlayContainer, {
-            opacity: resultOverlayOpacity,
-            transform: [{ scale: resultOverlayScale }],
-          }]}>
-            <View style={[styles.resultOverlayBubble, {
-              backgroundColor: resultOverlay === 'correct' ? colors.success + '30' : colors.error + '30',
-              borderColor: resultOverlay === 'correct' ? colors.success : colors.error,
-            }]}>
-              <Text style={styles.resultOverlayEmoji}>
-                {resultOverlay === 'correct' ? '✓' : '✗'}
-              </Text>
-            </View>
-          </Animated.View>
-        )}
+        {/* Result overlay bubble */}
+        <Animated.View style={[s.overlayBubble, {
+          opacity: resultOverlayOpacity,
+          transform: [{ scale: resultOverlayScale }],
+          borderColor: resultColor,
+          backgroundColor: resultColor + '25',
+        }]}>
+          <Text style={s.overlayEmoji}>{resultEmoji}</Text>
+        </Animated.View>
       </View>
 
-      {/* Action Buttons */}
-      <Animated.View style={[styles.resultArea, {
+      {/* Rating buttons */}
+      <Animated.View style={[s.bottomArea, {
         opacity: buttonsAnim,
-        transform: [{ translateY: buttonsAnim.interpolate({ inputRange: [0, 1], outputRange: [40, 0] }) }],
+        transform: [{ translateY: buttonsAnim.interpolate({ inputRange: [0, 1], outputRange: [50, 0] }) }],
       }]}>
         {isFlipped ? (
           <>
-            <Text style={styles.resultQuestion}>How did you do?</Text>
-            <View style={styles.resultButtons}>
-              <Animated.View style={{ transform: [{ scale: wrongBtnScale }], flex: 1 }}>
-                <TouchableOpacity
-                  style={[styles.resultBtn, styles.wrongBtn]}
-                  onPress={() => handleResult('wrong')}
+            <Text style={s.rateLabel}>How well did you recall it?</Text>
+            <View style={s.ratingButtons}>
+              {QUALITY_OPTIONS.map((opt) => (
+                <QualityButton
+                  key={opt.quality}
+                  option={opt}
+                  onPress={() => handleQuality(opt.quality)}
                   disabled={isSubmitting}
-                  activeOpacity={0.85}
-                >
-                  <View style={styles.btnIconCircle}>
-                    <Ionicons name="close" size={26} color={colors.error} />
-                  </View>
-                  <Text style={[styles.resultBtnText, { color: colors.error }]}>Missed it</Text>
-                  <Text style={styles.resultBtnSub}>← swipe left</Text>
-                </TouchableOpacity>
-              </Animated.View>
-
-              <Animated.View style={{ transform: [{ scale: correctBtnScale }], flex: 1 }}>
-                <TouchableOpacity
-                  style={[styles.resultBtn, styles.correctBtn]}
-                  onPress={() => handleResult('correct')}
-                  disabled={isSubmitting}
-                  activeOpacity={0.85}
-                >
-                  <View style={styles.btnIconCircleGreen}>
-                    <Ionicons name="checkmark" size={26} color={colors.success} />
-                  </View>
-                  <Text style={[styles.resultBtnText, { color: colors.success }]}>Got it!</Text>
-                  <Text style={styles.resultBtnSub}>swipe right →</Text>
-                </TouchableOpacity>
-              </Animated.View>
+                />
+              ))}
             </View>
           </>
         ) : (
-          <TouchableOpacity style={styles.flipPromptBtn} onPress={flipCard} activeOpacity={0.8}>
-            <Ionicons name="sync-outline" size={18} color={colors.primary} />
-            <Text style={styles.flipPromptText}>Tap card to reveal answer</Text>
+          <TouchableOpacity style={s.flipPrompt} onPress={flipCard} activeOpacity={0.8}>
+            <Ionicons name="sync-outline" size={16} color={colors.primary} />
+            <Text style={s.flipPromptText}>Tap card to reveal answer</Text>
           </TouchableOpacity>
         )}
       </Animated.View>
@@ -450,83 +455,115 @@ export default function QuizSessionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function QualityButton({ option, onPress, disabled }: {
+  option: QualityOption; onPress: () => void; disabled: boolean;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const pressIn = () => Animated.spring(scale, { toValue: 0.90, tension: 200, friction: 5, useNativeDriver: true }).start();
+  const pressOut = () => Animated.spring(scale, { toValue: 1, tension: 200, friction: 5, useNativeDriver: true }).start();
+
+  return (
+    <Animated.View style={[s.ratingBtnWrap, { transform: [{ scale }] }]}>
+      <TouchableOpacity
+        style={[s.ratingBtn, {
+          backgroundColor: option.color + '18',
+          borderColor: option.color + '60',
+        }]}
+        onPress={onPress}
+        onPressIn={pressIn}
+        onPressOut={pressOut}
+        disabled={disabled}
+        activeOpacity={1}
+      >
+        <Text style={s.ratingBtnEmoji}>{option.emoji}</Text>
+        <Text style={[s.ratingBtnLabel, { color: option.color }]}>{option.label}</Text>
+        <Text style={s.ratingBtnSub}>{option.sublabel}</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
   noCardsTitle: { ...typography.h2, marginTop: spacing.md, textAlign: 'center' },
-  noCardsSubtitle: { ...typography.bodyMuted, textAlign: 'center', marginTop: spacing.sm, marginBottom: spacing.xl },
-  backBtn2: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.xl, paddingVertical: spacing.md, alignSelf: 'center' },
+  noCardsSub: { ...typography.bodyMuted, textAlign: 'center', marginTop: spacing.sm, marginBottom: spacing.xl },
+  backBtn2: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
   backBtnText: { ...typography.h4, color: colors.white },
 
-  header: { paddingHorizontal: spacing.lg, paddingTop: 60, paddingBottom: spacing.sm, gap: spacing.sm },
+  header: { paddingHorizontal: spacing.lg, paddingTop: 58, paddingBottom: spacing.xs, gap: spacing.xs },
   headerBack: { alignSelf: 'flex-start', padding: spacing.xs },
-  progressContainer: { gap: 6 },
+  progressContainer: { gap: 5 },
   progressTrack: { height: 6, backgroundColor: colors.surface, borderRadius: 3, overflow: 'hidden', borderWidth: 1, borderColor: colors.border },
   progressFill: { height: '100%', backgroundColor: colors.primary, borderRadius: 3 },
-  progressText: { ...typography.small, textAlign: 'center', fontSize: 12 },
-  scoreRow: { flexDirection: 'row', justifyContent: 'center', gap: spacing.md },
-  scorePill: { paddingHorizontal: spacing.md, paddingVertical: 5, borderRadius: radius.full },
-  correctPill: { backgroundColor: colors.success + '20' },
-  wrongPill: { backgroundColor: colors.error + '20' },
-  correctCount: { color: colors.success, fontWeight: '700', fontSize: 14 },
-  wrongCount: { color: colors.error, fontWeight: '700', fontSize: 14 },
+  progressText: { ...typography.small, textAlign: 'center', fontSize: 11 },
+  scoreRow: { flexDirection: 'row', justifyContent: 'center', gap: spacing.sm },
+  scorePill: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: radius.full, backgroundColor: colors.success + '20' },
+  correctCount: { color: colors.success, fontWeight: '700', fontSize: 13 },
+  wrongCount: { color: colors.error, fontWeight: '700', fontSize: 13 },
+
+  sm2Toast: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    alignSelf: 'center', paddingHorizontal: spacing.md, paddingVertical: 4,
+    backgroundColor: colors.surface, borderRadius: radius.full,
+    borderWidth: 1, borderColor: colors.border, marginTop: 4,
+  },
+  sm2ToastText: { ...typography.small, fontSize: 12 },
 
   cardArea: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg },
-  cardWrapper: { width: CARD_WIDTH, aspectRatio: 0.72 },
+  cardWrapper: { width: CARD_WIDTH, aspectRatio: 0.74 },
   flashCard: {
     position: 'absolute', width: '100%', height: '100%',
-    borderRadius: radius.xl, backfaceVisibility: 'hidden',
-    ...shadow.lg,
+    borderRadius: radius.xl, backfaceVisibility: 'hidden', ...shadow.lg,
   },
   cardInner: { flex: 1, padding: spacing.xl, justifyContent: 'space-between' },
   cardFront: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   cardBack: { backgroundColor: colors.surfaceElevated, borderWidth: 1.5, borderColor: colors.primary + '40' },
   cardTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  cardSideTag: { backgroundColor: colors.surfaceElevated, borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 4 },
-  cardSideText: { fontSize: 10, fontWeight: '700', color: colors.textMuted, letterSpacing: 1 },
-  cardNumber: { ...typography.small, color: colors.textMuted, fontSize: 12 },
-  cardQuestion: { ...typography.h3, textAlign: 'center', lineHeight: 32, fontSize: 22, flex: 1, textAlignVertical: 'center', paddingVertical: spacing.lg },
-  cardAnswer: { ...typography.h3, textAlign: 'center', lineHeight: 32, fontSize: 22, flex: 1, textAlignVertical: 'center', paddingVertical: spacing.lg, color: colors.primaryLight },
-  tapHintRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  cardTag: { backgroundColor: colors.background, borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 3 },
+  cardTagText: { fontSize: 10, fontWeight: '700', color: colors.textMuted, letterSpacing: 1 },
+  cardNum: { ...typography.small, fontSize: 11, color: colors.textMuted },
+  questionText: { ...typography.h3, textAlign: 'center', lineHeight: 30, fontSize: 21, flex: 1, textAlignVertical: 'center', paddingVertical: spacing.md },
+  answerText: { ...typography.h3, textAlign: 'center', lineHeight: 30, fontSize: 21, flex: 1, textAlignVertical: 'center', paddingVertical: spacing.md, color: colors.primaryLight },
+  tapHintRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
   tapHintText: { ...typography.small, fontSize: 12 },
-  swipeHint: { ...typography.small, fontSize: 11, color: colors.textMuted },
+  swipeGestureTip: { ...typography.small, fontSize: 11, color: colors.textMuted },
 
-  swipeIndicator: {
-    position: 'absolute', top: 30, zIndex: 10,
-    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
-    borderRadius: radius.md, borderWidth: 2,
+  swipeHintRight: {
+    position: 'absolute', right: 16, top: 28, zIndex: 10,
+    paddingHorizontal: 12, paddingVertical: 7,
+    borderRadius: radius.md, borderWidth: 2, borderColor: colors.success,
+    backgroundColor: colors.success + '20',
   },
-  swipeCorrect: { right: 16, borderColor: colors.success, backgroundColor: colors.success + '20' },
-  swipeWrong: { left: 16, borderColor: colors.error, backgroundColor: colors.error + '20' },
-  swipeIndicatorText: { fontWeight: '800', fontSize: 14, color: colors.white, letterSpacing: 1 },
+  swipeHintLeft: {
+    position: 'absolute', left: 16, top: 28, zIndex: 10,
+    paddingHorizontal: 12, paddingVertical: 7,
+    borderRadius: radius.md, borderWidth: 2, borderColor: colors.error,
+    backgroundColor: colors.error + '20',
+  },
+  swipeHintText: { fontWeight: '800', fontSize: 13, letterSpacing: 0.5 },
 
-  resultOverlayContainer: {
+  overlayBubble: {
     position: 'absolute',
+    width: 96, height: 96, borderRadius: 48,
+    borderWidth: 2.5, alignItems: 'center', justifyContent: 'center',
+  },
+  overlayEmoji: { fontSize: 44 },
+
+  bottomArea: { paddingHorizontal: spacing.md, paddingBottom: 42, minHeight: 150, justifyContent: 'flex-end' },
+  rateLabel: { ...typography.small, textAlign: 'center', marginBottom: 8, color: colors.textMuted, fontSize: 12 },
+  ratingButtons: { flexDirection: 'row', gap: spacing.xs },
+  ratingBtnWrap: { flex: 1 },
+  ratingBtn: {
     alignItems: 'center', justifyContent: 'center',
-    zIndex: 20,
+    paddingVertical: spacing.sm + 2, borderRadius: radius.lg,
+    borderWidth: 1.5, gap: 3,
   },
-  resultOverlayBubble: {
-    width: 100, height: 100, borderRadius: 50,
-    borderWidth: 3, alignItems: 'center', justifyContent: 'center',
-  },
-  resultOverlayEmoji: { fontSize: 52, fontWeight: '900', color: colors.white },
+  ratingBtnEmoji: { fontSize: 22 },
+  ratingBtnLabel: { fontSize: 13, fontWeight: '700' },
+  ratingBtnSub: { fontSize: 10, color: colors.textMuted, textAlign: 'center' },
 
-  resultArea: { paddingHorizontal: spacing.lg, paddingBottom: 48, minHeight: 160, justifyContent: 'flex-end' },
-  resultQuestion: { ...typography.bodyMuted, textAlign: 'center', marginBottom: spacing.sm, fontSize: 13 },
-  resultButtons: { flexDirection: 'row', gap: spacing.md },
-  resultBtn: {
-    flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: spacing.lg, borderRadius: radius.xl, gap: spacing.xs,
-    borderWidth: 1.5,
-  },
-  wrongBtn: { backgroundColor: colors.error + '12', borderColor: colors.error + '50' },
-  correctBtn: { backgroundColor: colors.success + '12', borderColor: colors.success + '50' },
-  btnIconCircle: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.error + '20', alignItems: 'center', justifyContent: 'center' },
-  btnIconCircleGreen: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.success + '20', alignItems: 'center', justifyContent: 'center' },
-  resultBtnText: { fontSize: 16, fontWeight: '700' },
-  resultBtnSub: { ...typography.small, fontSize: 11 },
-
-  flipPromptBtn: {
+  flipPrompt: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: spacing.sm, paddingVertical: spacing.md,
     backgroundColor: colors.primary + '15', borderRadius: radius.full,
@@ -534,26 +571,39 @@ const styles = StyleSheet.create({
   },
   flipPromptText: { ...typography.body, color: colors.primary, fontSize: 14 },
 
-  startContent: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
+  startContent: { paddingHorizontal: spacing.lg, paddingBottom: 60, alignItems: 'center', paddingTop: 12 },
   startIconBg: {
-    width: 110, height: 110, borderRadius: radius.xl,
-    backgroundColor: colors.primary + '25', alignItems: 'center', justifyContent: 'center',
-    marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.primary + '40',
+    width: 100, height: 100, borderRadius: radius.xl,
+    backgroundColor: colors.primary + '22', alignItems: 'center', justifyContent: 'center',
+    marginBottom: spacing.md, borderWidth: 1, borderColor: colors.primary + '40',
   },
-  startTitle: { ...typography.h2, marginBottom: 6 },
-  startTopic: { ...typography.bodyMuted, marginBottom: spacing.xl },
+  startTitle: { ...typography.h2, marginBottom: 4 },
+  startTopic: { ...typography.bodyMuted, marginBottom: spacing.lg },
   startStatsBox: {
-    backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.xl,
+    backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg,
     width: '100%', alignItems: 'center', marginBottom: spacing.lg,
     borderWidth: 1, borderColor: colors.border,
   },
-  startStatNum: { ...typography.h1, color: colors.primary, fontSize: 56 },
+  startStatNum: { ...typography.h1, color: colors.primary, fontSize: 52 },
   startStatLabel: { ...typography.bodyMuted, marginTop: 4 },
-  startHint: { ...typography.bodyMuted, textAlign: 'center', marginBottom: spacing.xl, lineHeight: 24 },
+  ratingGuide: {
+    backgroundColor: colors.surface, borderRadius: radius.lg,
+    padding: spacing.md, width: '100%', marginBottom: spacing.lg,
+    borderWidth: 1, borderColor: colors.border, gap: spacing.sm,
+  },
+  ratingGuideTitle: { ...typography.small, color: colors.textSecondary, marginBottom: spacing.xs, textAlign: 'center' },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  ratingDot: { width: 38, height: 38, borderRadius: 19, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  ratingEmoji: { fontSize: 18 },
+  ratingInfo: { flex: 1 },
+  ratingLabel: { fontSize: 14, fontWeight: '700' },
+  ratingSub: { ...typography.small, fontSize: 11 },
+  ratingQ: { ...typography.small, fontSize: 11, color: colors.textMuted },
+  swipeTip: { ...typography.small, fontSize: 11, textAlign: 'center', color: colors.textMuted, marginTop: 2 },
   startBtn: {
     backgroundColor: colors.primary, borderRadius: radius.full,
     paddingHorizontal: spacing.xxl, paddingVertical: spacing.md + 4,
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm, ...shadow.md,
   },
-  startBtnText: { ...typography.h4, color: colors.white, fontSize: 18 },
+  startBtnText: { ...typography.h4, color: colors.white, fontSize: 17 },
 });
