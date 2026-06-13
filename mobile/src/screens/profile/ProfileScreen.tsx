@@ -1,29 +1,26 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, typography, shadow } from '../../theme';
 import { useAppSelector, useAppDispatch } from '../../hooks/redux';
 import { logout } from '../../store/authSlice';
+import { resetSubscription } from '../../store/subscriptionSlice';
 import { useGetTopicsQuery, useGetAnalyticsQuery } from '../../services/api';
 import { api } from '../../services/api';
+import PaywallModal from '../../components/PaywallModal';
 
 export default function ProfileScreen() {
   const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.auth.user);
+  const subscriptionTier = useAppSelector((s) => s.subscription.tier);
   const { data: topics } = useGetTopicsQuery();
   const { data: analytics } = useGetAnalyticsQuery({});
+  const [showPaywall, setShowPaywall] = useState(false);
 
   const handleLogout = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign Out', style: 'destructive',
-        onPress: () => {
-          dispatch(api.util.resetApiState());
-          dispatch(logout());
-        },
-      },
-    ]);
+    dispatch(api.util.resetApiState());
+    dispatch(resetSubscription());
+    dispatch(logout());
   };
 
   const MenuItem = ({ icon, label, value, color = colors.primary }: { icon: string; label: string; value?: string; color?: string }) => (
@@ -72,6 +69,30 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Subscription</Text>
+        {subscriptionTier === 'pro' ? (
+          <View style={styles.proRow}>
+            <View style={styles.proBadge}>
+              <Ionicons name="flash" size={16} color={colors.background} />
+              <Text style={styles.proBadgeText}>PRO</Text>
+            </View>
+            <Text style={styles.proLabel}>FlashStudy Pro — Active</Text>
+          </View>
+        ) : (
+          <TouchableOpacity style={styles.upgradeRow} onPress={() => setShowPaywall(true)} activeOpacity={0.85}>
+            <View style={styles.upgradeLeft}>
+              <Ionicons name="flash-outline" size={20} color={colors.primary} />
+              <View>
+                <Text style={styles.upgradeTitle}>Upgrade to Pro</Text>
+                <Text style={styles.upgradeSub}>Unlimited decks · $4.99/month</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
         <TouchableOpacity style={[styles.menuItem, styles.logoutItem]} onPress={handleLogout}>
           <View style={[styles.menuIcon, { backgroundColor: colors.error + '20' }]}>
@@ -80,6 +101,12 @@ export default function ProfileScreen() {
           <Text style={[styles.menuLabel, { color: colors.error }]}>Sign Out</Text>
         </TouchableOpacity>
       </View>
+
+      <PaywallModal
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        onSuccess={() => setShowPaywall(false)}
+      />
 
       <View style={{ height: 100 }} />
     </ScrollView>
@@ -121,4 +148,16 @@ const styles = StyleSheet.create({
   menuIcon: { width: 40, height: 40, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
   menuLabel: { ...typography.body, flex: 1 },
   menuValue: { ...typography.body, color: colors.textSecondary },
+  proRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
+  proBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 4 },
+  proBadgeText: { fontSize: 12, fontWeight: '900', color: colors.background, letterSpacing: 1 },
+  proLabel: { ...typography.body, color: colors.accent, fontWeight: '600' },
+  upgradeRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: colors.primary + '15', borderRadius: radius.md,
+    padding: spacing.md, borderWidth: 1, borderColor: colors.primary + '40',
+  },
+  upgradeLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flex: 1 },
+  upgradeTitle: { ...typography.body, fontWeight: '700', color: colors.white, fontSize: 15 },
+  upgradeSub: { ...typography.small, color: colors.primary, fontSize: 12 },
 });

@@ -8,6 +8,9 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, radius, typography, shadow } from '../../theme';
 import { useGetTopicsQuery, useCreateTopicMutation, useDeleteTopicMutation } from '../../services/api';
+import { useAppSelector } from '../../hooks/redux';
+import { FREE_DECK_LIMIT } from '../../services/revenueCat';
+import PaywallModal from '../../components/PaywallModal';
 import type { TopicsStackParamList, Topic } from '../../types';
 
 type Nav = NativeStackNavigationProp<TopicsStackParamList, 'TopicList'>;
@@ -96,12 +99,24 @@ export default function TopicListScreen() {
   const { data: topics, isLoading } = useGetTopicsQuery();
   const [createTopic, { isLoading: creating }] = useCreateTopicMutation();
   const [deleteTopic] = useDeleteTopicMutation();
+  const subscriptionTier = useAppSelector((s) => s.subscription.tier);
   const [showModal, setShowModal] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedEmoji, setSelectedEmoji] = useState('📚');
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
   const [selectedLang, setSelectedLang] = useState('en');
+
+  const isAtFreeLimit = subscriptionTier === 'free' && (topics?.length ?? 0) >= FREE_DECK_LIMIT;
+
+  const handleAddPressed = () => {
+    if (isAtFreeLimit) {
+      setShowPaywall(true);
+    } else {
+      openModal();
+    }
+  };
 
   const headerAnim = useRef(new Animated.Value(0)).current;
   const addBtnAnim = useRef(new Animated.Value(0)).current;
@@ -151,8 +166,8 @@ export default function TopicListScreen() {
           transform: [{ scale: addBtnAnim }],
           opacity: addBtnAnim,
         }}>
-          <TouchableOpacity style={styles.addBtn} onPress={openModal}>
-            <Ionicons name="add" size={24} color={colors.white} />
+          <TouchableOpacity style={[styles.addBtn, isAtFreeLimit && styles.addBtnLocked]} onPress={handleAddPressed}>
+            <Ionicons name={isAtFreeLimit ? 'lock-closed' : 'add'} size={24} color={colors.white} />
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -164,12 +179,27 @@ export default function TopicListScreen() {
           <Text style={{ fontSize: 64 }}>📚</Text>
           <Text style={styles.emptyTitle}>No topics yet</Text>
           <Text style={styles.emptySubtitle}>Create your first topic to get started</Text>
-          <TouchableOpacity style={styles.emptyBtn} onPress={openModal}>
+          <TouchableOpacity style={styles.emptyBtn} onPress={handleAddPressed}>
             <Text style={styles.emptyBtnText}>Create Topic</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+          {/* Free tier banner */}
+          {subscriptionTier === 'free' && (
+            <TouchableOpacity style={styles.freeBanner} onPress={() => setShowPaywall(true)} activeOpacity={0.8}>
+              <View style={styles.freeBannerLeft}>
+                <Ionicons name="flash" size={18} color={colors.primary} />
+                <View>
+                  <Text style={styles.freeBannerTitle}>Free plan: {topics?.length ?? 0}/{FREE_DECK_LIMIT} decks used</Text>
+                  <Text style={styles.freeBannerSub}>Upgrade to Pro for unlimited decks</Text>
+                </View>
+              </View>
+              <View style={styles.freeBannerBadge}>
+                <Text style={styles.freeBannerBadgeText}>Go Pro →</Text>
+              </View>
+            </TouchableOpacity>
+          )}
           {topics?.map((topic, i) => (
             <AnimatedTopicCard
               key={topic._id}
@@ -257,6 +287,12 @@ export default function TopicListScreen() {
           </Animated.View>
         </View>
       </Modal>
+
+      <PaywallModal
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        onSuccess={() => setShowPaywall(false)}
+      />
     </View>
   );
 }
@@ -319,4 +355,16 @@ const styles = StyleSheet.create({
   cancelText: { ...typography.body, color: colors.textSecondary },
   createBtn: { flex: 1, borderRadius: radius.full, paddingVertical: spacing.md, alignItems: 'center' },
   createText: { ...typography.h4, color: colors.white },
+  addBtnLocked: { backgroundColor: colors.surfaceElevated, borderWidth: 1, borderColor: colors.primary + '60' },
+  freeBanner: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: colors.primary + '15', borderRadius: radius.lg,
+    padding: spacing.md, marginBottom: spacing.md,
+    borderWidth: 1, borderColor: colors.primary + '40',
+  },
+  freeBannerLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 },
+  freeBannerTitle: { ...typography.body, fontSize: 13, fontWeight: '600', color: colors.white },
+  freeBannerSub: { ...typography.small, fontSize: 11, color: colors.textSecondary },
+  freeBannerBadge: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 4 },
+  freeBannerBadgeText: { fontSize: 12, fontWeight: '700', color: colors.white },
 });

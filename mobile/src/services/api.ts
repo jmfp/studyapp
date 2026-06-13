@@ -17,14 +17,17 @@ export const api = createApi({
   tagTypes: ['Topic', 'Card', 'Session', 'Analytics'],
   endpoints: (builder) => ({
     // Auth
-    login: builder.mutation<{ token: string; user: { _id: string; name: string; email: string } }, { email: string; password: string }>({
+    login: builder.mutation<{ token: string; user: { _id: string; name: string; email: string; subscriptionTier: string } }, { email: string; password: string }>({
       query: (body) => ({ url: '/auth/login', method: 'POST', body }),
     }),
-    register: builder.mutation<{ token: string; user: { _id: string; name: string; email: string } }, { name: string; email: string; password: string }>({
+    register: builder.mutation<{ token: string; user: { _id: string; name: string; email: string; subscriptionTier: string } }, { name: string; email: string; password: string }>({
       query: (body) => ({ url: '/auth/register', method: 'POST', body }),
     }),
-    getMe: builder.query<{ _id: string; name: string; email: string }, void>({
+    getMe: builder.query<{ _id: string; name: string; email: string; subscriptionTier: string }, void>({
       query: () => '/auth/me',
+    }),
+    updateSubscription: builder.mutation<{ user: { _id: string; name: string; email: string; subscriptionTier: string } }, { subscriptionTier: 'free' | 'pro'; revenueCatUserId?: string }>({
+      query: (body) => ({ url: '/auth/subscription', method: 'POST', body }),
     }),
 
     // Topics
@@ -97,6 +100,7 @@ export const {
   useLoginMutation,
   useRegisterMutation,
   useGetMeQuery,
+  useUpdateSubscriptionMutation,
   useGetTopicsQuery,
   useGetTopicQuery,
   useCreateTopicMutation,

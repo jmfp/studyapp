@@ -2,6 +2,7 @@ export interface User {
   _id: string;
   name: string;
   email: string;
+  subscriptionTier: 'free' | 'pro';
 }
 
 export interface AuthState {

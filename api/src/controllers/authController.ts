@@ -6,6 +6,13 @@ import User from '../models/User';
 const signToken = (id: string) =>
   jwt.sign({ id }, process.env.JWT_SECRET as string, { expiresIn: '30d' });
 
+const userPayload = (user: InstanceType<typeof User>) => ({
+  _id: user._id,
+  name: user.name,
+  email: user.email,
+  subscriptionTier: user.subscriptionTier,
+});
+
 export const register = async (req: Request, res: Response) => {
   try {
     const { name, email, password } = req.body;
@@ -19,10 +26,7 @@ export const register = async (req: Request, res: Response) => {
     const user = await User.create({ name, email, password: hashed });
     const token = signToken(user._id.toString());
 
-    res.status(201).json({
-      token,
-      user: { _id: user._id, name: user.name, email: user.email },
-    });
+    res.status(201).json({ token, user: userPayload(user) });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err });
   }
@@ -41,7 +45,7 @@ export const login = async (req: Request, res: Response) => {
     if (!match) return res.status(401).json({ message: 'Invalid credentials' });
 
     const token = signToken(user._id.toString());
-    res.json({ token, user: { _id: user._id, name: user.name, email: user.email } });
+    res.json({ token, user: userPayload(user) });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err });
   }
@@ -52,6 +56,28 @@ export const getMe = async (req: Request, res: Response) => {
     const user = await User.findById((req as any).userId).select('-password');
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err });
+  }
+};
+
+// Called by mobile after RevenueCat purchase is verified on device
+export const updateSubscription = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId;
+    const { subscriptionTier, revenueCatUserId } = req.body;
+
+    if (!['free', 'pro'].includes(subscriptionTier))
+      return res.status(400).json({ message: 'Invalid subscription tier' });
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { subscriptionTier, ...(revenueCatUserId ? { revenueCatUserId } : {}) },
+      { new: true }
+    ).select('-password');
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ user: userPayload(user) });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err });
   }

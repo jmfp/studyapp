@@ -29,7 +29,7 @@ export default function LoginScreen() {
     }
     try {
       const result = await login({ email: email.trim().toLowerCase(), password }).unwrap();
-      dispatch(setCredentials({ user: result.user, token: result.token }));
+      dispatch(setCredentials({ user: { ...result.user, subscriptionTier: (result.user.subscriptionTier as 'free' | 'pro') ?? 'free' }, token: result.token }));
     } catch (err: any) {
       Alert.alert('Login Failed', err?.data?.message || 'Something went wrong');
     }

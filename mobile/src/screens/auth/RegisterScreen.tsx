@@ -34,7 +34,7 @@ export default function RegisterScreen() {
     }
     try {
       const result = await register({ name: name.trim(), email: email.trim().toLowerCase(), password }).unwrap();
-      dispatch(setCredentials({ user: result.user, token: result.token }));
+      dispatch(setCredentials({ user: { ...result.user, subscriptionTier: (result.user.subscriptionTier as 'free' | 'pro') ?? 'free' }, token: result.token }));
     } catch (err: any) {
       Alert.alert('Registration Failed', err?.data?.message || 'Something went wrong');
     }
