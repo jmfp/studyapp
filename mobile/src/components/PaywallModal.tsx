@@ -19,6 +19,7 @@ const { width, height } = Dimensions.get('window');
 
 const PRO_FEATURES = [
   { icon: 'infinite', label: 'Unlimited decks', sub: `Create more than ${FREE_DECK_LIMIT} study decks` },
+  { icon: 'sparkles', label: 'Unlimited AI deck generation', sub: 'Generate flashcards from notes, URLs, and images' },
   { icon: 'bar-chart', label: 'Advanced analytics', sub: 'Forecasts, recall quality, weak cards & session history' },
 ];
 

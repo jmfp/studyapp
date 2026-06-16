@@ -1,0 +1,10 @@
+export const FREE_AI_GENERATIONS_PER_MONTH = 1;
+export const PRO_AI_GENERATIONS_PER_MONTH = 9999;
+export const MAX_SOURCE_CHARS = 15000;
+export const MAX_PDF_BYTES = 25 * 1024 * 1024; // 25MB upload
+export const MAX_PDF_EXTRACT_CHARS = 200_000;
+export const PDF_CHUNK_SIZE = 14_000;
+export const MAX_PDF_CHUNKS = 8;
+export const DEFAULT_MAX_CARDS = 15;
+export const MAX_CARDS_PER_GENERATION = 25;
+export const MAX_BULK_CARDS = 50;

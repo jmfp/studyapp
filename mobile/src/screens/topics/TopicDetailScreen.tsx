@@ -13,6 +13,10 @@ import type { TopicsStackParamList, MainTabParamList, Card } from '../../types';
 import { TopicIcon } from '../../constants/topicIcons';
 import { getLanguageLabel } from '../../constants/languages';
 import MultilingualTextInput from '../../components/MultilingualTextInput';
+import GenerateCardsModal from '../../components/GenerateCardsModal';
+import ReviewGeneratedCardsModal from '../../components/ReviewGeneratedCardsModal';
+import PaywallModal from '../../components/PaywallModal';
+import type { DraftCard } from '../../types';
 
 type Nav = CompositeNavigationProp<
   NativeStackNavigationProp<TopicsStackParamList, 'TopicDetail'>,
@@ -112,6 +116,10 @@ export default function TopicDetailScreen() {
   const [deleteCard] = useDeleteCardMutation();
 
   const [showModal, setShowModal] = useState(false);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [generatedCards, setGeneratedCards] = useState<DraftCard[]>([]);
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [flippedCards, setFlippedCards] = useState<Set<string>>(new Set());
@@ -179,9 +187,14 @@ export default function TopicDetailScreen() {
           <TopicIcon emoji={topic?.emoji || 'book'} size={22} color={topic?.color || colors.primary} />
           <Text style={styles.title}>{topicTitle}</Text>
         </View>
-        <TouchableOpacity style={styles.addBtn} onPress={openModal}>
-          <Ionicons name="add" size={22} color={colors.white} />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.aiBtn} onPress={() => setShowGenerateModal(true)}>
+            <Ionicons name="sparkles" size={20} color={colors.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.addBtn} onPress={openModal}>
+            <Ionicons name="add" size={22} color={colors.white} />
+          </TouchableOpacity>
+        </View>
       </Animated.View>
 
       <Animated.View style={[styles.metaRow, {
@@ -214,9 +227,13 @@ export default function TopicDetailScreen() {
             <Ionicons name="layers-outline" size={52} color={colors.textMuted} />
           </View>
           <Text style={styles.emptyTitle}>No cards yet</Text>
-          <Text style={styles.emptySubtitle}>Add your first flashcard to this topic</Text>
+          <Text style={styles.emptySubtitle}>Add cards manually or generate a deck with AI</Text>
           <TouchableOpacity style={styles.emptyBtn} onPress={openModal}>
             <Text style={styles.emptyBtnText}>Add Card</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.emptyAiBtn} onPress={() => setShowGenerateModal(true)}>
+            <Ionicons name="sparkles" size={18} color={colors.primary} />
+            <Text style={styles.emptyAiBtnText}>Generate with AI</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -287,6 +304,41 @@ export default function TopicDetailScreen() {
           </Animated.View>
         </KeyboardAvoidingView>
       </Modal>
+
+      <GenerateCardsModal
+        visible={showGenerateModal}
+        topicId={topicId}
+        onClose={() => setShowGenerateModal(false)}
+        onUpgrade={() => {
+          setShowGenerateModal(false);
+          setShowPaywall(true);
+        }}
+        onGenerated={(cards) => {
+          setGeneratedCards(cards);
+          setShowReviewModal(true);
+        }}
+      />
+
+      <ReviewGeneratedCardsModal
+        visible={showReviewModal}
+        topicId={topicId}
+        initialCards={generatedCards}
+        onClose={() => {
+          setShowReviewModal(false);
+          setGeneratedCards([]);
+        }}
+        onSaved={(count) => {
+          setShowReviewModal(false);
+          setGeneratedCards([]);
+          Alert.alert('Cards added', `${count} flashcard${count === 1 ? '' : 's'} added to this deck.`);
+        }}
+      />
+
+      <PaywallModal
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        onSuccess={() => setShowPaywall(false)}
+      />
     </View>
   );
 }
@@ -301,6 +353,12 @@ const styles = StyleSheet.create({
   headerCenter: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1, paddingHorizontal: spacing.sm },
   topicEmoji: { fontSize: 24 },
   title: { ...typography.h3, flex: 1 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  aiBtn: {
+    width: 40, height: 40, borderRadius: radius.full,
+    backgroundColor: colors.primary + '18', alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: colors.primary + '35',
+  },
   addBtn: { width: 40, height: 40, borderRadius: radius.full, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg, marginBottom: spacing.md },
   metaChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full },
@@ -316,6 +374,13 @@ const styles = StyleSheet.create({
   emptySubtitle: { ...typography.bodyMuted, textAlign: 'center', marginTop: spacing.sm, marginBottom: spacing.xl },
   emptyBtn: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
   emptyBtnText: { ...typography.h4, color: colors.white },
+  emptyAiBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    marginTop: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
+    borderRadius: radius.full, borderWidth: 1, borderColor: colors.primary + '40',
+    backgroundColor: colors.primary + '12',
+  },
+  emptyAiBtnText: { color: colors.primary, fontWeight: '700' },
   list: { paddingHorizontal: spacing.lg, paddingTop: spacing.xs },
   tapHint: { ...typography.small, textAlign: 'center', marginBottom: spacing.md, color: colors.textMuted, fontSize: 12 },
   cardOuter: {

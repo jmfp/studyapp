@@ -7,6 +7,8 @@ export interface IUser extends Document {
   password: string;
   subscriptionTier: 'free' | 'pro';
   revenueCatUserId?: string;
+  aiGenerationsUsed: number;
+  aiGenerationsMonth: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -18,6 +20,8 @@ const UserSchema = new Schema<IUser>(
     password: { type: String, required: true, minlength: 6 },
     subscriptionTier: { type: String, enum: ['free', 'pro'], default: 'free' },
     revenueCatUserId: { type: String },
+    aiGenerationsUsed: { type: Number, default: 0 },
+    aiGenerationsMonth: { type: String, default: '' },
   },
   { timestamps: true }
 );

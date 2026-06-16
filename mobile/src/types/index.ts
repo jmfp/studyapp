@@ -136,6 +136,25 @@ export interface ForecastDay {
   dueCount: number;
 }
 
+export interface DraftCard {
+  question: string;
+  answer: string;
+}
+
+export interface AiUsage {
+  tier: 'free' | 'pro';
+  used: number;
+  limit: number;
+  remaining: number;
+  month: string;
+  configured?: boolean;
+}
+
+export interface GenerateCardsResponse {
+  cards: DraftCard[];
+  usage: AiUsage;
+}
+
 export interface Analytics {
   totalSessions: number;
   totalCardsReviewed: number;

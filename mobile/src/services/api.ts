@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query';
 import type { RootState } from '../store';
-import type { Topic, Card, ReviewSession, Analytics, SubmitReviewResponse, ReviewQuality } from '../types';
+import type { Topic, Card, ReviewSession, Analytics, SubmitReviewResponse, ReviewQuality, GenerateCardsResponse, AiUsage, DraftCard } from '../types';
 import { BYPASS_AUTH, DEV_USER } from '../config/dev';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000/api';
@@ -16,6 +16,56 @@ const realBaseQuery = fetchBaseQuery({
 });
 
 function getMockData(url: string, method: string, body?: Record<string, unknown>) {
+  if (method === 'GET' && url === '/ai/usage') {
+    return {
+      tier: 'pro',
+      used: 0,
+      limit: 9999,
+      remaining: 9999,
+      month: '2026-06',
+      configured: true,
+    } satisfies AiUsage;
+  }
+
+  const generateMatch = url.match(/^\/topics\/([^/]+)\/cards\/generate$/);
+  if (method === 'POST' && generateMatch) {
+    return {
+      cards: [
+        { question: 'What is spaced repetition?', answer: 'Reviewing material at increasing intervals to strengthen memory.' },
+        { question: 'What does SM-2 optimize?', answer: 'When each card should be reviewed next based on recall quality.' },
+        { question: 'What is an atomic flashcard?', answer: 'A card that tests exactly one fact.' },
+      ],
+      usage: { tier: 'pro', used: 1, limit: 9999, remaining: 9998, month: '2026-06' },
+    } satisfies GenerateCardsResponse;
+  }
+
+  const bulkMatch = url.match(/^\/topics\/([^/]+)\/cards\/bulk$/);
+  if (method === 'POST' && bulkMatch) {
+    const topicId = bulkMatch[1];
+    const cards = (body?.cards as DraftCard[]) || [];
+    return {
+      count: cards.length,
+      cards: cards.map((c, i) => ({
+        _id: `card-ai-${Date.now()}-${i}`,
+        topicId,
+        userId: DEV_USER._id,
+        question: c.question,
+        answer: c.answer,
+        language: 'en',
+        repetitions: 0,
+        easeFactor: 2.5,
+        interval: 0,
+        isMature: false,
+        qualityHistory: [],
+        timesReviewed: 0,
+        timesCorrect: 0,
+        timesWrong: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })),
+    };
+  }
+
   if (method === 'GET' && url === '/topics') return demoTopics;
   if (method === 'GET' && url === '/analytics') return demoAnalytics;
   if (method === 'GET' && url.startsWith('/analytics?')) return demoAnalytics;
@@ -183,6 +233,38 @@ export const api = createApi({
       query: ({ id, topicId }) => ({ url: `/topics/${topicId}/cards/${id}`, method: 'DELETE' }),
       invalidatesTags: (_r, _e, { topicId }) => [{ type: 'Card', id: topicId }, 'Topic'],
     }),
+    generateCards: builder.mutation<
+      GenerateCardsResponse,
+      {
+        topicId: string;
+        sourceType: 'text' | 'url' | 'image' | 'pdf';
+        content?: string;
+        imageBase64?: string;
+        pdfBase64?: string;
+        mimeType?: string;
+        maxCards?: number;
+      }
+    >({
+      query: ({ topicId, ...body }) => ({
+        url: `/topics/${topicId}/cards/generate`,
+        method: 'POST',
+        body,
+      }),
+    }),
+    bulkCreateCards: builder.mutation<
+      { count: number; cards: Card[] },
+      { topicId: string; cards: DraftCard[] }
+    >({
+      query: ({ topicId, cards }) => ({
+        url: `/topics/${topicId}/cards/bulk`,
+        method: 'POST',
+        body: { cards },
+      }),
+      invalidatesTags: (_r, _e, { topicId }) => [{ type: 'Card', id: topicId }, 'Topic'],
+    }),
+    getAiUsage: builder.query<AiUsage & { configured: boolean }, void>({
+      query: () => '/ai/usage',
+    }),
 
     // Review Sessions
     startSession: builder.mutation<ReviewSession, string>({
@@ -221,6 +303,9 @@ export const {
   useCreateCardMutation,
   useUpdateCardMutation,
   useDeleteCardMutation,
+  useGenerateCardsMutation,
+  useBulkCreateCardsMutation,
+  useGetAiUsageQuery,
   useStartSessionMutation,
   useSubmitReviewMutation,
   useCompleteSessionMutation,
