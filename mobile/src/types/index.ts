@@ -18,6 +18,7 @@ export interface Topic {
   title: string;
   description?: string;
   language: string;
+  sourceLanguage?: string;
   color: string;
   emoji: string;
   cardCount: number;
@@ -87,7 +88,7 @@ export interface QualityOption {
   label: string;
   sublabel: string;
   color: string;
-  emoji: string;
+  icon: string;
   isCorrect: boolean; // quality >= 3
 }
 
@@ -167,8 +168,8 @@ export type AuthStackParamList = {
 
 export type MainTabParamList = {
   HomeTab: undefined;
-  TopicsTab: undefined;
-  QuizTab: undefined;
+  TopicsTab: import('@react-navigation/native').NavigatorScreenParams<TopicsStackParamList> | undefined;
+  QuizTab: import('@react-navigation/native').NavigatorScreenParams<QuizStackParamList> | undefined;
   AnalyticsTab: undefined;
   ProfileTab: undefined;
 };

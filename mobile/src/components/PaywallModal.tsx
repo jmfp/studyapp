@@ -11,18 +11,15 @@ import {
 } from '../store/subscriptionSlice';
 import { useUpdateSubscriptionMutation } from '../services/api';
 import {
-  getOfferings, purchasePackage, restorePurchases, isPro, FREE_DECK_LIMIT,
+  getOfferings, purchasePackage, restorePurchases, isPro, FREE_DECK_LIMIT, PRO_PRICE,
 } from '../services/revenueCat';
 import type { PurchasesPackage } from 'react-native-purchases';
 
 const { width, height } = Dimensions.get('window');
 
 const PRO_FEATURES = [
-  { icon: 'infinite', label: 'Unlimited decks', sub: `Free plan is limited to ${FREE_DECK_LIMIT}` },
-  { icon: 'flash', label: 'Priority SM-2 scheduling', sub: 'Advanced spaced repetition tuning' },
-  { icon: 'bar-chart', label: 'Advanced analytics', sub: 'Full retention graphs & forecasts' },
-  { icon: 'sync', label: 'Sync across devices', sub: 'Study anywhere, anytime' },
-  { icon: 'star', label: 'Support development', sub: 'Help keep FlashStudy growing' },
+  { icon: 'infinite', label: 'Unlimited decks', sub: `Create more than ${FREE_DECK_LIMIT} study decks` },
+  { icon: 'bar-chart', label: 'Advanced analytics', sub: 'Forecasts, recall quality, weak cards & session history' },
 ];
 
 interface PaywallModalProps {
@@ -131,7 +128,7 @@ export default function PaywallModal({ visible, onClose, onSuccess }: PaywallMod
           subscriptionTier: 'pro',
           revenueCatUserId: user?._id,
         });
-        setSuccessMsg('🎉 Welcome to FlashStudy Pro!');
+        setSuccessMsg('Welcome to FlashStudy Pro!');
         setTimeout(() => { onSuccess?.(); onClose(); }, 1600);
       } else {
         setErrorMsg('Purchase complete but entitlement not active. Try restoring.');
@@ -158,7 +155,7 @@ export default function PaywallModal({ visible, onClose, onSuccess }: PaywallMod
       if (pro) {
         dispatch(setTier('pro'));
         await updateSubscription({ subscriptionTier: 'pro', revenueCatUserId: user?._id });
-        setSuccessMsg('✅ Pro subscription restored!');
+        setSuccessMsg('Pro subscription restored!');
         setTimeout(() => { onSuccess?.(); onClose(); }, 1600);
       } else {
         setErrorMsg('No active subscription found on this account.');
@@ -203,8 +200,7 @@ export default function PaywallModal({ visible, onClose, onSuccess }: PaywallMod
 
           <Text style={styles.headline}>Unlock FlashStudy Pro</Text>
           <Text style={styles.subheadline}>
-            You've reached the <Text style={styles.highlight}>{FREE_DECK_LIMIT}-deck</Text> free limit.{'\n'}
-            Go Pro to study without limits.
+            Get unlimited decks and advanced analytics for {PRO_PRICE}.
           </Text>
 
           {/* Features list */}

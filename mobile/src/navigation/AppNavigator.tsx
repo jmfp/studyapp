@@ -55,6 +55,7 @@ function QuizNavigator() {
 function MainNavigator() {
   return (
     <MainTab.Navigator
+      initialRouteName="HomeTab"
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarShowLabel: false,
@@ -84,9 +85,9 @@ function MainNavigator() {
         },
       })}
     >
-      <MainTab.Screen name="HomeTab" component={HomeScreen} />
       <MainTab.Screen name="TopicsTab" component={TopicsNavigator} />
       <MainTab.Screen name="QuizTab" component={QuizNavigator} />
+      <MainTab.Screen name="HomeTab" component={HomeScreen} />
       <MainTab.Screen name="AnalyticsTab" component={AnalyticsScreen} />
       <MainTab.Screen name="ProfileTab" component={ProfileScreen} />
     </MainTab.Navigator>
@@ -112,9 +113,10 @@ export default function AppNavigator() {
 const styles = StyleSheet.create({
   tabBar: {
     position: 'absolute',
+    left: 0,
+    right: 0,
     bottom: Platform.OS === 'ios' ? 24 : 16,
-    left: 24,
-    right: 24,
+    marginHorizontal: 28,
     backgroundColor: '#1A1A2E',
     borderRadius: 32,
     height: 64,
@@ -122,6 +124,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     paddingBottom: 0,
+    paddingHorizontal: 4,
     elevation: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },

@@ -30,7 +30,7 @@ export const getTopic = async (req: Request, res: Response) => {
 export const createTopic = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId;
-    const { title, description, language, color, emoji } = req.body;
+    const { title, description, language, sourceLanguage, color, emoji } = req.body;
     if (!title) return res.status(400).json({ message: 'Title is required' });
 
     // Enforce free tier limit at the API level
@@ -48,7 +48,7 @@ export const createTopic = async (req: Request, res: Response) => {
       }
     }
 
-    const topic = await Topic.create({ userId, title, description, language, color, emoji });
+    const topic = await Topic.create({ userId, title, description, language, sourceLanguage, color, emoji });
     res.status(201).json(topic);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err });
@@ -58,10 +58,10 @@ export const createTopic = async (req: Request, res: Response) => {
 export const updateTopic = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId;
-    const { title, description, language, color, emoji } = req.body;
+    const { title, description, language, sourceLanguage, color, emoji } = req.body;
     const topic = await Topic.findOneAndUpdate(
       { _id: req.params.id, userId },
-      { title, description, language, color, emoji },
+      { title, description, language, sourceLanguage, color, emoji },
       { new: true, runValidators: true }
     );
     if (!topic) return res.status(404).json({ message: 'Topic not found' });

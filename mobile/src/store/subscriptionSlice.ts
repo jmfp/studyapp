@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { BYPASS_AUTH } from '../config/dev';
 
 export type SubscriptionTier = 'free' | 'pro';
 
@@ -12,12 +13,12 @@ interface SubscriptionState {
 }
 
 const initialState: SubscriptionState = {
-  tier: 'free',
+  tier: BYPASS_AUTH ? 'pro' : 'free',
   isLoading: false,
   isPurchasing: false,
   isRestoring: false,
   expirationDate: null,
-  rcInitialized: false,
+  rcInitialized: BYPASS_AUTH,
 };
 
 const subscriptionSlice = createSlice({

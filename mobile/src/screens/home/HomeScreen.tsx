@@ -1,11 +1,12 @@
 import React, { useRef, useEffect } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Animated,
+  View, Text, ScrollView, StyleSheet, ActivityIndicator, Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, typography, shadow } from '../../theme';
 import { useGetTopicsQuery, useGetAnalyticsQuery } from '../../services/api';
 import { useAppSelector } from '../../hooks/redux';
+import type { DailyActivity, ReviewSession } from '../../types';
 
 function useFadeSlideIn(delay = 0) {
   const anim = useRef(new Animated.Value(0)).current;
@@ -18,6 +19,81 @@ function useFadeSlideIn(delay = 0) {
     opacity: anim,
     transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) }],
   };
+}
+
+function StatCard({
+  icon, label, value, color, style,
+}: { icon: string; label: string; value: string | number; color: string; style: object }) {
+  return (
+    <Animated.View style={[styles.statCard, { borderTopColor: color, borderTopWidth: 2 }, style]}>
+      <View style={[styles.statIcon, { backgroundColor: color + '20' }]}>
+        <Ionicons name={icon as any} size={20} color={color} />
+      </View>
+      <Text style={[styles.statValue, { color }]}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </Animated.View>
+  );
+}
+
+function ActivityBar({ day, index, maxCards }: { day: DailyActivity; index: number; maxCards: number }) {
+  const heightPct = day.cardsReviewed / maxCards;
+  const isToday = index === 6;
+  const barHeight = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.spring(barHeight, {
+      toValue: Math.max(heightPct * 90, 4),
+      tension: 50, friction: 7, delay: 400 + index * 60, useNativeDriver: false,
+    }).start();
+  }, [barHeight, heightPct, index]);
+
+  return (
+    <View style={styles.barWrapper}>
+      {day.cardsReviewed > 0 && (
+        <Text style={styles.barValue}>{day.cardsReviewed}</Text>
+      )}
+      <View style={styles.barTrack}>
+        <Animated.View style={[styles.bar, {
+          height: barHeight,
+          backgroundColor: isToday ? colors.primary : colors.surfaceElevated,
+          borderWidth: isToday ? 0 : 1, borderColor: colors.border,
+        }]} />
+      </View>
+      <Text style={[styles.barLabel, isToday && { color: colors.primary, fontWeight: '700' }]}>
+        {['M', 'T', 'W', 'T', 'F', 'S', 'S'][new Date(day.date).getDay()]}
+      </Text>
+    </View>
+  );
+}
+
+function SessionRow({ session, index }: { session: ReviewSession; index: number }) {
+  const scoreColor = session.score >= 70 ? colors.success : session.score >= 40 ? colors.warning : colors.error;
+  const rowAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.spring(rowAnim, { toValue: 1, tension: 60, friction: 8, delay: 560 + index * 80, useNativeDriver: true }).start();
+  }, [rowAnim, index]);
+
+  return (
+    <Animated.View style={[styles.sessionRow, {
+      opacity: rowAnim,
+      transform: [{ translateX: rowAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }],
+    }]}>
+      <View style={[styles.scoreCircle, { borderColor: scoreColor }]}>
+        <Text style={[styles.scoreText, { color: scoreColor }]}>{session.score}%</Text>
+      </View>
+      <View style={styles.sessionInfo}>
+        <Text style={styles.sessionCards}>{session.totalCards} cards reviewed</Text>
+        <Text style={styles.sessionDate}>
+          {session.completedAt ? new Date(session.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
+        </Text>
+      </View>
+      <View style={styles.sessionResults}>
+        <Text style={{ color: colors.success, fontSize: 12, fontWeight: '600' }}>✓ {session.correctCount}</Text>
+        <Text style={{ color: colors.error, fontSize: 12, fontWeight: '600' }}>✗ {session.wrongCount}</Text>
+      </View>
+    </Animated.View>
+  );
 }
 
 export default function HomeScreen() {
@@ -37,37 +113,30 @@ export default function HomeScreen() {
   const sessionStyle = useFadeSlideIn(540);
 
   const streakPulse = useRef(new Animated.Value(1)).current;
+  const idleScale = useRef(new Animated.Value(1)).current;
+  const hasStreak = (analytics?.streakDays ?? 0) > 0;
+
   useEffect(() => {
+    if (!hasStreak) return;
     Animated.loop(
       Animated.sequence([
         Animated.timing(streakPulse, { toValue: 1.08, duration: 800, useNativeDriver: true }),
         Animated.timing(streakPulse, { toValue: 1, duration: 800, useNativeDriver: true }),
       ])
     ).start();
-  }, []);
+  }, [hasStreak, streakPulse]);
 
-  const StatCard = ({
-    icon, label, value, color, style,
-  }: { icon: string; label: string; value: string | number; color: string; style: object }) => (
-    <Animated.View style={[styles.statCard, { borderTopColor: color, borderTopWidth: 2 }, style]}>
-      <View style={[styles.statIcon, { backgroundColor: color + '20' }]}>
-        <Ionicons name={icon as any} size={20} color={color} />
-      </View>
-      <Text style={[styles.statValue, { color }]}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </Animated.View>
-  );
+  const maxCards = Math.max(...(analytics?.dailyActivity.map((d) => d.cardsReviewed) ?? [1]), 1);
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header */}
       <Animated.View style={[styles.headerSection, headerStyle]}>
         <View>
           <Text style={styles.greetingText}>{greeting}</Text>
           <Text style={styles.userName}>{user?.name || 'Learner'}</Text>
         </View>
-        <Animated.View style={[styles.streakBadge, { transform: [{ scale: (analytics?.streakDays ?? 0) > 0 ? streakPulse : new Animated.Value(1) }] }]}>
-          <Text style={styles.streakEmoji}>🔥</Text>
+        <Animated.View style={[styles.streakBadge, { transform: [{ scale: hasStreak ? streakPulse : idleScale }] }]}>
+          <Ionicons name="flame" size={18} color={colors.warning} />
           <Text style={styles.streakCount}>{analytics?.streakDays ?? 0}</Text>
         </Animated.View>
       </Animated.View>
@@ -88,37 +157,9 @@ export default function HomeScreen() {
               <Text style={styles.sectionSub}>cards reviewed per day</Text>
             </View>
             <View style={styles.barChartContainer}>
-              {analytics?.dailyActivity.map((day, i) => {
-                const maxCards = Math.max(...(analytics.dailyActivity.map((d) => d.cardsReviewed)), 1);
-                const heightPct = day.cardsReviewed / maxCards;
-                const isToday = i === 6;
-                const barHeight = useRef(new Animated.Value(0)).current;
-
-                useEffect(() => {
-                  Animated.spring(barHeight, {
-                    toValue: Math.max(heightPct * 90, 4),
-                    tension: 50, friction: 7, delay: 400 + i * 60, useNativeDriver: false,
-                  }).start();
-                }, []);
-
-                return (
-                  <View key={day.date} style={styles.barWrapper}>
-                    {day.cardsReviewed > 0 && (
-                      <Text style={styles.barValue}>{day.cardsReviewed}</Text>
-                    )}
-                    <View style={styles.barTrack}>
-                      <Animated.View style={[styles.bar, {
-                        height: barHeight,
-                        backgroundColor: isToday ? colors.primary : colors.surfaceElevated,
-                        borderWidth: isToday ? 0 : 1, borderColor: colors.border,
-                      }]} />
-                    </View>
-                    <Text style={[styles.barLabel, isToday && { color: colors.primary, fontWeight: '700' }]}>
-                      {['M', 'T', 'W', 'T', 'F', 'S', 'S'][new Date(day.date).getDay()]}
-                    </Text>
-                  </View>
-                );
-              })}
+              {analytics?.dailyActivity.map((day, i) => (
+                <ActivityBar key={day.date} day={day} index={i} maxCards={maxCards} />
+              ))}
             </View>
           </Animated.View>
 
@@ -149,33 +190,9 @@ export default function HomeScreen() {
                 <Text style={styles.emptyText}>No sessions yet. Start studying!</Text>
               </View>
             ) : (
-              analytics?.recentSessions.slice(0, 5).map((s, i) => {
-                const scoreColor = s.score >= 70 ? colors.success : s.score >= 40 ? colors.warning : colors.error;
-                const rowAnim = useRef(new Animated.Value(0)).current;
-                useEffect(() => {
-                  Animated.spring(rowAnim, { toValue: 1, tension: 60, friction: 8, delay: 560 + i * 80, useNativeDriver: true }).start();
-                }, []);
-                return (
-                  <Animated.View key={s._id} style={[styles.sessionRow, {
-                    opacity: rowAnim,
-                    transform: [{ translateX: rowAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }],
-                  }]}>
-                    <View style={[styles.scoreCircle, { borderColor: scoreColor }]}>
-                      <Text style={[styles.scoreText, { color: scoreColor }]}>{s.score}%</Text>
-                    </View>
-                    <View style={styles.sessionInfo}>
-                      <Text style={styles.sessionCards}>{s.totalCards} cards reviewed</Text>
-                      <Text style={styles.sessionDate}>
-                        {s.completedAt ? new Date(s.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
-                      </Text>
-                    </View>
-                    <View style={styles.sessionResults}>
-                      <Text style={{ color: colors.success, fontSize: 12, fontWeight: '600' }}>✓ {s.correctCount}</Text>
-                      <Text style={{ color: colors.error, fontSize: 12, fontWeight: '600' }}>✗ {s.wrongCount}</Text>
-                    </View>
-                  </Animated.View>
-                );
-              })
+              analytics?.recentSessions.slice(0, 5).map((s, i) => (
+                <SessionRow key={s._id} session={s} index={i} />
+              ))
             )}
           </Animated.View>
         </>
@@ -199,7 +216,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 4,
     borderWidth: 1, borderColor: colors.border,
   },
-  streakEmoji: { fontSize: 18 },
   streakCount: { ...typography.h4, color: colors.accent },
   statsRow: {
     flexDirection: 'row', paddingHorizontal: spacing.lg, gap: spacing.sm, marginBottom: spacing.lg,

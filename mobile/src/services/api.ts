@@ -1,19 +1,129 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query';
 import type { RootState } from '../store';
 import type { Topic, Card, ReviewSession, Analytics, SubmitReviewResponse, ReviewQuality } from '../types';
+import { BYPASS_AUTH, DEV_USER } from '../config/dev';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000/api';
 
+const realBaseQuery = fetchBaseQuery({
+  baseUrl: BASE_URL,
+  prepareHeaders: (headers, { getState }) => {
+    const token = (getState() as RootState).auth.token;
+    if (token) headers.set('authorization', `Bearer ${token}`);
+    return headers;
+  },
+});
+
+function getMockData(url: string, method: string, body?: Record<string, unknown>) {
+  if (method === 'GET' && url === '/topics') return demoTopics;
+  if (method === 'GET' && url === '/analytics') return demoAnalytics;
+  if (method === 'GET' && url.startsWith('/analytics?')) return demoAnalytics;
+  if (method === 'GET' && url === '/auth/me') return DEV_USER;
+
+  const topicMatch = url.match(/^\/topics\/([^/]+)$/);
+  if (method === 'GET' && topicMatch) {
+    return demoTopics.find((t) => t._id === topicMatch[1]) ?? demoTopics[0];
+  }
+
+  const cardsMatch = url.match(/^\/topics\/([^/]+)\/cards$/);
+  if (method === 'GET' && cardsMatch) {
+    return demoCards.filter((c) => c.topicId === cardsMatch[1]);
+  }
+
+  const dueMatch = url.match(/^\/topics\/([^/]+)\/cards\/due$/);
+  if (method === 'GET' && dueMatch) {
+    return demoCards.filter((c) => c.topicId === dueMatch[1] && c.nextReviewAt);
+  }
+
+  const sessionsMatch = url.match(/^\/topics\/([^/]+)\/sessions$/);
+  if (method === 'GET' && sessionsMatch) return demoAnalytics.recentSessions;
+
+  if (method === 'POST' && url.match(/^\/topics\/[^/]+\/sessions$/)) {
+    return {
+      _id: 'mock-session',
+      userId: DEV_USER._id,
+      topicId: url.split('/')[2],
+      startedAt: new Date().toISOString(),
+      totalCards: 0,
+      correctCount: 0,
+      wrongCount: 0,
+      score: 0,
+    } satisfies ReviewSession;
+  }
+
+  if (method === 'POST' && url.match(/^\/sessions\/[^/]+\/reviews$/)) {
+    return {
+      session: demoAnalytics.recentSessions[0],
+      sm2Result: {
+        newInterval: 1,
+        newEaseFactor: 2.5,
+        nextReviewAt: new Date().toISOString(),
+        nextReviewLabel: 'Tomorrow',
+        repetitions: 1,
+      },
+    } satisfies SubmitReviewResponse;
+  }
+
+  if (method === 'POST' && url.match(/^\/sessions\/[^/]+\/complete$/)) {
+    return demoAnalytics.recentSessions[0];
+  }
+
+  if (method === 'POST' && url === '/topics') {
+    return {
+      ...demoTopics[0],
+      _id: `topic-${Date.now()}`,
+      title: (body?.title as string) || 'New Topic',
+      emoji: (body?.emoji as string) || 'book',
+      color: (body?.color as string) || '#6C63FF',
+      language: (body?.language as string) || 'en',
+      sourceLanguage: (body?.sourceLanguage as string) || 'en',
+    } satisfies Topic;
+  }
+
+  if (method === 'POST' && url.match(/^\/topics\/[^/]+\/cards$/)) {
+    const topicId = url.split('/')[2];
+    return {
+      _id: `card-${Date.now()}`,
+      topicId,
+      userId: DEV_USER._id,
+      question: (body?.question as string) || '',
+      answer: (body?.answer as string) || '',
+      language: (body?.language as string) || 'en',
+      repetitions: 0,
+      easeFactor: 2.5,
+      interval: 0,
+      isMature: false,
+      qualityHistory: [],
+      timesReviewed: 0,
+      timesCorrect: 0,
+      timesWrong: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    } satisfies Card;
+  }
+
+  return null;
+}
+
+const baseQuery: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (args, api, extraOptions) => {
+  if (!BYPASS_AUTH) return realBaseQuery(args, api, extraOptions);
+
+  const request = typeof args === 'string' ? { url: args, method: 'GET' as const } : args;
+  const url = request.url;
+  const method = request.method ?? 'GET';
+  const data = getMockData(url, method, request.body as Record<string, unknown> | undefined);
+
+  if (data !== null) return { data };
+  if (method === 'DELETE') return { data: null };
+  if (method === 'PUT') return { data: request.body };
+
+  return realBaseQuery(args, api, extraOptions);
+};
+
 export const api = createApi({
   reducerPath: 'api',
-  baseQuery: fetchBaseQuery({
-    baseUrl: BASE_URL,
-    prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth.token;
-      if (token) headers.set('authorization', `Bearer ${token}`);
-      return headers;
-    },
-  }),
+  baseQuery,
   tagTypes: ['Topic', 'Card', 'Session', 'Analytics'],
   endpoints: (builder) => ({
     // Auth

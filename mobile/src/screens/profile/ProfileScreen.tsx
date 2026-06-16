@@ -55,7 +55,10 @@ export default function ProfileScreen() {
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statBox}>
-          <Text style={styles.statNum}>{analytics?.streakDays ?? 0}🔥</Text>
+          <View style={styles.statNumRow}>
+            <Text style={styles.statNum}>{analytics?.streakDays ?? 0}</Text>
+            <Ionicons name="flame" size={16} color={colors.warning} />
+          </View>
           <Text style={styles.statLabel}>Day Streak</Text>
         </View>
       </View>
@@ -84,7 +87,7 @@ export default function ProfileScreen() {
               <Ionicons name="flash-outline" size={20} color={colors.primary} />
               <View>
                 <Text style={styles.upgradeTitle}>Upgrade to Pro</Text>
-                <Text style={styles.upgradeSub}>Unlimited decks · $4.99/month</Text>
+                <Text style={styles.upgradeSub}>Unlimited decks · Advanced analytics</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.primary} />
@@ -131,6 +134,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg, borderWidth: 1, borderColor: colors.border,
   },
   statBox: { flex: 1, alignItems: 'center' },
+  statNumRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   statNum: { ...typography.h3 },
   statLabel: { ...typography.small, textAlign: 'center', marginTop: 2 },
   statDivider: { width: 1, backgroundColor: colors.border },

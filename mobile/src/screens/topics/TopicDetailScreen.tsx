@@ -1,17 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  ActivityIndicator, Alert, TextInput, Modal, Animated,
+  ActivityIndicator, Alert, Modal, Animated, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, type CompositeNavigationProp, type RouteProp } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RouteProp } from '@react-navigation/native';
 import { colors, spacing, radius, typography, shadow } from '../../theme';
 import { useGetCardsQuery, useGetTopicQuery, useCreateCardMutation, useDeleteCardMutation } from '../../services/api';
-import type { TopicsStackParamList, Card } from '../../types';
+import type { TopicsStackParamList, MainTabParamList, Card } from '../../types';
+import { TopicIcon } from '../../constants/topicIcons';
+import { getLanguageLabel } from '../../constants/languages';
+import MultilingualTextInput from '../../components/MultilingualTextInput';
 
-type Nav = NativeStackNavigationProp<TopicsStackParamList, 'TopicDetail'>;
+type Nav = CompositeNavigationProp<
+  NativeStackNavigationProp<TopicsStackParamList, 'TopicDetail'>,
+  BottomTabNavigationProp<MainTabParamList>
+>;
 type Route = RouteProp<TopicsStackParamList, 'TopicDetail'>;
 
 function AnimatedCard({ card, index, onFlip, isFlipped, onDelete }: {
@@ -123,13 +129,21 @@ export default function TopicDetailScreen() {
     Animated.spring(modalAnim, { toValue: 1, tension: 55, friction: 8, useNativeDriver: true }).start();
   };
 
+  const frontLang = topic?.sourceLanguage ?? 'en';
+  const backLang = topic?.language ?? 'en';
+
   const handleCreate = async () => {
     if (!question.trim() || !answer.trim()) {
       Alert.alert('Error', 'Both question and answer are required');
       return;
     }
     try {
-      await createCard({ topicId, question: question.trim(), answer: answer.trim() }).unwrap();
+      await createCard({
+        topicId,
+        question: question.trim(),
+        answer: answer.trim(),
+        language: backLang,
+      }).unwrap();
       setQuestion(''); setAnswer('');
       setShowModal(false);
     } catch (err: any) {
@@ -162,7 +176,7 @@ export default function TopicDetailScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.topicEmoji}>{topic?.emoji || '📚'}</Text>
+          <TopicIcon emoji={topic?.emoji || 'book'} size={22} color={topic?.color || colors.primary} />
           <Text style={styles.title}>{topicTitle}</Text>
         </View>
         <TouchableOpacity style={styles.addBtn} onPress={openModal}>
@@ -181,7 +195,10 @@ export default function TopicDetailScreen() {
         {cards && cards.length > 0 && (
           <TouchableOpacity
             style={styles.quizBtn}
-            onPress={() => navigation.navigate('QuizSession' as any, { topicId, topicTitle })}
+            onPress={() => navigation.navigate('QuizTab', {
+              screen: 'QuizSession',
+              params: { topicId, topicTitle },
+            })}
           >
             <Ionicons name="play" size={14} color={colors.white} />
             <Text style={styles.quizBtnText}>Start Quiz</Text>
@@ -193,7 +210,9 @@ export default function TopicDetailScreen() {
         <ActivityIndicator color={colors.primary} style={{ marginTop: 80 }} />
       ) : cards?.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={{ fontSize: 56 }}>🃏</Text>
+          <View style={styles.emptyIcon}>
+            <Ionicons name="layers-outline" size={52} color={colors.textMuted} />
+          </View>
           <Text style={styles.emptyTitle}>No cards yet</Text>
           <Text style={styles.emptySubtitle}>Add your first flashcard to this topic</Text>
           <TouchableOpacity style={styles.emptyBtn} onPress={openModal}>
@@ -218,20 +237,24 @@ export default function TopicDetailScreen() {
       )}
 
       <Modal visible={showModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
           <Animated.View style={[styles.modalContent, {
             transform: [{ translateY: modalAnim.interpolate({ inputRange: [0, 1], outputRange: [60, 0] }) }],
             opacity: modalAnim,
           }]}>
             <View style={styles.modalHandle} />
             <Text style={styles.modalTitle}>New Flashcard</Text>
-            <Text style={styles.modalSubtitle}>{topicTitle}</Text>
+            <Text style={styles.modalSubtitle}>
+              {getLanguageLabel(frontLang)} front · {getLanguageLabel(backLang)} back
+            </Text>
 
-            <Text style={styles.inputLabel}>QUESTION (FRONT)</Text>
-            <TextInput
-              style={styles.textArea}
-              placeholder="Type your question here..."
-              placeholderTextColor={colors.textMuted}
+            <Text style={styles.inputLabel}>QUESTION — {getLanguageLabel(frontLang).toUpperCase()}</Text>
+            <MultilingualTextInput
+              languageCode={frontLang}
+              placeholder={`Type the ${getLanguageLabel(frontLang).toLowerCase()} prompt...`}
               value={question}
               onChangeText={setQuestion}
               multiline
@@ -240,11 +263,12 @@ export default function TopicDetailScreen() {
               textAlignVertical="top"
             />
 
-            <Text style={[styles.inputLabel, { marginTop: spacing.md }]}>ANSWER (BACK)</Text>
-            <TextInput
-              style={styles.textArea}
-              placeholder="Type the answer here..."
-              placeholderTextColor={colors.textMuted}
+            <Text style={[styles.inputLabel, { marginTop: spacing.md }]}>
+              ANSWER — {getLanguageLabel(backLang).toUpperCase()}
+            </Text>
+            <MultilingualTextInput
+              languageCode={backLang}
+              placeholder={`Type or tap characters below...`}
               value={answer}
               onChangeText={setAnswer}
               multiline
@@ -261,7 +285,7 @@ export default function TopicDetailScreen() {
               </TouchableOpacity>
             </View>
           </Animated.View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -284,6 +308,10 @@ const styles = StyleSheet.create({
   quizBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.primary, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full },
   quizBtnText: { color: colors.white, fontSize: 13, fontWeight: '600' },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
+  emptyIcon: {
+    width: 96, height: 96, borderRadius: radius.lg, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.surfaceElevated, borderWidth: 1, borderColor: colors.border,
+  },
   emptyTitle: { ...typography.h3, marginTop: spacing.md },
   emptySubtitle: { ...typography.bodyMuted, textAlign: 'center', marginTop: spacing.sm, marginBottom: spacing.xl },
   emptyBtn: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
@@ -314,10 +342,6 @@ const styles = StyleSheet.create({
   modalTitle: { ...typography.h3, marginBottom: 4 },
   modalSubtitle: { ...typography.small, marginBottom: spacing.md },
   inputLabel: { ...typography.label, marginBottom: spacing.xs },
-  textArea: {
-    backgroundColor: colors.background, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
-    paddingHorizontal: spacing.md, paddingVertical: spacing.md, ...typography.body, color: colors.textPrimary, minHeight: 90,
-  },
   modalActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
   cancelBtn: { flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, paddingVertical: spacing.md, alignItems: 'center' },
   cancelText: { ...typography.body, color: colors.textSecondary },

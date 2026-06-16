@@ -6,6 +6,7 @@ export interface ITopic extends Document {
   title: string;
   description?: string;
   language: string;
+  sourceLanguage: string;
   color: string;
   emoji: string;
   cardCount: number;
@@ -19,6 +20,7 @@ const TopicSchema = new Schema<ITopic>(
     title: { type: String, required: true, trim: true },
     description: { type: String, trim: true },
     language: { type: String, default: 'en', trim: true },
+    sourceLanguage: { type: String, default: 'en', trim: true },
     color: { type: String, default: '#6C63FF' },
     emoji: { type: String, default: '📚' },
     cardCount: { type: Number, default: 0 },

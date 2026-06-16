@@ -8,6 +8,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, radius, typography } from '../../theme';
 import { useGetTopicsQuery, useGetDueCardsQuery } from '../../services/api';
 import type { QuizStackParamList } from '../../types';
+import { TopicIcon } from '../../constants/topicIcons';
 
 type Nav = NativeStackNavigationProp<QuizStackParamList, 'QuizSelect'>;
 
@@ -22,7 +23,7 @@ function TopicQuizCard({ topic }: { topic: any }) {
       disabled={!dueCards || dueCards.length === 0}
     >
       <View style={[styles.emoji, { backgroundColor: topic.color + '20' }]}>
-        <Text style={{ fontSize: 24 }}>{topic.emoji}</Text>
+        <TopicIcon emoji={topic.emoji} size={24} color={topic.color} />
       </View>
       <View style={styles.cardInfo}>
         <Text style={styles.cardTitle}>{topic.title}</Text>

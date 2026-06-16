@@ -12,25 +12,12 @@ import { useAppSelector } from '../../hooks/redux';
 import { FREE_DECK_LIMIT } from '../../services/revenueCat';
 import PaywallModal from '../../components/PaywallModal';
 import type { TopicsStackParamList, Topic } from '../../types';
+import { TOPIC_ICONS, TopicIcon } from '../../constants/topicIcons';
+import { LANGUAGES, getLanguageLabel } from '../../constants/languages';
 
 type Nav = NativeStackNavigationProp<TopicsStackParamList, 'TopicList'>;
 
-const EMOJIS = ['📚', '🧠', '🌍', '🔢', '🎵', '🔬', '🏛️', '💻', '🎨', '📖', '🗣️', '✍️'];
 const COLORS = ['#6C63FF', '#FF6B9D', '#4CAF50', '#FF9800', '#00BCD4', '#9C27B0', '#F44336', '#2196F3'];
-const LANGUAGES = [
-  { code: 'en', label: 'English', flag: '🇬🇧' },
-  { code: 'es', label: 'Spanish', flag: '🇪🇸' },
-  { code: 'fr', label: 'French', flag: '🇫🇷' },
-  { code: 'de', label: 'German', flag: '🇩🇪' },
-  { code: 'ja', label: 'Japanese', flag: '🇯🇵' },
-  { code: 'zh', label: 'Chinese', flag: '🇨🇳' },
-  { code: 'ko', label: 'Korean', flag: '🇰🇷' },
-  { code: 'it', label: 'Italian', flag: '🇮🇹' },
-  { code: 'pt', label: 'Portuguese', flag: '🇵🇹' },
-  { code: 'ar', label: 'Arabic', flag: '🇸🇦' },
-  { code: 'ru', label: 'Russian', flag: '🇷🇺' },
-  { code: 'other', label: 'Other', flag: '🌐' },
-];
 
 function AnimatedTopicCard({ topic, index, onPress, onLongPress }: {
   topic: Topic; index: number;
@@ -71,7 +58,7 @@ function AnimatedTopicCard({ topic, index, onPress, onLongPress }: {
         activeOpacity={1}
       >
         <View style={[styles.emojiContainer, { backgroundColor: topic.color + '20' }]}>
-          <Text style={styles.emoji}>{topic.emoji}</Text>
+          <TopicIcon emoji={topic.emoji} size={24} color={topic.color} />
         </View>
         <View style={styles.topicInfo}>
           <Text style={styles.topicTitle}>{topic.title}</Text>
@@ -83,7 +70,9 @@ function AnimatedTopicCard({ topic, index, onPress, onLongPress }: {
             </View>
             <View style={styles.metaChip}>
               <Text style={styles.metaText}>
-                {LANGUAGES.find((l) => l.code === topic.language)?.flag || '🌐'} {topic.language.toUpperCase()}
+                {getLanguageLabel(topic.sourceLanguage ?? 'en').slice(0, 3).toUpperCase()}
+                {' → '}
+                {getLanguageLabel(topic.language).slice(0, 3).toUpperCase()}
               </Text>
             </View>
           </View>
@@ -104,9 +93,10 @@ export default function TopicListScreen() {
   const [showPaywall, setShowPaywall] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [selectedEmoji, setSelectedEmoji] = useState('📚');
+  const [selectedEmoji, setSelectedEmoji] = useState('book');
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
   const [selectedLang, setSelectedLang] = useState('en');
+  const [selectedSourceLang, setSelectedSourceLang] = useState('en');
 
   const isAtFreeLimit = subscriptionTier === 'free' && (topics?.length ?? 0) >= FREE_DECK_LIMIT;
 
@@ -138,9 +128,16 @@ export default function TopicListScreen() {
   const handleCreate = async () => {
     if (!title.trim()) { Alert.alert('Error', 'Topic title is required'); return; }
     try {
-      await createTopic({ title: title.trim(), description: description.trim(), emoji: selectedEmoji, color: selectedColor, language: selectedLang }).unwrap();
+      await createTopic({
+        title: title.trim(),
+        description: description.trim(),
+        emoji: selectedEmoji,
+        color: selectedColor,
+        language: selectedLang,
+        sourceLanguage: selectedSourceLang,
+      }).unwrap();
       setShowModal(false);
-      setTitle(''); setDescription(''); setSelectedEmoji('📚'); setSelectedColor(COLORS[0]); setSelectedLang('en');
+      setTitle(''); setDescription(''); setSelectedEmoji('book'); setSelectedColor(COLORS[0]); setSelectedLang('en'); setSelectedSourceLang('en');
     } catch (err: any) {
       Alert.alert('Error', err?.data?.message || 'Failed to create topic');
     }
@@ -176,7 +173,9 @@ export default function TopicListScreen() {
         <ActivityIndicator color={colors.primary} style={{ marginTop: 80 }} />
       ) : topics?.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={{ fontSize: 64 }}>📚</Text>
+          <View style={styles.emptyIcon}>
+            <Ionicons name="book-outline" size={56} color={colors.textMuted} />
+          </View>
           <Text style={styles.emptyTitle}>No topics yet</Text>
           <Text style={styles.emptySubtitle}>Create your first topic to get started</Text>
           <TouchableOpacity style={styles.emptyBtn} onPress={handleAddPressed}>
@@ -240,13 +239,13 @@ export default function TopicListScreen() {
 
             <Text style={styles.pickerLabel}>ICON</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.emojiRow}>
-              {EMOJIS.map((e) => (
+              {TOPIC_ICONS.map((item) => (
                 <TouchableOpacity
-                  key={e}
-                  style={[styles.emojiOption, selectedEmoji === e && { backgroundColor: selectedColor + '30', borderColor: selectedColor }]}
-                  onPress={() => setSelectedEmoji(e)}
+                  key={item.id}
+                  style={[styles.emojiOption, selectedEmoji === item.id && { backgroundColor: selectedColor + '30', borderColor: selectedColor }]}
+                  onPress={() => setSelectedEmoji(item.id)}
                 >
-                  <Text style={{ fontSize: 24 }}>{e}</Text>
+                  <TopicIcon emoji={item.id} size={22} color={selectedEmoji === item.id ? selectedColor : colors.textSecondary} />
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -262,7 +261,27 @@ export default function TopicListScreen() {
               ))}
             </View>
 
-            <Text style={styles.pickerLabel}>LANGUAGE</Text>
+            <Text style={styles.pickerLabel}>FRONT OF CARDS</Text>
+            <Text style={styles.pickerHint}>Language for the question side (e.g. English)</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.langRow}>
+              {LANGUAGES.map((l) => (
+                <TouchableOpacity
+                  key={`source-${l.code}`}
+                  style={[styles.langChip, selectedSourceLang === l.code && { backgroundColor: selectedColor + '30', borderColor: selectedColor }]}
+                  onPress={() => setSelectedSourceLang(l.code)}
+                >
+                  <View style={[styles.langCodeBadge, selectedSourceLang === l.code && { backgroundColor: selectedColor + '40' }]}>
+                    <Text style={[styles.langCode, selectedSourceLang === l.code && { color: colors.white }]}>
+                      {l.code.toUpperCase()}
+                    </Text>
+                  </View>
+                  <Text style={[styles.langLabel, selectedSourceLang === l.code && { color: colors.white }]}>{l.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <Text style={styles.pickerLabel}>LEARNING LANGUAGE</Text>
+            <Text style={styles.pickerHint}>Language for the answer side (e.g. Japanese)</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.langRow}>
               {LANGUAGES.map((l) => (
                 <TouchableOpacity
@@ -270,7 +289,11 @@ export default function TopicListScreen() {
                   style={[styles.langChip, selectedLang === l.code && { backgroundColor: selectedColor + '30', borderColor: selectedColor }]}
                   onPress={() => setSelectedLang(l.code)}
                 >
-                  <Text style={styles.langFlag}>{l.flag}</Text>
+                  <View style={[styles.langCodeBadge, selectedLang === l.code && { backgroundColor: selectedColor + '40' }]}>
+                    <Text style={[styles.langCode, selectedLang === l.code && { color: colors.white }]}>
+                      {l.code.toUpperCase()}
+                    </Text>
+                  </View>
                   <Text style={[styles.langLabel, selectedLang === l.code && { color: colors.white }]}>{l.label}</Text>
                 </TouchableOpacity>
               ))}
@@ -310,6 +333,10 @@ const styles = StyleSheet.create({
     ...shadow.md,
   },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
+  emptyIcon: {
+    width: 96, height: 96, borderRadius: radius.lg, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.surfaceElevated, borderWidth: 1, borderColor: colors.border,
+  },
   emptyTitle: { ...typography.h3, marginTop: spacing.md },
   emptySubtitle: { ...typography.bodyMuted, textAlign: 'center', marginTop: spacing.sm, marginBottom: spacing.xl },
   emptyBtn: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
@@ -322,7 +349,6 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.border, ...shadow.sm,
   },
   emojiContainer: { width: 52, height: 52, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  emoji: { fontSize: 26 },
   topicInfo: { flex: 1 },
   topicTitle: { ...typography.h4, marginBottom: 2 },
   topicDesc: { ...typography.small, marginBottom: spacing.xs },
@@ -338,8 +364,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md, paddingVertical: spacing.md, ...typography.body, color: colors.textPrimary,
   },
   pickerLabel: { ...typography.label, marginTop: spacing.md, marginBottom: spacing.xs },
+  pickerHint: { ...typography.small, fontSize: 11, marginBottom: spacing.xs, color: colors.textMuted },
   emojiRow: { flexDirection: 'row' },
-  emojiOption: { padding: spacing.sm, borderRadius: radius.sm, borderWidth: 1, borderColor: 'transparent', marginRight: spacing.xs },
+  emojiOption: {
+    width: 44, height: 44, alignItems: 'center', justifyContent: 'center',
+    borderRadius: radius.sm, borderWidth: 1, borderColor: 'transparent', marginRight: spacing.xs,
+  },
   colorRow: { flexDirection: 'row', gap: spacing.sm },
   colorDot: { width: 32, height: 32, borderRadius: 16 },
   colorDotSelected: { borderWidth: 3, borderColor: colors.white },
@@ -348,7 +378,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
     borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, marginRight: spacing.sm, backgroundColor: colors.background,
   },
-  langFlag: { fontSize: 16 },
+  langCodeBadge: {
+    minWidth: 28, height: 22, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.surfaceElevated, paddingHorizontal: 6,
+  },
+  langCode: { fontSize: 10, fontWeight: '700', color: colors.textMuted },
   langLabel: { fontSize: 13, color: colors.textSecondary },
   modalActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
   cancelBtn: { flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, paddingVertical: spacing.md, alignItems: 'center' },

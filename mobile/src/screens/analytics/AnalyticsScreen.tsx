@@ -1,136 +1,97 @@
 import React, { useState } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator,
+  View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, radius, typography, shadow } from '../../theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors, spacing, radius, typography } from '../../theme';
 import { useGetAnalyticsQuery, useGetTopicsQuery } from '../../services/api';
+import { useAppSelector } from '../../hooks/redux';
+import { TopicIcon } from '../../constants/topicIcons';
+import PaywallModal from '../../components/PaywallModal';
+import { PRO_PRICE } from '../../services/revenueCat';
+
+const TAB_BAR_CLEARANCE = Platform.OS === 'ios' ? 96 : 80;
 
 const QUALITY_COLORS = ['#FF1744', '#FF6D00', '#FF9800', '#FFD740', '#00BCD4', '#00E676'];
 const QUALITY_LABELS = ['0-Blackout', '1-Wrong', '2-Saw it', '3-Hard', '4-Good', '5-Easy'];
 
 export default function AnalyticsScreen() {
+  const insets = useSafeAreaInsets();
+  const bottomPad = TAB_BAR_CLEARANCE + insets.bottom;
+  const subscriptionTier = useAppSelector((s) => s.subscription.tier);
+  const userTier = useAppSelector((s) => s.auth.user?.subscriptionTier);
+  const isPro = subscriptionTier === 'pro' || userTier === 'pro';
   const [selectedTopicId, setSelectedTopicId] = useState<string | undefined>(undefined);
+  const [showPaywall, setShowPaywall] = useState(false);
   const { data: topics } = useGetTopicsQuery();
-  const { data: analytics, isLoading } = useGetAnalyticsQuery({ topicId: selectedTopicId });
+  const { data: analytics, isLoading } = useGetAnalyticsQuery({ topicId: isPro ? selectedTopicId : undefined });
 
   const maxActivity = analytics ? Math.max(...analytics.dailyActivity.map((d) => d.cardsReviewed), 1) : 1;
   const maxForecast = analytics ? Math.max(...analytics.forecast.map((d) => d.dueCount), 1) : 1;
   const totalQuality = analytics?.qualityDistribution.reduce((s, q) => s + q.count, 0) || 1;
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{ paddingBottom: bottomPad }}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.header}>
         <Text style={styles.title}>Analytics</Text>
-        <Text style={styles.subtitle}>Spaced repetition insights</Text>
+        <Text style={styles.subtitle}>
+          {isPro ? 'Spaced repetition insights' : 'Basic overview · upgrade for full insights'}
+        </Text>
       </View>
 
-      {/* Topic filter */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={styles.filterContent}>
-        <TouchableOpacity
-          style={[styles.filterChip, !selectedTopicId && styles.filterChipActive]}
-          onPress={() => setSelectedTopicId(undefined)}
-        >
-          <Text style={[styles.filterText, !selectedTopicId && styles.filterTextActive]}>All Topics</Text>
-        </TouchableOpacity>
-        {topics?.map((t) => (
+      {isPro && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={styles.filterContent}>
           <TouchableOpacity
-            key={t._id}
-            style={[styles.filterChip, selectedTopicId === t._id && styles.filterChipActive]}
-            onPress={() => setSelectedTopicId(selectedTopicId === t._id ? undefined : t._id)}
+            style={[styles.filterChip, !selectedTopicId && styles.filterChipActive]}
+            onPress={() => setSelectedTopicId(undefined)}
           >
-            <Text style={styles.filterEmoji}>{t.emoji}</Text>
-            <Text style={[styles.filterText, selectedTopicId === t._id && styles.filterTextActive]}>{t.title}</Text>
+            <Text style={[styles.filterText, !selectedTopicId && styles.filterTextActive]}>All Topics</Text>
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+          {topics?.map((t) => (
+            <TouchableOpacity
+              key={t._id}
+              style={[styles.filterChip, selectedTopicId === t._id && styles.filterChipActive]}
+              onPress={() => setSelectedTopicId(selectedTopicId === t._id ? undefined : t._id)}
+            >
+              <TopicIcon emoji={t.emoji} size={14} color={selectedTopicId === t._id ? colors.white : t.color} />
+              <Text style={[styles.filterText, selectedTopicId === t._id && styles.filterTextActive]}>{t.title}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
 
       {isLoading ? (
         <ActivityIndicator color={colors.primary} style={{ marginTop: 60 }} />
       ) : !analytics ? null : (
         <>
-          {/* ── Top stats row ── */}
           <View style={styles.topStats}>
             <View style={[styles.bigStat, { borderColor: colors.error + '40' }]}>
-              <Text style={styles.bigStatEmoji}>🔥</Text>
+              <Ionicons name="flame" size={22} color={colors.error} style={styles.bigStatIcon} />
               <Text style={[styles.bigStatVal, { color: colors.error }]}>{analytics.streakDays}</Text>
               <Text style={styles.bigStatLabel}>Day Streak</Text>
             </View>
             <View style={[styles.bigStat, { borderColor: colors.accent + '40' }]}>
-              <Text style={styles.bigStatEmoji}>🎯</Text>
+              <Ionicons name="locate" size={22} color={colors.accent} style={styles.bigStatIcon} />
               <Text style={[styles.bigStatVal, { color: colors.accent }]}>{analytics.retentionRate}%</Text>
               <Text style={styles.bigStatLabel}>Retention</Text>
             </View>
             <View style={[styles.bigStat, { borderColor: colors.primary + '40' }]}>
-              <Text style={styles.bigStatEmoji}>⚡</Text>
+              <Ionicons name="flash" size={22} color={colors.primary} style={styles.bigStatIcon} />
               <Text style={[styles.bigStatVal, { color: colors.primary }]}>{analytics.dueToday}</Text>
               <Text style={styles.bigStatLabel}>Due Today</Text>
             </View>
             <View style={[styles.bigStat, { borderColor: colors.warning + '40' }]}>
-              <Text style={styles.bigStatEmoji}>💡</Text>
+              <Ionicons name="bulb" size={22} color={colors.warning} style={styles.bigStatIcon} />
               <Text style={[styles.bigStatVal, { color: colors.warning }]}>{analytics.avgQuality}</Text>
               <Text style={styles.bigStatLabel}>Avg Quality</Text>
             </View>
           </View>
 
-          {/* ── Card States (Anki-style) ── */}
-          {analytics.cardStates && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Card States</Text>
-              <Text style={styles.cardSub}>Based on spaced repetition schedule</Text>
-              <View style={styles.statesRow}>
-                <View style={styles.stateBox}>
-                  <Text style={[styles.stateNum, { color: colors.primary }]}>{analytics.cardStates.new}</Text>
-                  <Text style={styles.stateLabel}>New</Text>
-                </View>
-                <View style={styles.stateBox}>
-                  <Text style={[styles.stateNum, { color: colors.warning }]}>{analytics.cardStates.young}</Text>
-                  <Text style={styles.stateLabel}>Young</Text>
-                  <Text style={styles.stateHint}>{'<21d interval'}</Text>
-                </View>
-                <View style={styles.stateBox}>
-                  <Text style={[styles.stateNum, { color: colors.success }]}>{analytics.cardStates.mature}</Text>
-                  <Text style={styles.stateLabel}>Mature</Text>
-                  <Text style={styles.stateHint}>{'≥21d interval'}</Text>
-                </View>
-                <View style={styles.stateBox}>
-                  <Text style={[styles.stateNum, { color: colors.textSecondary }]}>{analytics.cardStates.total}</Text>
-                  <Text style={styles.stateLabel}>Total</Text>
-                </View>
-              </View>
-              {/* Stacked progress bar */}
-              <View style={styles.stateBar}>
-                {analytics.cardStates.total > 0 && <>
-                  <View style={[styles.stateBarSeg, { flex: analytics.cardStates.new, backgroundColor: colors.primary + '70' }]} />
-                  <View style={[styles.stateBarSeg, { flex: analytics.cardStates.young, backgroundColor: colors.warning + '70' }]} />
-                  <View style={[styles.stateBarSeg, { flex: analytics.cardStates.mature, backgroundColor: colors.success + '70' }]} />
-                </>}
-              </View>
-            </View>
-          )}
-
-          {/* ── Quality Distribution ── */}
-          {analytics.qualityDistribution && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Recall Quality Distribution</Text>
-              <Text style={styles.cardSub}>How you rated each card (0 = blackout, 5 = easy)</Text>
-              {analytics.qualityDistribution.map((q) => {
-                const pct = totalQuality > 0 ? (q.count / totalQuality) * 100 : 0;
-                return (
-                  <View key={q.quality} style={styles.qualityRow}>
-                    <Text style={[styles.qualityNum, { color: QUALITY_COLORS[q.quality] }]}>{q.quality}</Text>
-                    <Text style={styles.qualityLabel}>{QUALITY_LABELS[q.quality]}</Text>
-                    <View style={styles.qualityBarTrack}>
-                      <View style={[styles.qualityBarFill, { width: `${pct}%`, backgroundColor: QUALITY_COLORS[q.quality] }]} />
-                    </View>
-                    <Text style={styles.qualityCount}>{q.count}</Text>
-                  </View>
-                );
-              })}
-            </View>
-          )}
-
-          {/* ── 7-Day Activity ── */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>7-Day Activity</Text>
             <View style={styles.weekChart}>
@@ -154,79 +115,15 @@ export default function AnalyticsScreen() {
             </View>
           </View>
 
-          {/* ── 7-Day Forecast ── */}
-          {analytics.forecast && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Review Forecast</Text>
-              <Text style={styles.cardSub}>Cards due per day (next 7 days)</Text>
-              <View style={styles.weekChart}>
-                {analytics.forecast.map((day, i) => {
-                  const h = Math.max((day.dueCount / maxForecast) * 80, 4);
-                  const isToday = i === 0;
-                  const d = new Date(day.date);
-                  const label = isToday ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' });
-                  return (
-                    <View key={day.date} style={styles.dayCol}>
-                      {day.dueCount > 0 && <Text style={styles.dayNum}>{day.dueCount}</Text>}
-                      <View style={styles.dayBarTrack}>
-                        <View style={[styles.dayBar, {
-                          height: h,
-                          backgroundColor: isToday ? colors.accent + 'CC' : colors.primary + '50',
-                        }]} />
-                      </View>
-                      <Text style={[styles.dayLabel, isToday && { color: colors.accent, fontWeight: '700' }]}>{label}</Text>
-                    </View>
-                  );
-                })}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Recent Sessions</Text>
+            {analytics.recentSessions.length === 0 ? (
+              <View style={styles.emptySection}>
+                <Ionicons name="play-circle-outline" size={32} color={colors.textMuted} />
+                <Text style={styles.emptySectionText}>No sessions yet. Complete a quiz to see your history here.</Text>
               </View>
-            </View>
-          )}
-
-          {/* ── Weak Cards ── */}
-          {analytics.weakCards.length > 0 && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Cards Needing Work</Text>
-              <Text style={styles.cardSub}>Reviewed ≥3 times, lowest accuracy</Text>
-              {analytics.weakCards.map((card) => (
-                <View key={card._id} style={styles.weakRow}>
-                  <View style={[styles.weakIcon, { backgroundColor: card.accuracy < 50 ? colors.error + '20' : colors.warning + '20' }]}>
-                    <Ionicons name="alert-circle" size={16} color={card.accuracy < 50 ? colors.error : colors.warning} />
-                  </View>
-                  <View style={styles.weakInfo}>
-                    <Text style={styles.weakQ} numberOfLines={1}>{card.question}</Text>
-                    <Text style={styles.weakMeta}>EF {card.easeFactor} · {card.interval}d interval · q̄={card.avgQuality}</Text>
-                  </View>
-                  <Text style={[styles.weakAccuracy, { color: card.accuracy < 50 ? colors.error : colors.warning }]}>{card.accuracy}%</Text>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {/* ── Strong Cards ── */}
-          {analytics.strongCards && analytics.strongCards.length > 0 && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Mastered Cards</Text>
-              <Text style={styles.cardSub}>Mature cards with highest ease factor</Text>
-              {analytics.strongCards.map((card) => (
-                <View key={card._id} style={styles.weakRow}>
-                  <View style={[styles.weakIcon, { backgroundColor: colors.success + '20' }]}>
-                    <Ionicons name="star" size={16} color={colors.success} />
-                  </View>
-                  <View style={styles.weakInfo}>
-                    <Text style={styles.weakQ} numberOfLines={1}>{card.question}</Text>
-                    <Text style={styles.weakMeta}>EF {card.easeFactor} · {card.interval}d interval</Text>
-                  </View>
-                  <Text style={[styles.weakAccuracy, { color: colors.success }]}>{card.accuracy}%</Text>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {/* ── Recent Sessions ── */}
-          {analytics.recentSessions.length > 0 && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Recent Sessions</Text>
-              {analytics.recentSessions.map((s) => {
+            ) : (
+              analytics.recentSessions.map((s) => {
                 const sc = s.score >= 70 ? colors.success : s.score >= 40 ? colors.warning : colors.error;
                 return (
                   <View key={s._id} style={styles.sessionRow}>
@@ -245,12 +142,191 @@ export default function AnalyticsScreen() {
                     </View>
                   </View>
                 );
-              })}
+              })
+            )}
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Cards Needing Work</Text>
+            <Text style={styles.cardSub}>Reviewed ≥3 times, lowest accuracy</Text>
+            {!isPro ? (
+              <View style={styles.lockedSection}>
+                <Ionicons name="lock-closed" size={28} color={colors.textMuted} />
+                <Text style={styles.lockedSectionText}>Pro feature — see which cards need the most practice.</Text>
+                <TouchableOpacity style={styles.lockedSectionBtn} onPress={() => setShowPaywall(true)}>
+                  <Text style={styles.lockedSectionBtnText}>Unlock with Pro</Text>
+                </TouchableOpacity>
+              </View>
+            ) : analytics.weakCards.length > 0 ? (
+              analytics.weakCards.map((card) => (
+                <View key={card._id} style={styles.weakRow}>
+                  <View style={[styles.weakIcon, { backgroundColor: card.accuracy < 50 ? colors.error + '20' : colors.warning + '20' }]}>
+                    <Ionicons name="alert-circle" size={16} color={card.accuracy < 50 ? colors.error : colors.warning} />
+                  </View>
+                  <View style={styles.weakInfo}>
+                    <Text style={styles.weakQ} numberOfLines={1}>{card.question}</Text>
+                    <Text style={styles.weakMeta}>EF {card.easeFactor} · {card.interval}d interval · q̄={card.avgQuality}</Text>
+                  </View>
+                  <Text style={[styles.weakAccuracy, { color: card.accuracy < 50 ? colors.error : colors.warning }]}>{card.accuracy}%</Text>
+                </View>
+              ))
+            ) : (
+              <View style={styles.emptySection}>
+                <Ionicons name="alert-circle-outline" size={32} color={colors.textMuted} />
+                <Text style={styles.emptySectionText}>Cards reviewed 3+ times with low accuracy will appear here.</Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Mastered Cards</Text>
+            <Text style={styles.cardSub}>Mature cards with highest ease factor</Text>
+            {!isPro ? (
+              <View style={styles.lockedSection}>
+                <Ionicons name="lock-closed" size={28} color={colors.textMuted} />
+                <Text style={styles.lockedSectionText}>Pro feature — track your strongest, most retained cards.</Text>
+                <TouchableOpacity style={styles.lockedSectionBtn} onPress={() => setShowPaywall(true)}>
+                  <Text style={styles.lockedSectionBtnText}>Unlock with Pro</Text>
+                </TouchableOpacity>
+              </View>
+            ) : analytics.strongCards && analytics.strongCards.length > 0 ? (
+              analytics.strongCards.map((card) => (
+                <View key={card._id} style={styles.weakRow}>
+                  <View style={[styles.weakIcon, { backgroundColor: colors.success + '20' }]}>
+                    <Ionicons name="star" size={16} color={colors.success} />
+                  </View>
+                  <View style={styles.weakInfo}>
+                    <Text style={styles.weakQ} numberOfLines={1}>{card.question}</Text>
+                    <Text style={styles.weakMeta}>EF {card.easeFactor} · {card.interval}d interval</Text>
+                  </View>
+                  <Text style={[styles.weakAccuracy, { color: colors.success }]}>{card.accuracy}%</Text>
+                </View>
+              ))
+            ) : (
+              <View style={styles.emptySection}>
+                <Ionicons name="star-outline" size={32} color={colors.textMuted} />
+                <Text style={styles.emptySectionText}>Mature cards with high ease factor will show up as you progress.</Text>
+              </View>
+            )}
+          </View>
+
+          {isPro ? (
+            <>
+              {analytics.cardStates && (
+                <View style={styles.card}>
+                  <Text style={styles.cardTitle}>Card States</Text>
+                  <Text style={styles.cardSub}>Based on spaced repetition schedule</Text>
+                  <View style={styles.statesRow}>
+                    <View style={styles.stateBox}>
+                      <Text style={[styles.stateNum, { color: colors.primary }]}>{analytics.cardStates.new}</Text>
+                      <Text style={styles.stateLabel}>New</Text>
+                    </View>
+                    <View style={styles.stateBox}>
+                      <Text style={[styles.stateNum, { color: colors.warning }]}>{analytics.cardStates.young}</Text>
+                      <Text style={styles.stateLabel}>Young</Text>
+                      <Text style={styles.stateHint}>{'<21d interval'}</Text>
+                    </View>
+                    <View style={styles.stateBox}>
+                      <Text style={[styles.stateNum, { color: colors.success }]}>{analytics.cardStates.mature}</Text>
+                      <Text style={styles.stateLabel}>Mature</Text>
+                      <Text style={styles.stateHint}>{'≥21d interval'}</Text>
+                    </View>
+                    <View style={styles.stateBox}>
+                      <Text style={[styles.stateNum, { color: colors.textSecondary }]}>{analytics.cardStates.total}</Text>
+                      <Text style={styles.stateLabel}>Total</Text>
+                    </View>
+                  </View>
+                  <View style={styles.stateBar}>
+                    {analytics.cardStates.total > 0 && (
+                      <>
+                        <View style={[styles.stateBarSeg, { flex: analytics.cardStates.new, backgroundColor: colors.primary + '70' }]} />
+                        <View style={[styles.stateBarSeg, { flex: analytics.cardStates.young, backgroundColor: colors.warning + '70' }]} />
+                        <View style={[styles.stateBarSeg, { flex: analytics.cardStates.mature, backgroundColor: colors.success + '70' }]} />
+                      </>
+                    )}
+                  </View>
+                </View>
+              )}
+
+              {analytics.qualityDistribution && (
+                <View style={styles.card}>
+                  <Text style={styles.cardTitle}>Recall Quality Distribution</Text>
+                  <Text style={styles.cardSub}>How you rated each card (0 = blackout, 5 = easy)</Text>
+                  {analytics.qualityDistribution.map((q) => {
+                    const pct = totalQuality > 0 ? (q.count / totalQuality) * 100 : 0;
+                    return (
+                      <View key={q.quality} style={styles.qualityRow}>
+                        <Text style={[styles.qualityNum, { color: QUALITY_COLORS[q.quality] }]}>{q.quality}</Text>
+                        <Text style={styles.qualityLabel}>{QUALITY_LABELS[q.quality]}</Text>
+                        <View style={styles.qualityBarTrack}>
+                          <View style={[styles.qualityBarFill, { width: `${pct}%`, backgroundColor: QUALITY_COLORS[q.quality] }]} />
+                        </View>
+                        <Text style={styles.qualityCount}>{q.count}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+
+              {analytics.forecast && (
+                <View style={styles.card}>
+                  <Text style={styles.cardTitle}>Review Forecast</Text>
+                  <Text style={styles.cardSub}>Cards due per day (next 7 days)</Text>
+                  <View style={styles.weekChart}>
+                    {analytics.forecast.map((day, i) => {
+                      const h = Math.max((day.dueCount / maxForecast) * 80, 4);
+                      const isToday = i === 0;
+                      const d = new Date(day.date);
+                      const label = isToday ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' });
+                      return (
+                        <View key={day.date} style={styles.dayCol}>
+                          {day.dueCount > 0 && <Text style={styles.dayNum}>{day.dueCount}</Text>}
+                          <View style={styles.dayBarTrack}>
+                            <View style={[styles.dayBar, {
+                              height: h,
+                              backgroundColor: isToday ? colors.accent + 'CC' : colors.primary + '50',
+                            }]} />
+                          </View>
+                          <Text style={[styles.dayLabel, isToday && { color: colors.accent, fontWeight: '700' }]}>{label}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+              )}
+
+            </>
+          ) : (
+            <View style={styles.proUpsell}>
+              <View style={styles.proUpsellIcon}>
+                <Ionicons name="bar-chart" size={28} color={colors.primary} />
+              </View>
+              <Text style={styles.proUpsellTitle}>Advanced analytics</Text>
+              <Text style={styles.proUpsellSub}>
+                Unlock review forecasts, recall quality breakdown, weak & mastered cards, and per-topic filters.
+              </Text>
+              <View style={styles.proUpsellList}>
+                {['Review forecast', 'Recall quality', 'Weak & mastered cards', 'Per-topic filters'].map((item) => (
+                  <View key={item} style={styles.proUpsellRow}>
+                    <Ionicons name="lock-closed" size={14} color={colors.textMuted} />
+                    <Text style={styles.proUpsellItem}>{item}</Text>
+                  </View>
+                ))}
+              </View>
+              <TouchableOpacity style={styles.proUpsellBtn} onPress={() => setShowPaywall(true)} activeOpacity={0.85}>
+                <Ionicons name="flash" size={18} color={colors.background} />
+                <Text style={styles.proUpsellBtnText}>Upgrade to Pro · {PRO_PRICE}</Text>
+              </TouchableOpacity>
             </View>
           )}
         </>
       )}
-      <View style={{ height: 100 }} />
+
+      <PaywallModal
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        onSuccess={() => setShowPaywall(false)}
+      />
     </ScrollView>
   );
 }
@@ -264,12 +340,11 @@ const styles = StyleSheet.create({
   filterContent: { paddingHorizontal: spacing.lg, gap: spacing.sm },
   filterChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border },
   filterChipActive: { backgroundColor: colors.primary + '20', borderColor: colors.primary },
-  filterEmoji: { fontSize: 14 },
   filterText: { fontSize: 13, color: colors.textSecondary },
   filterTextActive: { color: colors.primary, fontWeight: '600' },
   topStats: { flexDirection: 'row', paddingHorizontal: spacing.lg, gap: spacing.sm, marginBottom: spacing.sm },
   bigStat: { flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.sm, alignItems: 'center', borderWidth: 1 },
-  bigStatEmoji: { fontSize: 18 },
+  bigStatIcon: { marginBottom: 4 },
   bigStatVal: { fontSize: 20, fontWeight: '800', marginTop: 2 },
   bigStatLabel: { fontSize: 10, color: colors.textMuted, textAlign: 'center', marginTop: 2 },
   card: { marginHorizontal: spacing.lg, marginBottom: spacing.sm, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border },
@@ -308,4 +383,52 @@ const styles = StyleSheet.create({
   sessionCards: { ...typography.body, fontSize: 13 },
   sessionDate: { ...typography.small, fontSize: 11 },
   sessionCounts: { gap: 2 },
+  emptySection: { alignItems: 'center', paddingVertical: spacing.lg, gap: spacing.sm },
+  emptySectionText: { ...typography.bodyMuted, textAlign: 'center', fontSize: 13 },
+  lockedSection: { alignItems: 'center', paddingVertical: spacing.lg, gap: spacing.sm },
+  lockedSectionText: { ...typography.bodyMuted, textAlign: 'center', fontSize: 13 },
+  lockedSectionBtn: {
+    marginTop: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
+    backgroundColor: colors.primary + '20',
+    borderWidth: 1,
+    borderColor: colors.primary + '40',
+  },
+  lockedSectionBtnText: { color: colors.primary, fontWeight: '600', fontSize: 13 },
+  proUpsell: {
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.primary + '30',
+    alignItems: 'center',
+  },
+  proUpsellIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+  },
+  proUpsellTitle: { ...typography.h3, marginBottom: spacing.xs },
+  proUpsellSub: { ...typography.bodyMuted, textAlign: 'center', marginBottom: spacing.md },
+  proUpsellList: { alignSelf: 'stretch', gap: spacing.xs, marginBottom: spacing.lg },
+  proUpsellRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  proUpsellItem: { ...typography.body, fontSize: 13, color: colors.textSecondary },
+  proUpsellBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: radius.full,
+  },
+  proUpsellBtnText: { color: colors.background, fontWeight: '700', fontSize: 15 },
 });

@@ -1,12 +1,10 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { AuthState, User } from '../types';
+import { BYPASS_AUTH, DEV_TOKEN, DEV_USER } from '../config/dev';
 
-const initialState: AuthState = {
-  user: null,
-  token: null,
-  isLoading: false,
-  error: null,
-};
+const initialState: AuthState = BYPASS_AUTH
+  ? { user: DEV_USER, token: DEV_TOKEN, isLoading: false, error: null }
+  : { user: null, token: null, isLoading: false, error: null };
 
 const authSlice = createSlice({
   name: 'auth',

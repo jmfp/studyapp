@@ -4,6 +4,7 @@ import Purchases, {
   type PurchasesPackage,
 } from 'react-native-purchases';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 export const RC_ENTITLEMENT = 'pro';
 export const FREE_DECK_LIMIT = 2;
@@ -13,7 +14,14 @@ export const PRO_PRICE = '$4.99/month';
 const RC_API_KEY_IOS = process.env.EXPO_PUBLIC_RC_API_KEY_IOS || 'appl_REPLACE_WITH_YOUR_IOS_KEY';
 const RC_API_KEY_ANDROID = process.env.EXPO_PUBLIC_RC_API_KEY_ANDROID || 'goog_REPLACE_WITH_YOUR_ANDROID_KEY';
 
+export function canUseRevenueCat(): boolean {
+  if (Constants.appOwnership === 'expo') return false;
+  const apiKey = Platform.OS === 'ios' ? RC_API_KEY_IOS : RC_API_KEY_ANDROID;
+  return !apiKey.includes('REPLACE');
+}
+
 export async function initRevenueCat(userId: string): Promise<void> {
+  if (!canUseRevenueCat()) return;
   if (__DEV__) Purchases.setLogLevel(LOG_LEVEL.DEBUG);
 
   const apiKey = Platform.OS === 'ios' ? RC_API_KEY_IOS : RC_API_KEY_ANDROID;

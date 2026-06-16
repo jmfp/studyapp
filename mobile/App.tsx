@@ -7,9 +7,10 @@ import { store } from './src/store';
 import type { RootState, AppDispatch } from './src/store';
 import AppNavigator from './src/navigation/AppNavigator';
 import { setTier, setRcInitialized } from './src/store/subscriptionSlice';
-import { initRevenueCat, getCustomerInfo, isPro, logOut } from './src/services/revenueCat';
+import { initRevenueCat, getCustomerInfo, isPro, logOut, canUseRevenueCat } from './src/services/revenueCat';
 import { logout } from './src/store/authSlice';
 import { api } from './src/services/api';
+import { BYPASS_AUTH } from './src/config/dev';
 
 function AppInit() {
   const dispatch = useDispatch<AppDispatch>();
@@ -18,9 +19,15 @@ function AppInit() {
 
   // When user logs in, initialize RevenueCat and sync subscription state
   useEffect(() => {
-    if (!user || !token) return;
+    if (!user || !token || BYPASS_AUTH) return;
 
     (async () => {
+      if (!canUseRevenueCat()) {
+        dispatch(setTier((user.subscriptionTier as 'free' | 'pro') ?? 'free'));
+        dispatch(setRcInitialized(false));
+        return;
+      }
+
       try {
         await initRevenueCat(user._id);
         const info = await getCustomerInfo();
@@ -38,7 +45,7 @@ function AppInit() {
 
   // When user logs out, clean up RevenueCat
   useEffect(() => {
-    if (!token) {
+    if (!token && canUseRevenueCat()) {
       logOut().catch(() => {});
     }
   }, [token]);

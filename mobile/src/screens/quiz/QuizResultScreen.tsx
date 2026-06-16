@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Dimensions, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
@@ -8,6 +9,7 @@ import { colors, spacing, radius, typography, shadow } from '../../theme';
 import type { QuizStackParamList } from '../../types';
 
 const { width } = Dimensions.get('window');
+const TAB_BAR_CLEARANCE = Platform.OS === 'ios' ? 96 : 80;
 
 type Nav = NativeStackNavigationProp<QuizStackParamList, 'QuizResult'>;
 type Route = RouteProp<QuizStackParamList, 'QuizResult'>;
@@ -15,13 +17,14 @@ type Route = RouteProp<QuizStackParamList, 'QuizResult'>;
 export default function QuizResultScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
+  const insets = useSafeAreaInsets();
+  const bottomPad = TAB_BAR_CLEARANCE + insets.bottom;
   const { score, correct, wrong, total, topicId, avgQuality } = route.params;
 
   const [displayScore, setDisplayScore] = useState(0);
 
-  // Animation refs
-  const emojiScale = useRef(new Animated.Value(0)).current;
-  const emojiRotate = useRef(new Animated.Value(0)).current;
+  const iconScale = useRef(new Animated.Value(0)).current;
+  const iconRotate = useRef(new Animated.Value(0)).current;
   const titleAnim = useRef(new Animated.Value(0)).current;
   const circleAnim = useRef(new Animated.Value(0)).current;
   const stat1Anim = useRef(new Animated.Value(0)).current;
@@ -34,16 +37,38 @@ export default function QuizResultScreen() {
   const bgPulse = useRef(new Animated.Value(1)).current;
 
   const getGrade = () => {
-    if (score >= 90) return { label: 'Outstanding!', emoji: '🏆', color: colors.accent };
-    if (score >= 70) return { label: 'Great job!', emoji: '🌟', color: colors.success };
-    if (score >= 50) return { label: 'Good effort', emoji: '👍', color: colors.warning };
-    return { label: 'Keep going!', emoji: '💪', color: colors.error };
+    if (score >= 90) return { label: 'Outstanding!', icon: 'trophy', color: colors.accent };
+    if (score >= 70) return { label: 'Great job!', icon: 'star', color: colors.success };
+    if (score >= 50) return { label: 'Good effort', icon: 'thumbs-up', color: colors.warning };
+    return { label: 'Keep going!', icon: 'trending-up', color: colors.error };
+  };
+
+  const getMessage = () => {
+    if (score >= 90) {
+      return {
+        icon: 'flame' as const,
+        color: colors.accent,
+        text: 'Perfect! Cards are scheduled further out. Keep this up!',
+      };
+    }
+    if (score >= 70) {
+      return {
+        icon: 'sparkles' as const,
+        color: colors.success,
+        text: "Nice work! SM-2 has adjusted each card's next review date based on your ratings.",
+      };
+    }
+    return {
+      icon: 'book-outline' as const,
+      color: colors.primary,
+      text: "Missed cards have been reset and will reappear sooner. That's how you build memory.",
+    };
   };
 
   const grade = getGrade();
+  const message = getMessage();
 
   useEffect(() => {
-    // Score counter
     let frame = 0;
     const totalFrames = 60;
     const timer = setInterval(() => {
@@ -54,24 +79,18 @@ export default function QuizResultScreen() {
       if (frame >= totalFrames) clearInterval(timer);
     }, 16);
 
-    // Staggered entrance cascade
     Animated.sequence([
-      // Emoji bounces in
       Animated.parallel([
-        Animated.spring(emojiScale, { toValue: 1, tension: 60, friction: 5, useNativeDriver: true }),
-        Animated.timing(emojiRotate, { toValue: 1, duration: 600, useNativeDriver: true }),
+        Animated.spring(iconScale, { toValue: 1, tension: 60, friction: 5, useNativeDriver: true }),
+        Animated.timing(iconRotate, { toValue: 1, duration: 600, useNativeDriver: true }),
       ]),
-      // Title fades up
       Animated.spring(titleAnim, { toValue: 1, tension: 70, friction: 8, useNativeDriver: true }),
-      // Score ring expands
       Animated.spring(circleAnim, { toValue: 1, tension: 50, friction: 7, useNativeDriver: true }),
-      // Stats cascade in
       Animated.stagger(120, [
         Animated.spring(stat1Anim, { toValue: 1, tension: 70, friction: 8, useNativeDriver: true }),
         Animated.spring(stat2Anim, { toValue: 1, tension: 70, friction: 8, useNativeDriver: true }),
         Animated.spring(stat3Anim, { toValue: 1, tension: 70, friction: 8, useNativeDriver: true }),
       ]),
-      // Message + buttons
       Animated.stagger(100, [
         Animated.spring(messageAnim, { toValue: 1, tension: 60, friction: 8, useNativeDriver: true }),
         Animated.spring(btn1Anim, { toValue: 1, tension: 60, friction: 8, useNativeDriver: true }),
@@ -79,7 +98,6 @@ export default function QuizResultScreen() {
       ]),
     ]).start();
 
-    // Ring pulse for high scores
     if (score >= 70) {
       Animated.loop(
         Animated.sequence([
@@ -89,7 +107,6 @@ export default function QuizResultScreen() {
       ).start();
     }
 
-    // Background glow pulse for perfect/great scores
     if (score >= 90) {
       Animated.loop(
         Animated.sequence([
@@ -102,7 +119,10 @@ export default function QuizResultScreen() {
     return () => clearInterval(timer);
   }, []);
 
-  const emojiRotateDeg = emojiRotate.interpolate({ inputRange: [0, 0.2, 0.4, 0.6, 0.8, 1], outputRange: ['-20deg', '15deg', '-10deg', '8deg', '-4deg', '0deg'] });
+  const iconRotateDeg = iconRotate.interpolate({
+    inputRange: [0, 0.2, 0.4, 0.6, 0.8, 1],
+    outputRange: ['-20deg', '15deg', '-10deg', '8deg', '-4deg', '0deg'],
+  });
   const ringOpacity = ringAnim.interpolate({ inputRange: [0, 1], outputRange: [0.6, 0.1] });
   const ringScale = ringAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.5] });
 
@@ -120,25 +140,27 @@ export default function QuizResultScreen() {
   );
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      {/* Emoji */}
-      <Animated.View style={[styles.emojiContainer, {
-        transform: [{ scale: emojiScale }, { rotate: emojiRotateDeg }, { scale: bgPulse }],
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.content, { paddingBottom: bottomPad + spacing.lg }]}
+      showsVerticalScrollIndicator={false}
+    >
+      <Animated.View style={[styles.gradeIconWrap, {
+        backgroundColor: grade.color + '18',
+        borderColor: grade.color + '40',
+        transform: [{ scale: iconScale }, { rotate: iconRotateDeg }, { scale: bgPulse }],
       }]}>
-        <Text style={styles.gradeEmoji}>{grade.emoji}</Text>
+        <Ionicons name={grade.icon as any} size={52} color={grade.color} />
       </Animated.View>
 
-      {/* Title */}
       <Animated.Text style={[styles.gradeLabel, animatedSlideUp(titleAnim)]}>
         {grade.label}
       </Animated.Text>
 
-      {/* Score circle */}
       <Animated.View style={[styles.scoreSection, {
         transform: [{ scale: circleAnim }],
         opacity: circleAnim,
       }]}>
-        {/* Pulsing ring for good scores */}
         {score >= 70 && (
           <Animated.View style={[styles.pulsingRing, {
             borderColor: grade.color,
@@ -147,20 +169,20 @@ export default function QuizResultScreen() {
           }]} />
         )}
         <View style={[styles.scoreCircle, { borderColor: grade.color }]}>
-          <Text style={[styles.scoreNumber, { color: grade.color }]}>{displayScore}</Text>
-          <Text style={styles.scorePct}>%</Text>
+          <View style={styles.scoreValueRow}>
+            <Text style={[styles.scoreNumber, { color: grade.color }]}>{displayScore}</Text>
+            <Text style={[styles.scorePct, { color: grade.color }]}>%</Text>
+          </View>
           <Text style={styles.scoreLabel}>Score</Text>
         </View>
       </Animated.View>
 
-      {/* Stats */}
       <View style={styles.statsGrid}>
         <StatBox anim={stat1Anim} icon="checkmark-circle" value={correct} label="Correct" color={colors.success} />
         <StatBox anim={stat2Anim} icon="close-circle" value={wrong} label="Wrong" color={colors.error} />
         <StatBox anim={stat3Anim} icon="layers" value={total} label="Total" color={colors.primary} />
       </View>
 
-      {/* Message */}
       <Animated.View style={[styles.messageBox, animatedSlideUp(messageAnim)]}>
         <View style={styles.avgQualityRow}>
           <Text style={styles.avgQualityLabel}>Avg. recall quality</Text>
@@ -168,16 +190,12 @@ export default function QuizResultScreen() {
             {avgQuality ?? '—'} / 5
           </Text>
         </View>
-        <Text style={styles.messageText}>
-          {score >= 90
-            ? '🔥 Perfect! Cards are scheduled further out. Keep this up!'
-            : score >= 70
-            ? '✨ Nice work! SM-2 has adjusted each card\'s next review date based on your ratings.'
-            : '📖 Missed cards have been reset and will reappear sooner. That\'s how you build memory.'}
-        </Text>
+        <View style={styles.messageRow}>
+          <Ionicons name={message.icon} size={20} color={message.color} style={styles.messageIcon} />
+          <Text style={styles.messageText}>{message.text}</Text>
+        </View>
       </Animated.View>
 
-      {/* Buttons */}
       <Animated.View style={animatedSlideUp(btn1Anim)}>
         <TouchableOpacity
           style={[styles.primaryAction, { backgroundColor: grade.color }]}
@@ -198,8 +216,6 @@ export default function QuizResultScreen() {
           <Text style={styles.secondaryActionText}>Choose another topic</Text>
         </TouchableOpacity>
       </Animated.View>
-
-      <View style={{ height: 60 }} />
     </ScrollView>
   );
 }
@@ -207,8 +223,11 @@ export default function QuizResultScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { paddingHorizontal: spacing.lg, paddingTop: 80, alignItems: 'center' },
-  emojiContainer: { marginBottom: spacing.sm },
-  gradeEmoji: { fontSize: 80 },
+  gradeIconWrap: {
+    width: 96, height: 96, borderRadius: radius.xl,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: spacing.sm, borderWidth: 1,
+  },
   gradeLabel: { ...typography.h1, marginBottom: spacing.xl, textAlign: 'center' },
   scoreSection: { alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xl },
   pulsingRing: {
@@ -222,9 +241,10 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     ...shadow.lg,
   },
-  scoreNumber: { fontSize: 48, fontWeight: '900', lineHeight: 52 },
-  scorePct: { position: 'absolute', top: 28, right: 26, fontSize: 18, fontWeight: '700', color: colors.textSecondary },
-  scoreLabel: { ...typography.small, marginTop: 2 },
+  scoreValueRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 2 },
+  scoreNumber: { fontSize: 44, fontWeight: '900', lineHeight: 44 },
+  scorePct: { fontSize: 20, fontWeight: '700', marginBottom: 5, opacity: 0.9 },
+  scoreLabel: { ...typography.small, marginTop: 4 },
   statsGrid: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md, width: '100%' },
   statBox: {
     flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg,
@@ -238,10 +258,15 @@ const styles = StyleSheet.create({
     padding: spacing.lg, marginBottom: spacing.lg,
     borderWidth: 1, borderColor: colors.border, width: '100%', gap: spacing.sm,
   },
-  avgQualityRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
+  avgQualityRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border,
+  },
   avgQualityLabel: { ...typography.small, color: colors.textSecondary },
   avgQualityValue: { fontSize: 16, fontWeight: '800' },
-  messageText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', lineHeight: 24 },
+  messageRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  messageIcon: { marginTop: 2 },
+  messageText: { ...typography.body, color: colors.textSecondary, lineHeight: 24, flex: 1 },
   primaryAction: {
     borderRadius: radius.full,
     paddingVertical: spacing.md + 4, paddingHorizontal: spacing.xxl,
@@ -252,6 +277,7 @@ const styles = StyleSheet.create({
   secondaryAction: {
     borderWidth: 1, borderColor: colors.border, borderRadius: radius.full,
     paddingVertical: spacing.md, alignItems: 'center', width: width - spacing.lg * 2,
+    marginBottom: spacing.sm,
   },
   secondaryActionText: { ...typography.body, color: colors.textSecondary },
 });

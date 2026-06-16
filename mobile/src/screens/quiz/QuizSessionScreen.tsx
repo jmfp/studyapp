@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,
-  Animated, Alert, Dimensions, PanResponder, Vibration, ScrollView,
+  Animated, Alert, Dimensions, PanResponder, Vibration, ScrollView, Easing, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
@@ -20,23 +21,24 @@ type Route = RouteProp<QuizStackParamList, 'QuizSession'>;
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width - spacing.lg * 2;
 const SWIPE_THRESHOLD = width * 0.28;
+const TAB_BAR_CLEARANCE = Platform.OS === 'ios' ? 96 : 80;
 
 // SM-2 quality options shown after flipping
 const QUALITY_OPTIONS: QualityOption[] = [
   {
-    quality: 0, label: 'Blackout', sublabel: 'No idea', emoji: '💀',
+    quality: 0, label: 'Blackout', sublabel: 'No idea', icon: 'eye-off-outline',
     color: '#FF1744', isCorrect: false,
   },
   {
-    quality: 2, label: 'Wrong', sublabel: 'Saw it, knew it', emoji: '😕',
+    quality: 2, label: 'Wrong', sublabel: 'Saw it, knew it', icon: 'close-circle',
     color: '#FF6D00', isCorrect: false,
   },
   {
-    quality: 3, label: 'Hard', sublabel: 'Got it, barely', emoji: '😓',
+    quality: 3, label: 'Hard', sublabel: 'Got it, barely', icon: 'alert-circle',
     color: '#FFD740', isCorrect: true,
   },
   {
-    quality: 5, label: 'Easy', sublabel: 'Perfect recall', emoji: '⚡',
+    quality: 5, label: 'Easy', sublabel: 'Perfect recall', icon: 'flash',
     color: '#00E676', isCorrect: true,
   },
 ];
@@ -48,6 +50,8 @@ const SWIPE_LEFT_QUALITY: ReviewQuality = 1;  // Wrong
 export default function QuizSessionScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
+  const insets = useSafeAreaInsets();
+  const bottomPad = TAB_BAR_CLEARANCE + insets.bottom;
   const { topicId, topicTitle } = route.params;
 
   const { data: dueCards, isLoading } = useGetDueCardsQuery(topicId);
@@ -68,6 +72,7 @@ export default function QuizSessionScreen() {
 
   // Animation refs
   const flipAnim = useRef(new Animated.Value(0)).current;
+  const flipLiftAnim = useRef(new Animated.Value(0)).current;
   const cardTranslateX = useRef(new Animated.Value(0)).current;
   const cardTranslateY = useRef(new Animated.Value(60)).current;
   const cardRotation = useRef(new Animated.Value(0)).current;
@@ -82,7 +87,7 @@ export default function QuizSessionScreen() {
   const resultOverlayOpacity = useRef(new Animated.Value(0)).current;
   const resultOverlayScale = useRef(new Animated.Value(0.3)).current;
   const [resultColor, setResultColor] = useState(colors.success);
-  const [resultEmoji, setResultEmoji] = useState('⚡');
+  const [resultIcon, setResultIcon] = useState('flash');
 
   useEffect(() => {
     Animated.spring(startScreenAnim, { toValue: 1, tension: 55, friction: 8, useNativeDriver: true }).start();
@@ -90,6 +95,7 @@ export default function QuizSessionScreen() {
 
   const animateCardIn = useCallback(() => {
     flipAnim.setValue(0);
+    flipLiftAnim.setValue(0);
     cardTranslateX.setValue(0);
     cardTranslateY.setValue(60);
     cardScale.setValue(0.9);
@@ -103,6 +109,36 @@ export default function QuizSessionScreen() {
     ]).start();
   }, []);
 
+  const flipCard = () => {
+    if (isFlipped || isSubmitting) return;
+
+    Vibration.vibrate(8);
+
+    Animated.sequence([
+      Animated.spring(cardScale, { toValue: 0.97, tension: 140, friction: 9, useNativeDriver: true }),
+      Animated.parallel([
+        Animated.timing(flipAnim, {
+          toValue: 1,
+          duration: 560,
+          easing: Easing.bezier(0.22, 1, 0.36, 1),
+          useNativeDriver: true,
+        }),
+        Animated.sequence([
+          Animated.timing(flipLiftAnim, { toValue: -18, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+          Animated.spring(flipLiftAnim, { toValue: 0, tension: 52, friction: 7, useNativeDriver: true }),
+        ]),
+        Animated.sequence([
+          Animated.timing(cardScale, { toValue: 0.94, duration: 280, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+          Animated.spring(cardScale, { toValue: 1.02, tension: 70, friction: 6, useNativeDriver: true }),
+          Animated.spring(cardScale, { toValue: 1, tension: 80, friction: 8, useNativeDriver: true }),
+        ]),
+      ]),
+    ]).start(() => {
+      setIsFlipped(true);
+      Animated.spring(buttonsAnim, { toValue: 1, tension: 48, friction: 7, useNativeDriver: true }).start();
+    });
+  };
+
   useEffect(() => {
     if (isStarted && dueCards) {
       animateCardIn();
@@ -113,14 +149,6 @@ export default function QuizSessionScreen() {
       }).start();
     }
   }, [isStarted, currentIndex]);
-
-  const flipCard = () => {
-    if (isFlipped || isSubmitting) return;
-    Animated.spring(flipAnim, { toValue: 1, tension: 45, friction: 6, useNativeDriver: true }).start(() => {
-      setIsFlipped(true);
-      Animated.spring(buttonsAnim, { toValue: 1, tension: 55, friction: 7, useNativeDriver: true }).start();
-    });
-  };
 
   const shakeCard = () => {
     Animated.sequence([
@@ -133,9 +161,9 @@ export default function QuizSessionScreen() {
     ]).start();
   };
 
-  const showResultBubble = (color: string, emoji: string) => {
+  const showResultBubble = (color: string, icon: string) => {
     setResultColor(color);
-    setResultEmoji(emoji);
+    setResultIcon(icon);
     resultOverlayOpacity.setValue(0);
     resultOverlayScale.setValue(0.3);
     Animated.parallel([
@@ -168,7 +196,7 @@ export default function QuizSessionScreen() {
       shakeCard();
     }
 
-    showResultBubble(opt.color, opt.emoji);
+    showResultBubble(opt.color, opt.icon);
     if (isCorrect) setCorrect((c) => c + 1);
     else setWrong((w) => w + 1);
     setQualityScores((qs) => [...qs, quality]);
@@ -240,6 +268,10 @@ export default function QuizSessionScreen() {
 
   const frontRotate = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
   const backRotate = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['180deg', '360deg'] });
+  const frontOpacity = flipAnim.interpolate({ inputRange: [0, 0.48, 0.52, 1], outputRange: [1, 1, 0, 0] });
+  const backOpacity = flipAnim.interpolate({ inputRange: [0, 0.48, 0.52, 1], outputRange: [0, 0, 1, 1] });
+  const backGlow = flipAnim.interpolate({ inputRange: [0.55, 1], outputRange: [0, 1], extrapolate: 'clamp' });
+  const cardLiftY = Animated.add(cardTranslateY, flipLiftAnim);
   const cardRotateDeg = cardRotation.interpolate({ inputRange: [-30, 0, 30], outputRange: ['-30deg', '0deg', '30deg'] });
   const swipeRightOpacity = cardTranslateX.interpolate({ inputRange: [20, 80], outputRange: [0, 1], extrapolate: 'clamp' });
   const swipeLeftOpacity = cardTranslateX.interpolate({ inputRange: [-80, -20], outputRange: [1, 0], extrapolate: 'clamp' });
@@ -250,7 +282,7 @@ export default function QuizSessionScreen() {
     return (
       <View style={s.center}>
         <Animated.View style={{ transform: [{ scale: startScreenAnim }], alignItems: 'center' }}>
-          <Text style={{ fontSize: 72 }}>🎉</Text>
+          <Ionicons name="checkmark-circle" size={72} color={colors.success} />
           <Text style={s.noCardsTitle}>All caught up!</Text>
           <Text style={s.noCardsSub}>No cards due. Your schedule is on track.</Text>
           <TouchableOpacity style={s.backBtn2} onPress={() => navigation.goBack()}>
@@ -270,7 +302,8 @@ export default function QuizSessionScreen() {
           </TouchableOpacity>
         </View>
         <Animated.ScrollView
-          contentContainerStyle={s.startContent}
+          contentContainerStyle={[s.startContent, { paddingBottom: bottomPad + spacing.lg }]}
+          showsVerticalScrollIndicator={false}
           style={{ opacity: startScreenAnim, transform: [{ translateY: startScreenAnim.interpolate({ inputRange: [0, 1], outputRange: [40, 0] }) }] }}
         >
           <View style={s.startIconBg}>
@@ -289,7 +322,7 @@ export default function QuizSessionScreen() {
             {QUALITY_OPTIONS.map((opt) => (
               <View key={opt.quality} style={s.ratingRow}>
                 <View style={[s.ratingDot, { backgroundColor: opt.color + '30', borderColor: opt.color }]}>
-                  <Text style={s.ratingEmoji}>{opt.emoji}</Text>
+                  <Ionicons name={opt.icon as any} size={20} color={opt.color} />
                 </View>
                 <View style={s.ratingInfo}>
                   <Text style={[s.ratingLabel, { color: opt.color }]}>{opt.label}</Text>
@@ -298,7 +331,10 @@ export default function QuizSessionScreen() {
                 <Text style={s.ratingQ}>q={opt.quality}</Text>
               </View>
             ))}
-            <Text style={s.swipeTip}>💡 Swipe right = Good · Swipe left = Wrong</Text>
+            <View style={s.swipeTip}>
+              <Ionicons name="bulb-outline" size={14} color={colors.textMuted} />
+              <Text style={s.swipeTipText}>Swipe right = Good · Swipe left = Wrong</Text>
+            </View>
           </View>
 
           <TouchableOpacity style={s.startBtn} onPress={async () => {
@@ -370,7 +406,7 @@ export default function QuizSessionScreen() {
             opacity: cardOpacity,
             transform: [
               { translateX: Animated.add(cardTranslateX, shakeAnim) },
-              { translateY: cardTranslateY },
+              { translateY: cardLiftY },
               { rotate: cardRotateDeg },
               { scale: cardScale },
             ],
@@ -386,7 +422,10 @@ export default function QuizSessionScreen() {
           </Animated.View>
 
           {/* Front */}
-          <Animated.View style={[s.flashCard, s.cardFront, { transform: [{ rotateY: frontRotate }] }]}>
+          <Animated.View style={[s.flashCard, s.cardFront, {
+            opacity: frontOpacity,
+            transform: [{ perspective: 1200 }, { rotateY: frontRotate }],
+          }]}>
             <TouchableOpacity style={s.cardInner} onPress={flipCard} activeOpacity={0.95}>
               <View style={s.cardTopRow}>
                 <View style={s.cardTag}><Text style={s.cardTagText}>QUESTION</Text></View>
@@ -401,7 +440,11 @@ export default function QuizSessionScreen() {
           </Animated.View>
 
           {/* Back */}
-          <Animated.View style={[s.flashCard, s.cardBack, { transform: [{ rotateY: backRotate }] }]}>
+          <Animated.View style={[s.flashCard, s.cardBack, {
+            opacity: backOpacity,
+            transform: [{ perspective: 1200 }, { rotateY: backRotate }],
+          }]}>
+            <Animated.View style={[s.cardBackGlow, { opacity: backGlow }]} />
             <View style={s.cardInner}>
               <View style={s.cardTopRow}>
                 <View style={[s.cardTag, { backgroundColor: colors.primary + '30' }]}>
@@ -421,12 +464,13 @@ export default function QuizSessionScreen() {
           borderColor: resultColor,
           backgroundColor: resultColor + '25',
         }]}>
-          <Text style={s.overlayEmoji}>{resultEmoji}</Text>
+          <Ionicons name={resultIcon as any} size={44} color={resultColor} />
         </Animated.View>
       </View>
 
       {/* Rating buttons */}
       <Animated.View style={[s.bottomArea, {
+        paddingBottom: bottomPad,
         opacity: buttonsAnim,
         transform: [{ translateY: buttonsAnim.interpolate({ inputRange: [0, 1], outputRange: [50, 0] }) }],
       }]}>
@@ -475,7 +519,7 @@ function QualityButton({ option, onPress, disabled }: {
         disabled={disabled}
         activeOpacity={1}
       >
-        <Text style={s.ratingBtnEmoji}>{option.emoji}</Text>
+        <Ionicons name={option.icon as any} size={22} color={option.color} />
         <Text style={[s.ratingBtnLabel, { color: option.color }]}>{option.label}</Text>
         <Text style={s.ratingBtnSub}>{option.sublabel}</Text>
       </TouchableOpacity>
@@ -518,7 +562,12 @@ const s = StyleSheet.create({
   },
   cardInner: { flex: 1, padding: spacing.xl, justifyContent: 'space-between' },
   cardFront: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-  cardBack: { backgroundColor: colors.surfaceElevated, borderWidth: 1.5, borderColor: colors.primary + '40' },
+  cardBack: { backgroundColor: colors.surfaceElevated, borderWidth: 1.5, borderColor: colors.primary + '40', overflow: 'hidden' },
+  cardBackGlow: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.primary,
+    opacity: 0.08,
+  },
   cardTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   cardTag: { backgroundColor: colors.background, borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 3 },
   cardTagText: { fontSize: 10, fontWeight: '700', color: colors.textMuted, letterSpacing: 1 },
@@ -548,9 +597,8 @@ const s = StyleSheet.create({
     width: 96, height: 96, borderRadius: 48,
     borderWidth: 2.5, alignItems: 'center', justifyContent: 'center',
   },
-  overlayEmoji: { fontSize: 44 },
 
-  bottomArea: { paddingHorizontal: spacing.md, paddingBottom: 42, minHeight: 150, justifyContent: 'flex-end' },
+  bottomArea: { paddingHorizontal: spacing.md, minHeight: 150, justifyContent: 'flex-end' },
   rateLabel: { ...typography.small, textAlign: 'center', marginBottom: 8, color: colors.textMuted, fontSize: 12 },
   ratingButtons: { flexDirection: 'row', gap: spacing.xs },
   ratingBtnWrap: { flex: 1 },
@@ -559,7 +607,6 @@ const s = StyleSheet.create({
     paddingVertical: spacing.sm + 2, borderRadius: radius.lg,
     borderWidth: 1.5, gap: 3,
   },
-  ratingBtnEmoji: { fontSize: 22 },
   ratingBtnLabel: { fontSize: 13, fontWeight: '700' },
   ratingBtnSub: { fontSize: 10, color: colors.textMuted, textAlign: 'center' },
 
@@ -571,7 +618,7 @@ const s = StyleSheet.create({
   },
   flipPromptText: { ...typography.body, color: colors.primary, fontSize: 14 },
 
-  startContent: { paddingHorizontal: spacing.lg, paddingBottom: 60, alignItems: 'center', paddingTop: 12 },
+  startContent: { paddingHorizontal: spacing.lg, alignItems: 'center', paddingTop: 12 },
   startIconBg: {
     width: 100, height: 100, borderRadius: radius.xl,
     backgroundColor: colors.primary + '22', alignItems: 'center', justifyContent: 'center',
@@ -594,12 +641,12 @@ const s = StyleSheet.create({
   ratingGuideTitle: { ...typography.small, color: colors.textSecondary, marginBottom: spacing.xs, textAlign: 'center' },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   ratingDot: { width: 38, height: 38, borderRadius: 19, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-  ratingEmoji: { fontSize: 18 },
   ratingInfo: { flex: 1 },
   ratingLabel: { fontSize: 14, fontWeight: '700' },
   ratingSub: { ...typography.small, fontSize: 11 },
   ratingQ: { ...typography.small, fontSize: 11, color: colors.textMuted },
-  swipeTip: { ...typography.small, fontSize: 11, textAlign: 'center', color: colors.textMuted, marginTop: 2 },
+  swipeTip: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 2 },
+  swipeTipText: { ...typography.small, fontSize: 11, color: colors.textMuted },
   startBtn: {
     backgroundColor: colors.primary, borderRadius: radius.full,
     paddingHorizontal: spacing.xxl, paddingVertical: spacing.md + 4,
