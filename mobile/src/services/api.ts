@@ -1,10 +1,17 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query';
 import type { RootState } from '../store';
-import type { Topic, Card, ReviewSession, Analytics, SubmitReviewResponse, ReviewQuality, GenerateCardsResponse, AiUsage, DraftCard } from '../types';
+import type { Topic, Card, ReviewSession, Analytics, SubmitReviewResponse, ReviewQuality, GenerateCardsResponse, AiUsage, DraftCard, CardImprovementResult, StudyCoachResult, AnalyticsInsightsResult, MultilingualAssistResult } from '../types';
 import { BYPASS_AUTH, DEV_USER } from '../config/dev';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000/api';
+
+function cardTags(topicId: string) {
+  return [
+    { type: 'Card' as const, id: topicId },
+    { type: 'Card' as const, id: `due-${topicId}` },
+  ];
+}
 
 const realBaseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
@@ -64,6 +71,69 @@ function getMockData(url: string, method: string, body?: Record<string, unknown>
         updatedAt: new Date().toISOString(),
       })),
     };
+  }
+
+  const improveMatch = url.match(/^\/topics\/([^/]+)\/cards\/([^/]+)\/improve$/);
+  if (method === 'POST' && improveMatch) {
+    return {
+      isWeakCard: true,
+      suggestions: [
+        {
+          id: 'shorten-1',
+          type: 'shorten_answer',
+          title: 'Shorten the answer',
+          explanation: 'The answer covers multiple ideas. One short phrase is easier to recall under pressure.',
+          suggestedQuestion: 'What does === check?',
+          suggestedAnswer: 'Value and type equality',
+        },
+        {
+          id: 'mnemonic-1',
+          type: 'mnemonic',
+          title: 'Add a memory hook',
+          explanation: 'A quick mnemonic can boost recall for this weak card.',
+          suggestedAnswer: 'Strict equality (value and type)',
+          mnemonic: 'Same === same type',
+        },
+      ],
+    } satisfies CardImprovementResult;
+  }
+
+  const coachMatch = url.match(/^\/topics\/([^/]+)\/cards\/([^/]+)\/coach$/);
+  if (method === 'POST' && coachMatch) {
+    return {
+      explanation: 'This card tests a detail you may not have linked to a broader pattern yet. Missing it often means the prompt and answer feel disconnected.',
+      memoryHook: 'Picture the answer as a label on the question — one vivid image ties them together.',
+      compareCard: {
+        question: 'What is spaced repetition?',
+        answer: 'Reviewing at increasing intervals',
+        reason: 'Both reward linking a short prompt to a crisp definition.',
+      },
+    } satisfies StudyCoachResult;
+  }
+
+  const multilingualMatch = url.match(/^\/topics\/([^/]+)\/cards\/multilingual$/);
+  if (method === 'POST' && multilingualMatch) {
+    const action = body?.action as string;
+    if (action === 'translate') {
+      return { translated: '[mock translation]' } satisfies MultilingualAssistResult;
+    }
+    if (action === 'examples') {
+      return { examples: ['Example sentence one.', 'Example sentence two.'] } satisfies MultilingualAssistResult;
+    }
+    if (action === 'reverse') {
+      return { reverseCard: { question: 'Reversed question?', answer: 'Reversed answer.' } } satisfies MultilingualAssistResult;
+    }
+    if (action === 'romaji' || action === 'nativeScript') {
+      return { nativeScript: 'みどり', romaji: 'みどり' } satisfies MultilingualAssistResult;
+    }
+  }
+
+  if (method === 'GET' && (url === '/ai/insights' || url.startsWith('/ai/insights?'))) {
+    return {
+      summary: 'You struggled with a few weak cards this week — mostly low recall quality on cards you have seen before.',
+      recommendation: '3 cards are due tomorrow. A focused 5-minute session now would smooth out those gaps.',
+      focusArea: 'vocabulary',
+    } satisfies AnalyticsInsightsResult;
   }
 
   if (method === 'GET' && url === '/topics') return demoTopics;
@@ -174,7 +244,7 @@ const baseQuery: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> =
 export const api = createApi({
   reducerPath: 'api',
   baseQuery,
-  tagTypes: ['Topic', 'Card', 'Session', 'Analytics'],
+  tagTypes: ['Topic', 'Card', 'Session', 'Analytics', 'AiUsage'],
   endpoints: (builder) => ({
     // Auth
     login: builder.mutation<{ token: string; user: { _id: string; name: string; email: string; subscriptionTier: string } }, { email: string; password: string }>({
@@ -185,9 +255,11 @@ export const api = createApi({
     }),
     getMe: builder.query<{ _id: string; name: string; email: string; subscriptionTier: string }, void>({
       query: () => '/auth/me',
+      providesTags: ['Topic'],
     }),
     updateSubscription: builder.mutation<{ user: { _id: string; name: string; email: string; subscriptionTier: string } }, { subscriptionTier: 'free' | 'pro'; revenueCatUserId?: string }>({
       query: (body) => ({ url: '/auth/subscription', method: 'POST', body }),
+      invalidatesTags: ['Topic'],
     }),
 
     // Topics
@@ -223,21 +295,21 @@ export const api = createApi({
     }),
     createCard: builder.mutation<Card, { topicId: string; question: string; answer: string; language?: string }>({
       query: ({ topicId, ...body }) => ({ url: `/topics/${topicId}/cards`, method: 'POST', body }),
-      invalidatesTags: (_r, _e, { topicId }) => [{ type: 'Card', id: topicId }, 'Topic'],
+      invalidatesTags: (_r, _e, { topicId }) => [...cardTags(topicId), 'Topic', 'Analytics'],
     }),
     updateCard: builder.mutation<Card, { id: string; topicId: string; data: Partial<Card> }>({
-      query: ({ id, data }) => ({ url: `/topics/${data.topicId || ''}/cards/${id}`, method: 'PUT', body: data }),
-      invalidatesTags: (_r, _e, { topicId }) => [{ type: 'Card', id: topicId }],
+      query: ({ id, topicId, data }) => ({ url: `/topics/${topicId}/cards/${id}`, method: 'PUT', body: data }),
+      invalidatesTags: (_r, _e, { topicId }) => [...cardTags(topicId), 'Topic', 'Analytics'],
     }),
     deleteCard: builder.mutation<void, { id: string; topicId: string }>({
       query: ({ id, topicId }) => ({ url: `/topics/${topicId}/cards/${id}`, method: 'DELETE' }),
-      invalidatesTags: (_r, _e, { topicId }) => [{ type: 'Card', id: topicId }, 'Topic'],
+      invalidatesTags: (_r, _e, { topicId }) => [...cardTags(topicId), 'Topic', 'Analytics'],
     }),
     generateCards: builder.mutation<
       GenerateCardsResponse,
       {
         topicId: string;
-        sourceType: 'text' | 'url' | 'image' | 'pdf';
+        sourceType: 'text' | 'url' | 'site' | 'image' | 'pdf';
         content?: string;
         imageBase64?: string;
         pdfBase64?: string;
@@ -250,6 +322,7 @@ export const api = createApi({
         method: 'POST',
         body,
       }),
+      invalidatesTags: ['AiUsage'],
     }),
     bulkCreateCards: builder.mutation<
       { count: number; cards: Card[] },
@@ -260,26 +333,82 @@ export const api = createApi({
         method: 'POST',
         body: { cards },
       }),
-      invalidatesTags: (_r, _e, { topicId }) => [{ type: 'Card', id: topicId }, 'Topic'],
+      invalidatesTags: (_r, _e, { topicId }) => [...cardTags(topicId), 'Topic', 'Analytics'],
     }),
     getAiUsage: builder.query<AiUsage & { configured: boolean }, void>({
       query: () => '/ai/usage',
+      providesTags: ['AiUsage'],
+    }),
+    improveCard: builder.mutation<
+      CardImprovementResult,
+      { topicId: string; cardId: string; trigger?: 'manual' | 'weak_card' }
+    >({
+      query: ({ topicId, cardId, trigger }) => ({
+        url: `/topics/${topicId}/cards/${cardId}/improve`,
+        method: 'POST',
+        body: { trigger: trigger ?? 'manual' },
+      }),
+    }),
+    getStudyCoach: builder.mutation<
+      StudyCoachResult,
+      { topicId: string; cardId: string; qualityRated?: number }
+    >({
+      query: ({ topicId, cardId, qualityRated }) => ({
+        url: `/topics/${topicId}/cards/${cardId}/coach`,
+        method: 'POST',
+        body: { qualityRated: qualityRated ?? 2 },
+      }),
+    }),
+    multilingualAssist: builder.mutation<
+      MultilingualAssistResult,
+      {
+        topicId: string;
+        action: 'translate' | 'examples' | 'reverse' | 'romaji' | 'nativeScript';
+        question?: string;
+        answer?: string;
+        text?: string;
+        side?: 'question' | 'answer';
+      }
+    >({
+      query: ({ topicId, ...body }) => ({
+        url: `/topics/${topicId}/cards/multilingual`,
+        method: 'POST',
+        body,
+      }),
+    }),
+    generateAnalyticsInsights: builder.mutation<AnalyticsInsightsResult, { topicId?: string }>({
+      query: ({ topicId } = {}) => ({
+        url: `/ai/insights${topicId ? `?topicId=${topicId}` : ''}`,
+        method: 'GET',
+      }),
     }),
 
     // Review Sessions
     startSession: builder.mutation<ReviewSession, string>({
       query: (topicId) => ({ url: `/topics/${topicId}/sessions`, method: 'POST' }),
     }),
-    submitReview: builder.mutation<SubmitReviewResponse, { sessionId: string; cardId: string; quality: ReviewQuality; timeSpentMs: number }>({
-      query: ({ sessionId, ...body }) => ({ url: `/sessions/${sessionId}/reviews`, method: 'POST', body }),
+    submitReview: builder.mutation<
+      SubmitReviewResponse,
+      { sessionId: string; cardId: string; topicId: string; quality: ReviewQuality; timeSpentMs: number }
+    >({
+      query: ({ sessionId, topicId: _topicId, ...body }) => ({
+        url: `/sessions/${sessionId}/reviews`,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: (_r, _e, { topicId }) => [...cardTags(topicId), 'Analytics'],
     }),
     completeSession: builder.mutation<ReviewSession, string>({
       query: (sessionId) => ({ url: `/sessions/${sessionId}/complete`, method: 'POST' }),
-      invalidatesTags: ['Session', 'Analytics', 'Card'],
+      invalidatesTags: (result) => [
+        'Session',
+        'Analytics',
+        ...(result?.topicId ? cardTags(result.topicId) : [{ type: 'Card' as const }]),
+      ],
     }),
     getSessionHistory: builder.query<ReviewSession[], string>({
       query: (topicId) => `/topics/${topicId}/sessions`,
-      providesTags: ['Session'],
+      providesTags: (_r, _e, topicId) => [{ type: 'Session', id: topicId }],
     }),
     getAnalytics: builder.query<Analytics, { topicId?: string }>({
       query: ({ topicId } = {}) => `/analytics${topicId ? `?topicId=${topicId}` : ''}`,
@@ -306,6 +435,10 @@ export const {
   useGenerateCardsMutation,
   useBulkCreateCardsMutation,
   useGetAiUsageQuery,
+  useImproveCardMutation,
+  useGetStudyCoachMutation,
+  useMultilingualAssistMutation,
+  useGenerateAnalyticsInsightsMutation,
   useStartSessionMutation,
   useSubmitReviewMutation,
   useCompleteSessionMutation,

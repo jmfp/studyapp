@@ -195,7 +195,7 @@ export const getAnalytics = async (req: Request, res: Response) => {
     // ─── Card-level stats ─────────────────────────────────────────────────────
     const cardQuery = topicId ? { userId, topicId: new mongoose.Types.ObjectId(topicId as string) } : { userId };
     const allCards = await Card.find(cardQuery).select(
-      'question timesReviewed timesCorrect timesWrong easeFactor interval repetitions isMature nextReviewAt qualityHistory'
+      'question answer topicId timesReviewed timesCorrect timesWrong easeFactor interval repetitions isMature nextReviewAt qualityHistory'
     );
 
     const reviewedCards = allCards.filter((c) => c.timesReviewed > 0);
@@ -212,7 +212,9 @@ export const getAnalytics = async (req: Request, res: Response) => {
       .filter((c) => c.timesReviewed >= 3)
       .map((c) => ({
         _id: c._id,
+        topicId: c.topicId,
         question: c.question,
+        answer: c.answer,
         accuracy: Math.round((c.timesCorrect / c.timesReviewed) * 100),
         timesReviewed: c.timesReviewed,
         easeFactor: +c.easeFactor.toFixed(2),

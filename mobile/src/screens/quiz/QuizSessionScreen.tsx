@@ -12,8 +12,12 @@ import { colors, spacing, radius, typography, shadow } from '../../theme';
 import {
   useGetDueCardsQuery, useStartSessionMutation,
   useSubmitReviewMutation, useCompleteSessionMutation,
+  useGetStudyCoachMutation,
 } from '../../services/api';
-import type { QuizStackParamList, ReviewQuality, QualityOption } from '../../types';
+import type { QuizStackParamList, ReviewQuality, QualityOption, StudyCoachResult } from '../../types';
+import StudyCoachModal from '../../components/StudyCoachModal';
+import PaywallModal from '../../components/PaywallModal';
+import { useAiProGate, isAiProRequiredError } from '../../hooks/useAiProGate';
 
 type Nav = NativeStackNavigationProp<QuizStackParamList, 'QuizSession'>;
 type Route = RouteProp<QuizStackParamList, 'QuizSession'>;
@@ -44,8 +48,8 @@ const QUALITY_OPTIONS: QualityOption[] = [
 ];
 
 // Maps swipe direction to quality for gesture shortcuts
-const SWIPE_RIGHT_QUALITY: ReviewQuality = 4; // Good
-const SWIPE_LEFT_QUALITY: ReviewQuality = 1;  // Wrong
+const SWIPE_LEFT_QUALITY: ReviewQuality = 5;  // Easy — swipe left = got it
+const SWIPE_RIGHT_QUALITY: ReviewQuality = 0; // Blackout — swipe right = no idea
 
 export default function QuizSessionScreen() {
   const navigation = useNavigation<Nav>();
@@ -58,6 +62,7 @@ export default function QuizSessionScreen() {
   const [startSession] = useStartSessionMutation();
   const [submitReview] = useSubmitReviewMutation();
   const [completeSession] = useCompleteSessionMutation();
+  const [getStudyCoach, { isLoading: coachLoading }] = useGetStudyCoachMutation();
 
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -69,6 +74,12 @@ export default function QuizSessionScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSm2, setLastSm2] = useState<{ label: string; quality: number } | null>(null);
   const [qualityScores, setQualityScores] = useState<number[]>([]);
+  const [coachVisible, setCoachVisible] = useState(false);
+  const [coachData, setCoachData] = useState<StudyCoachResult | null>(null);
+  const [coachAfterRating, setCoachAfterRating] = useState(false);
+  const [pendingQuality, setPendingQuality] = useState<ReviewQuality | null>(null);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const { requirePro } = useAiProGate(() => setShowPaywall(true));
 
   // Animation refs
   const flipAnim = useRef(new Animated.Value(0)).current;
@@ -88,6 +99,18 @@ export default function QuizSessionScreen() {
   const resultOverlayScale = useRef(new Animated.Value(0.3)).current;
   const [resultColor, setResultColor] = useState(colors.success);
   const [resultIcon, setResultIcon] = useState('flash');
+
+  const isFlippedRef = useRef(isFlipped);
+  const isSubmittingRef = useRef(isSubmitting);
+  const handleQualityRef = useRef<(quality: ReviewQuality) => void>(() => {});
+
+  useEffect(() => {
+    isFlippedRef.current = isFlipped;
+  }, [isFlipped]);
+
+  useEffect(() => {
+    isSubmittingRef.current = isSubmitting;
+  }, [isSubmitting]);
 
   useEffect(() => {
     Animated.spring(startScreenAnim, { toValue: 1, tension: 55, friction: 8, useNativeDriver: true }).start();
@@ -182,6 +205,74 @@ export default function QuizSessionScreen() {
     ]).start(callback);
   };
 
+  const advanceAfterReview = async (quality: ReviewQuality) => {
+    if (!sessionId || !dueCards) return;
+
+    const nextIndex = currentIndex + 1;
+    if (nextIndex >= dueCards.length) {
+      const allQ = [...qualityScores, quality];
+      const avgQ = allQ.reduce((a, b) => a + b, 0) / allQ.length;
+      const session = await completeSession(sessionId).unwrap();
+      navigation.replace('QuizResult', {
+        sessionId: session._id, topicId,
+        score: session.score,
+        correct: session.correctCount,
+        wrong: session.wrongCount,
+        total: session.totalCards,
+        avgQuality: +avgQ.toFixed(1),
+      });
+    } else {
+      setIsFlipped(false);
+      setCurrentIndex(nextIndex);
+      setCardStartTime(Date.now());
+      cardRotation.setValue(0);
+      animateCardIn();
+    }
+  };
+
+  const showCoachHints = async (cardId: string, qualityRated: number, afterRating: boolean) => {
+    try {
+      const coach = await getStudyCoach({ topicId, cardId, qualityRated }).unwrap();
+      setCoachData(coach);
+      setCoachAfterRating(afterRating);
+      setCoachVisible(true);
+      return true;
+    } catch (err) {
+      if (isAiProRequiredError(err)) {
+        setShowPaywall(true);
+      } else if (afterRating) {
+        Alert.alert('Study coach unavailable', 'Continuing to the next card.');
+      } else {
+        Alert.alert('Study coach unavailable', 'Try again in a moment.');
+      }
+      return false;
+    }
+  };
+
+  const handleCoachContinue = async () => {
+    setCoachVisible(false);
+    setCoachData(null);
+    if (coachAfterRating && pendingQuality !== null) {
+      const quality = pendingQuality;
+      setPendingQuality(null);
+      setCoachAfterRating(false);
+      try {
+        await advanceAfterReview(quality);
+      } catch {
+        Alert.alert('Error', 'Failed to continue session');
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
+
+  const handleHelpRemember = async () => {
+    if (!dueCards || isSubmitting || coachLoading) return;
+    if (!requirePro()) return;
+    const card = dueCards[currentIndex];
+    await showCoachHints(card._id, 2, false);
+  };
+
   const handleQuality = async (quality: ReviewQuality) => {
     if (!sessionId || !dueCards || isSubmitting) return;
     const card = dueCards[currentIndex];
@@ -200,15 +291,15 @@ export default function QuizSessionScreen() {
     if (isCorrect) setCorrect((c) => c + 1);
     else setWrong((w) => w + 1);
     setQualityScores((qs) => [...qs, quality]);
+    const needsCoach = quality <= 2;
 
     setTimeout(() => {
       exitCard(isCorrect ? 'right' : 'left', async () => {
         resultOverlayOpacity.setValue(0);
         try {
-          const resp = await submitReview({ sessionId, cardId: card._id, quality, timeSpentMs }).unwrap();
+          const resp = await submitReview({ sessionId, cardId: card._id, topicId, quality, timeSpentMs }).unwrap();
           setLastSm2({ label: resp.sm2Result.nextReviewLabel, quality });
 
-          // Show next-review label briefly
           sm2LabelAnim.setValue(0);
           Animated.sequence([
             Animated.spring(sm2LabelAnim, { toValue: 1, tension: 70, friction: 8, useNativeDriver: true }),
@@ -216,46 +307,57 @@ export default function QuizSessionScreen() {
             Animated.timing(sm2LabelAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
           ]).start();
 
-          const nextIndex = currentIndex + 1;
-          if (nextIndex >= dueCards.length) {
-            const allQ = [...qualityScores, quality];
-            const avgQ = allQ.reduce((a, b) => a + b, 0) / allQ.length;
-            const session = await completeSession(sessionId).unwrap();
-            navigation.replace('QuizResult', {
-              sessionId: session._id, topicId,
-              score: session.score,
-              correct: session.correctCount,
-              wrong: session.wrongCount,
-              total: session.totalCards,
-              avgQuality: +avgQ.toFixed(1),
-            });
+          if (needsCoach) {
+            setPendingQuality(quality);
+            const shown = await showCoachHints(card._id, quality, true);
+            if (!shown) {
+              await advanceAfterReview(quality);
+              setIsSubmitting(false);
+            }
           } else {
-            setIsFlipped(false);
-            setCurrentIndex(nextIndex);
-            setCardStartTime(Date.now());
-            cardRotation.setValue(0);
+            await advanceAfterReview(quality);
+            setIsSubmitting(false);
           }
         } catch {
           Alert.alert('Error', 'Failed to submit review');
-        } finally {
           setIsSubmitting(false);
         }
       });
     }, 380);
   };
 
+  handleQualityRef.current = handleQuality;
+
   const panResponder = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 12 && Math.abs(g.dx) > Math.abs(g.dy),
+      onMoveShouldSetPanResponder: (_, g) => {
+        if (!isFlippedRef.current || isSubmittingRef.current) return false;
+        return Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.2;
+      },
+      onMoveShouldSetPanResponderCapture: (_, g) => {
+        if (!isFlippedRef.current || isSubmittingRef.current) return false;
+        return Math.abs(g.dx) > 12 && Math.abs(g.dx) > Math.abs(g.dy) * 1.2;
+      },
+      onPanResponderGrant: () => {
+        cardTranslateX.stopAnimation();
+        cardRotation.stopAnimation();
+      },
       onPanResponderMove: (_, g) => {
         cardTranslateX.setValue(g.dx);
         cardRotation.setValue(g.dx / 16);
       },
       onPanResponderRelease: (_, g) => {
-        if (g.dx > SWIPE_THRESHOLD && isFlipped) {
-          handleQuality(SWIPE_RIGHT_QUALITY);
-        } else if (g.dx < -SWIPE_THRESHOLD && isFlipped) {
-          handleQuality(SWIPE_LEFT_QUALITY);
+        if (isSubmittingRef.current) {
+          Animated.parallel([
+            Animated.spring(cardTranslateX, { toValue: 0, tension: 80, friction: 7, useNativeDriver: true }),
+            Animated.spring(cardRotation, { toValue: 0, tension: 80, friction: 7, useNativeDriver: true }),
+          ]).start();
+          return;
+        }
+        if (g.dx > SWIPE_THRESHOLD && isFlippedRef.current) {
+          handleQualityRef.current(SWIPE_RIGHT_QUALITY);
+        } else if (g.dx < -SWIPE_THRESHOLD && isFlippedRef.current) {
+          handleQualityRef.current(SWIPE_LEFT_QUALITY);
         } else {
           Animated.parallel([
             Animated.spring(cardTranslateX, { toValue: 0, tension: 80, friction: 7, useNativeDriver: true }),
@@ -263,7 +365,8 @@ export default function QuizSessionScreen() {
           ]).start();
         }
       },
-    })
+      onPanResponderTerminationRequest: () => false,
+    }),
   ).current;
 
   const frontRotate = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
@@ -333,7 +436,7 @@ export default function QuizSessionScreen() {
             ))}
             <View style={s.swipeTip}>
               <Ionicons name="bulb-outline" size={14} color={colors.textMuted} />
-              <Text style={s.swipeTipText}>Swipe right = Good · Swipe left = Wrong</Text>
+              <Text style={s.swipeTipText}>Swipe left = Easy · Swipe right = Blackout</Text>
             </View>
           </View>
 
@@ -411,14 +514,16 @@ export default function QuizSessionScreen() {
               { scale: cardScale },
             ],
           }]}
-          {...(isFlipped ? panResponder.panHandlers : {})}
+          {...panResponder.panHandlers}
         >
           {/* Swipe hints */}
-          <Animated.View style={[s.swipeHintRight, { opacity: swipeRightOpacity }]}>
-            <Text style={[s.swipeHintText, { color: colors.success }]}>👍 GOOD</Text>
-          </Animated.View>
           <Animated.View style={[s.swipeHintLeft, { opacity: swipeLeftOpacity }]}>
-            <Text style={[s.swipeHintText, { color: colors.error }]}>✗ WRONG</Text>
+            <Ionicons name="flash" size={18} color={colors.success} />
+            <Text style={[s.swipeHintText, { color: colors.success }]}>EASY</Text>
+          </Animated.View>
+          <Animated.View style={[s.swipeHintRight, { opacity: swipeRightOpacity }]}>
+            <Ionicons name="eye-off-outline" size={18} color={colors.error} />
+            <Text style={[s.swipeHintText, { color: colors.error }]}>BLACKOUT</Text>
           </Animated.View>
 
           {/* Front */}
@@ -453,6 +558,21 @@ export default function QuizSessionScreen() {
                 <Text style={s.swipeGestureTip}>swipe or rate below</Text>
               </View>
               <Text style={s.answerText}>{card.answer}</Text>
+              <TouchableOpacity
+                style={s.helpRememberBtn}
+                onPress={handleHelpRemember}
+                disabled={coachLoading || isSubmitting}
+                activeOpacity={0.8}
+              >
+                {coachLoading ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <>
+                    <Ionicons name="school-outline" size={16} color={colors.primary} />
+                    <Text style={s.helpRememberText}>Help me remember this</Text>
+                  </>
+                )}
+              </TouchableOpacity>
             </View>
           </Animated.View>
         </Animated.View>
@@ -495,6 +615,19 @@ export default function QuizSessionScreen() {
           </TouchableOpacity>
         )}
       </Animated.View>
+
+      <StudyCoachModal
+        visible={coachVisible}
+        data={coachData}
+        onContinue={handleCoachContinue}
+        continueLabel={coachAfterRating ? 'Continue' : 'Got it'}
+      />
+
+      <PaywallModal
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        onSuccess={() => setShowPaywall(false)}
+      />
     </View>
   );
 }
@@ -580,15 +713,17 @@ const s = StyleSheet.create({
 
   swipeHintRight: {
     position: 'absolute', right: 16, top: 28, zIndex: 10,
-    paddingHorizontal: 12, paddingVertical: 7,
-    borderRadius: radius.md, borderWidth: 2, borderColor: colors.success,
-    backgroundColor: colors.success + '20',
-  },
-  swipeHintLeft: {
-    position: 'absolute', left: 16, top: 28, zIndex: 10,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 12, paddingVertical: 7,
     borderRadius: radius.md, borderWidth: 2, borderColor: colors.error,
     backgroundColor: colors.error + '20',
+  },
+  swipeHintLeft: {
+    position: 'absolute', left: 16, top: 28, zIndex: 10,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 12, paddingVertical: 7,
+    borderRadius: radius.md, borderWidth: 2, borderColor: colors.success,
+    backgroundColor: colors.success + '20',
   },
   swipeHintText: { fontWeight: '800', fontSize: 13, letterSpacing: 0.5 },
 
@@ -617,6 +752,14 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: colors.primary + '40',
   },
   flipPromptText: { ...typography.body, color: colors.primary, fontSize: 14 },
+
+  helpRememberBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
+    marginTop: spacing.md, paddingVertical: spacing.sm, paddingHorizontal: spacing.md,
+    backgroundColor: colors.primary + '12', borderRadius: radius.full,
+    borderWidth: 1, borderColor: colors.primary + '35',
+  },
+  helpRememberText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
 
   startContent: { paddingHorizontal: spacing.lg, alignItems: 'center', paddingTop: 12 },
   startIconBg: {

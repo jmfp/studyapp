@@ -194,9 +194,11 @@ export const demoAnalytics: Analytics = {
   weakCards: [
     {
       _id: 'card-5',
+      topicId: 'topic-js',
       question: 'What does === check?',
+      answer: 'Strict equality of value and type',
       accuracy: 50,
-      timesReviewed: 2,
+      timesReviewed: 4,
       easeFactor: 2.4,
       interval: 1,
       avgQuality: 2,

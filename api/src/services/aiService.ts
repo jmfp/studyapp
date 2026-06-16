@@ -5,8 +5,10 @@ import {
   MAX_PDF_CHUNKS,
   MAX_SOURCE_CHARS,
   PDF_CHUNK_SIZE,
+  SITE_DEFAULT_MAX_CARDS,
 } from '../constants/ai';
 import { chunkText, extractPdfText } from '../utils/pdfExtract';
+import { crawlWebsite, fetchUrlText } from '../utils/urlFetch';
 
 export interface DraftCard {
   question: string;
@@ -62,33 +64,39 @@ export function isAiConfigured(): boolean {
   return Boolean(openai);
 }
 
-export async function fetchUrlText(url: string): Promise<string> {
-  const response = await fetch(url, {
-    headers: { 'User-Agent': 'FlashStudy/1.0 (+https://flashstudy.app)' },
-    signal: AbortSignal.timeout(15000),
-  });
+async function generateFromSite(
+  baseUrl: string,
+  sourceLanguage: string,
+  language: string,
+  maxCards: number,
+): Promise<{ cards: DraftCard[]; meta: { pagesCrawled: number; urls: string[] } }> {
+  const { text, pagesCrawled, urls } = await crawlWebsite(baseUrl);
+  const chunks = chunkText(text, PDF_CHUNK_SIZE, MAX_PDF_CHUNKS);
 
-  if (!response.ok) {
-    throw new Error(`Could not fetch URL (${response.status})`);
+  if (chunks.length === 1) {
+    const cards = await generateFromText(text, sourceLanguage, language, maxCards);
+    return { cards, meta: { pagesCrawled, urls } };
   }
 
-  const html = await response.text();
-  const text = html
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/\s+/g, ' ')
-    .trim();
+  const perChunk = Math.max(Math.ceil(maxCards / chunks.length), 4);
+  const batchResults = await Promise.all(
+    chunks.map((chunk, index) =>
+      generateFromText(
+        chunk,
+        sourceLanguage,
+        language,
+        perChunk,
+        `Site section ${index + 1} of ${chunks.length}`,
+      ),
+    ),
+  );
 
-  if (text.length < 80) {
-    throw new Error('URL did not contain enough readable text');
+  const cards = dedupeCards(batchResults.flat()).slice(0, maxCards);
+  if (cards.length === 0) {
+    throw new Error('Could not generate cards from this website');
   }
 
-  return text.slice(0, MAX_SOURCE_CHARS);
+  return { cards, meta: { pagesCrawled, urls } };
 }
 
 function dedupeCards(cards: DraftCard[]): DraftCard[] {
@@ -209,7 +217,7 @@ export async function generateFromImage(
 }
 
 export async function generateCardsFromSource(params: {
-  sourceType: 'text' | 'url' | 'image' | 'pdf';
+  sourceType: 'text' | 'url' | 'site' | 'image' | 'pdf';
   content?: string;
   imageBase64?: string;
   pdfBase64?: string;
@@ -218,10 +226,18 @@ export async function generateCardsFromSource(params: {
   language: string;
   maxCards?: number;
 }): Promise<{ cards: DraftCard[]; meta?: Record<string, unknown> }> {
+  const defaultMax = params.sourceType === 'site' ? SITE_DEFAULT_MAX_CARDS : DEFAULT_MAX_CARDS;
   const maxCards = Math.min(
-    Math.max(params.maxCards ?? DEFAULT_MAX_CARDS, 3),
+    Math.max(params.maxCards ?? defaultMax, 3),
     MAX_CARDS_PER_GENERATION,
   );
+
+  if (params.sourceType === 'site') {
+    const url = params.content?.trim();
+    if (!url) throw new Error('Site URL is required');
+    const result = await generateFromSite(url, params.sourceLanguage, params.language, maxCards);
+    return { cards: result.cards, meta: result.meta };
+  }
 
   if (params.sourceType === 'pdf') {
     if (!params.pdfBase64) throw new Error('PDF data is required');

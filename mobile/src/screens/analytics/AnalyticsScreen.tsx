@@ -1,15 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { colors, spacing, radius, typography } from '../../theme';
-import { useGetAnalyticsQuery, useGetTopicsQuery } from '../../services/api';
+import { useGetAnalyticsQuery, useGetTopicsQuery, useGenerateAnalyticsInsightsMutation } from '../../services/api';
 import { useAppSelector } from '../../hooks/redux';
 import { TopicIcon } from '../../constants/topicIcons';
 import PaywallModal from '../../components/PaywallModal';
+import CardImproveModal from '../../components/CardImproveModal';
 import { PRO_PRICE } from '../../services/revenueCat';
+import type { Card, MainTabParamList, AnalyticsInsightsResult } from '../../types';
+import { weakCardToCard } from '../../utils/cardStats';
+import { useAiProGate, isAiProRequiredError } from '../../hooks/useAiProGate';
 
 const TAB_BAR_CLEARANCE = Platform.OS === 'ios' ? 96 : 80;
 
@@ -17,19 +23,64 @@ const QUALITY_COLORS = ['#FF1744', '#FF6D00', '#FF9800', '#FFD740', '#00BCD4', '
 const QUALITY_LABELS = ['0-Blackout', '1-Wrong', '2-Saw it', '3-Hard', '4-Good', '5-Easy'];
 
 export default function AnalyticsScreen() {
+  const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
   const insets = useSafeAreaInsets();
   const bottomPad = TAB_BAR_CLEARANCE + insets.bottom;
   const subscriptionTier = useAppSelector((s) => s.subscription.tier);
   const userTier = useAppSelector((s) => s.auth.user?.subscriptionTier);
   const isPro = subscriptionTier === 'pro' || userTier === 'pro';
-  const [selectedTopicId, setSelectedTopicId] = useState<string | undefined>(undefined);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [selectedTopicId, setSelectedTopicId] = useState<string | undefined>(undefined);
+  const { requirePro } = useAiProGate(() => setShowPaywall(true));
+  const [showImproveModal, setShowImproveModal] = useState(false);
+  const [improveCard, setImproveCard] = useState<Card | null>(null);
+  const [improveTopicId, setImproveTopicId] = useState<string | null>(null);
   const { data: topics } = useGetTopicsQuery();
   const { data: analytics, isLoading } = useGetAnalyticsQuery({ topicId: isPro ? selectedTopicId : undefined });
+  const [generateInsights, { isLoading: insightsLoading, isError: insightsError }] = useGenerateAnalyticsInsightsMutation();
+  const [insights, setInsights] = useState<AnalyticsInsightsResult | null>(null);
+
+  useEffect(() => {
+    setInsights(null);
+  }, [selectedTopicId]);
 
   const maxActivity = analytics ? Math.max(...analytics.dailyActivity.map((d) => d.cardsReviewed), 1) : 1;
   const maxForecast = analytics ? Math.max(...analytics.forecast.map((d) => d.dueCount), 1) : 1;
   const totalQuality = analytics?.qualityDistribution.reduce((s, q) => s + q.count, 0) || 1;
+
+  const openWeakImprove = (weak: NonNullable<typeof analytics>['weakCards'][number]) => {
+    if (!requirePro()) return;
+    const card = weakCardToCard(weak);
+    if (!card || !weak.topicId) return;
+    setImproveCard(card);
+    setImproveTopicId(weak.topicId);
+    setShowImproveModal(true);
+  };
+
+  const startFocusedSession = () => {
+    const topic = selectedTopicId
+      ? topics?.find((t) => t._id === selectedTopicId)
+      : topics?.[0];
+    if (!topic) return;
+    navigation.navigate('QuizTab', {
+      screen: 'QuizSession',
+      params: { topicId: topic._id, topicTitle: topic.title },
+    });
+  };
+
+  const handleGenerateInsights = async () => {
+    if (!requirePro()) return;
+    try {
+      const result = await generateInsights({ topicId: selectedTopicId }).unwrap();
+      setInsights(result);
+    } catch (err) {
+      if (isAiProRequiredError(err)) {
+        setShowPaywall(true);
+        return;
+      }
+      setInsights(null);
+    }
+  };
 
   return (
     <ScrollView
@@ -69,6 +120,68 @@ export default function AnalyticsScreen() {
         <ActivityIndicator color={colors.primary} style={{ marginTop: 60 }} />
       ) : !analytics ? null : (
         <>
+          <View style={styles.insightsCard}>
+            <View style={styles.insightsHeader}>
+              <Ionicons name="sparkles" size={18} color={colors.primary} />
+              <Text style={styles.insightsTitle}>AI weekly insight</Text>
+              {!isPro && (
+                <View style={styles.proBadge}>
+                  <Text style={styles.proBadgeText}>PRO</Text>
+                </View>
+              )}
+            </View>
+            {!insights && !insightsLoading && !insightsError && (
+              <>
+                <Text style={styles.insightsMuted}>
+                  Get a personalized summary of your weak spots and what to study next.
+                </Text>
+                <TouchableOpacity
+                  style={styles.generateInsightsBtn}
+                  onPress={handleGenerateInsights}
+                  disabled={insightsLoading}
+                >
+                  <Ionicons name="sparkles" size={16} color={colors.white} />
+                  <Text style={styles.generateInsightsBtnText}>Generate insight</Text>
+                </TouchableOpacity>
+              </>
+            )}
+            {insightsLoading && (
+              <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />
+            )}
+            {insightsError && !insightsLoading && isPro && (
+              <>
+                <Text style={styles.insightsMuted}>Could not generate insight — check your API key.</Text>
+                <TouchableOpacity style={styles.generateInsightsBtn} onPress={handleGenerateInsights}>
+                  <Ionicons name="refresh" size={16} color={colors.white} />
+                  <Text style={styles.generateInsightsBtnText}>Try again</Text>
+                </TouchableOpacity>
+              </>
+            )}
+            {insights && !insightsLoading && isPro && (
+              <>
+                {insights.focusArea && (
+                  <View style={styles.focusChip}>
+                    <Text style={styles.focusChipText}>{insights.focusArea}</Text>
+                  </View>
+                )}
+                <Text style={styles.insightsSummary}>{insights.summary}</Text>
+                <Text style={styles.insightsRecommendation}>{insights.recommendation}</Text>
+                <TouchableOpacity style={styles.insightsCta} onPress={startFocusedSession}>
+                  <Ionicons name="play" size={16} color={colors.white} />
+                  <Text style={styles.insightsCtaText}>Start focused session</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.regenerateBtn}
+                  onPress={handleGenerateInsights}
+                  disabled={insightsLoading}
+                >
+                  <Ionicons name="refresh" size={14} color={colors.primary} />
+                  <Text style={styles.regenerateBtnText}>Regenerate</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+
           <View style={styles.topStats}>
             <View style={[styles.bigStat, { borderColor: colors.error + '40' }]}>
               <Ionicons name="flame" size={22} color={colors.error} style={styles.bigStatIcon} />
@@ -168,6 +281,11 @@ export default function AnalyticsScreen() {
                     <Text style={styles.weakMeta}>EF {card.easeFactor} · {card.interval}d interval · q̄={card.avgQuality}</Text>
                   </View>
                   <Text style={[styles.weakAccuracy, { color: card.accuracy < 50 ? colors.error : colors.warning }]}>{card.accuracy}%</Text>
+                  {card.topicId && (
+                    <TouchableOpacity style={styles.improveChip} onPress={() => openWeakImprove(card)}>
+                      <Ionicons name="sparkles" size={16} color={colors.primary} />
+                    </TouchableOpacity>
+                  )}
                 </View>
               ))
             ) : (
@@ -327,6 +445,21 @@ export default function AnalyticsScreen() {
         onClose={() => setShowPaywall(false)}
         onSuccess={() => setShowPaywall(false)}
       />
+
+      {improveTopicId && (
+        <CardImproveModal
+          visible={showImproveModal}
+          topicId={improveTopicId}
+          card={improveCard}
+          trigger="weak_card"
+          onRequirePro={() => setShowPaywall(true)}
+          onClose={() => {
+            setShowImproveModal(false);
+            setImproveCard(null);
+            setImproveTopicId(null);
+          }}
+        />
+      )}
     </ScrollView>
   );
 }
@@ -342,6 +475,53 @@ const styles = StyleSheet.create({
   filterChipActive: { backgroundColor: colors.primary + '20', borderColor: colors.primary },
   filterText: { fontSize: 13, color: colors.textSecondary },
   filterTextActive: { color: colors.primary, fontWeight: '600' },
+  insightsCard: {
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.primary + '35',
+  },
+  insightsHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
+  proBadge: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    marginLeft: 'auto',
+  },
+  proBadgeText: { fontSize: 10, fontWeight: '900', color: colors.background, letterSpacing: 1 },
+  insightsTitle: { ...typography.h4, color: colors.primary },
+  insightsMuted: { ...typography.bodyMuted, fontSize: 13 },
+  focusChip: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.primary + '18',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.full,
+    marginBottom: spacing.sm,
+  },
+  focusChipText: { fontSize: 11, fontWeight: '700', color: colors.primary, textTransform: 'capitalize' },
+  insightsSummary: { ...typography.body, fontSize: 14, lineHeight: 21, marginBottom: spacing.sm },
+  insightsRecommendation: { ...typography.bodyMuted, fontSize: 13, lineHeight: 20, marginBottom: spacing.md },
+  insightsCta: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
+    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm,
+  },
+  insightsCtaText: { color: colors.white, fontWeight: '700', fontSize: 14 },
+  generateInsightsBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
+    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  generateInsightsBtnText: { color: colors.white, fontWeight: '700', fontSize: 14 },
+  regenerateBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    marginTop: spacing.sm, paddingVertical: spacing.xs,
+  },
+  regenerateBtnText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
   topStats: { flexDirection: 'row', paddingHorizontal: spacing.lg, gap: spacing.sm, marginBottom: spacing.sm },
   bigStat: { flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.sm, alignItems: 'center', borderWidth: 1 },
   bigStatIcon: { marginBottom: 4 },
@@ -376,6 +556,10 @@ const styles = StyleSheet.create({
   weakQ: { ...typography.body, fontSize: 13 },
   weakMeta: { fontSize: 10, color: colors.textMuted, marginTop: 1 },
   weakAccuracy: { fontSize: 14, fontWeight: '700' },
+  improveChip: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: colors.primary + '18', alignItems: 'center', justifyContent: 'center',
+  },
   sessionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
   sessionScore: { width: 48, height: 48, borderRadius: 24, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   sessionScoreTxt: { fontSize: 13, fontWeight: '700' },

@@ -1,17 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  ActivityIndicator, Alert, TextInput, Modal, Animated,
+  ActivityIndicator, Alert, TextInput, Modal, Animated, Switch, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, radius, typography, shadow } from '../../theme';
-import { useGetTopicsQuery, useCreateTopicMutation, useDeleteTopicMutation } from '../../services/api';
+import {
+  useGetTopicsQuery, useCreateTopicMutation, useDeleteTopicMutation,
+  useGenerateCardsMutation,
+} from '../../services/api';
 import { useAppSelector } from '../../hooks/redux';
 import { FREE_DECK_LIMIT } from '../../services/revenueCat';
 import PaywallModal from '../../components/PaywallModal';
-import type { TopicsStackParamList, Topic } from '../../types';
+import { useAiProGate } from '../../hooks/useAiProGate';
+import AiSourceForm, { useAiSourceForm } from '../../components/AiSourceForm';
+import ReviewGeneratedCardsModal from '../../components/ReviewGeneratedCardsModal';
+import type { TopicsStackParamList, Topic, DraftCard } from '../../types';
 import { TOPIC_ICONS, TopicIcon } from '../../constants/topicIcons';
 import { LANGUAGES, getLanguageLabel } from '../../constants/languages';
 
@@ -68,13 +74,15 @@ function AnimatedTopicCard({ topic, index, onPress, onLongPress }: {
               <Ionicons name="layers-outline" size={12} color={colors.textMuted} />
               <Text style={styles.metaText}>{topic.cardCount} cards</Text>
             </View>
-            <View style={styles.metaChip}>
-              <Text style={styles.metaText}>
-                {getLanguageLabel(topic.sourceLanguage ?? 'en').slice(0, 3).toUpperCase()}
-                {' → '}
-                {getLanguageLabel(topic.language).slice(0, 3).toUpperCase()}
-              </Text>
-            </View>
+            {(topic.sourceLanguage ?? 'en') !== topic.language && (
+              <View style={styles.metaChip}>
+                <Text style={styles.metaText}>
+                  {getLanguageLabel(topic.sourceLanguage ?? 'en').slice(0, 3).toUpperCase()}
+                  {' → '}
+                  {getLanguageLabel(topic.language).slice(0, 3).toUpperCase()}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
         <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
@@ -88,15 +96,22 @@ export default function TopicListScreen() {
   const { data: topics, isLoading } = useGetTopicsQuery();
   const [createTopic, { isLoading: creating }] = useCreateTopicMutation();
   const [deleteTopic] = useDeleteTopicMutation();
-  const subscriptionTier = useAppSelector((s) => s.subscription.tier);
+  const [generateCards, { isLoading: generating }] = useGenerateCardsMutation();
   const [showModal, setShowModal] = useState(false);
+  const sourceForm = useAiSourceForm();
+  const { requirePro } = useAiProGate(() => setShowPaywall(true));
+  const subscriptionTier = useAppSelector((s) => s.subscription.tier);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [importWithAi, setImportWithAi] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [pendingTopic, setPendingTopic] = useState<{ id: string; title: string } | null>(null);
+  const [generatedCards, setGeneratedCards] = useState<DraftCard[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedEmoji, setSelectedEmoji] = useState('book');
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
-  const [selectedLang, setSelectedLang] = useState('en');
-  const [selectedSourceLang, setSelectedSourceLang] = useState('en');
+  const [selectedLang, setSelectedLang] = useState('ja');
+  const [languageOptions, setLanguageOptions] = useState(false);
 
   const isAtFreeLimit = subscriptionTier === 'free' && (topics?.length ?? 0) >= FREE_DECK_LIMIT;
 
@@ -121,23 +136,81 @@ export default function TopicListScreen() {
 
   const openModal = () => {
     setShowModal(true);
+    setImportWithAi(false);
+    setLanguageOptions(false);
+    sourceForm.reset();
     modalContentAnim.setValue(0);
     Animated.spring(modalContentAnim, { toValue: 1, tension: 55, friction: 8, useNativeDriver: true }).start();
   };
 
+  const resetForm = () => {
+    setTitle('');
+    setDescription('');
+    setSelectedEmoji('book');
+    setSelectedColor(COLORS[0]);
+    setSelectedLang('ja');
+    setLanguageOptions(false);
+    setImportWithAi(false);
+    sourceForm.reset();
+  };
+
   const handleCreate = async () => {
     if (!title.trim()) { Alert.alert('Error', 'Topic title is required'); return; }
+
+    if (importWithAi) {
+      if (!requirePro()) return;
+    }
+
     try {
-      await createTopic({
+      const topic = await createTopic({
         title: title.trim(),
         description: description.trim(),
         emoji: selectedEmoji,
         color: selectedColor,
-        language: selectedLang,
-        sourceLanguage: selectedSourceLang,
+        language: languageOptions ? selectedLang : 'en',
+        sourceLanguage: 'en',
       }).unwrap();
-      setShowModal(false);
-      setTitle(''); setDescription(''); setSelectedEmoji('book'); setSelectedColor(COLORS[0]); setSelectedLang('en'); setSelectedSourceLang('en');
+
+      if (!importWithAi) {
+        setShowModal(false);
+        resetForm();
+        return;
+      }
+
+      const validationError = sourceForm.validate();
+      if (validationError) {
+        Alert.alert('Add content', validationError);
+        return;
+      }
+
+      try {
+        const result = await generateCards({
+          topicId: topic._id,
+          ...sourceForm.getPayload(),
+        }).unwrap();
+
+        setPendingTopic({ id: topic._id, title: topic.title });
+        setGeneratedCards(result.cards);
+        setShowModal(false);
+        setShowReviewModal(true);
+        resetForm();
+      } catch (err: any) {
+        const code = err?.data?.code;
+        setShowModal(false);
+        resetForm();
+        if (code === 'AI_LIMIT_REACHED' || code === 'AI_PRO_REQUIRED') {
+          setShowPaywall(true);
+          Alert.alert('Deck created', 'Your deck was saved. Upgrade to Pro to generate cards with AI.', [
+            { text: 'Open deck', onPress: () => navigation.navigate('TopicDetail', { topicId: topic._id, topicTitle: topic.title }) },
+          ]);
+        } else {
+          Alert.alert(
+            'Deck created',
+            err?.data?.message || 'AI generation failed. Your empty deck was saved — add cards manually.',
+            [{ text: 'Open deck', onPress: () => navigation.navigate('TopicDetail', { topicId: topic._id, topicTitle: topic.title }) }],
+          );
+        }
+      }
     } catch (err: any) {
       Alert.alert('Error', err?.data?.message || 'Failed to create topic');
     }
@@ -213,7 +286,7 @@ export default function TopicListScreen() {
       )}
 
       <Modal visible={showModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <Animated.View style={[styles.modalContent, {
             transform: [{ translateY: modalContentAnim.interpolate({ inputRange: [0, 1], outputRange: [60, 0] }) }],
             opacity: modalContentAnim,
@@ -221,23 +294,49 @@ export default function TopicListScreen() {
             <View style={styles.modalHandle} />
             <Text style={styles.modalTitle}>New Topic</Text>
 
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Topic title"
-              placeholderTextColor={colors.textMuted}
-              value={title}
-              onChangeText={setTitle}
-              autoFocus
-            />
-            <TextInput
-              style={[styles.modalInput, { marginTop: spacing.sm }]}
-              placeholder="Description (optional)"
-              placeholderTextColor={colors.textMuted}
-              value={description}
-              onChangeText={setDescription}
-            />
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" style={styles.modalScroll}>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Topic title"
+                placeholderTextColor={colors.textMuted}
+                value={title}
+                onChangeText={setTitle}
+                autoFocus
+              />
+              <TextInput
+                style={[styles.modalInput, { marginTop: spacing.sm }]}
+                placeholder="Description (optional)"
+                placeholderTextColor={colors.textMuted}
+                value={description}
+                onChangeText={setDescription}
+              />
 
-            <Text style={styles.pickerLabel}>ICON</Text>
+              <View style={styles.aiImportRow}>
+                <View style={styles.aiImportLabel}>
+                  <Ionicons name="sparkles" size={18} color={colors.primary} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.aiImportTitle}>Generate deck from material</Text>
+                    <Text style={styles.pickerHint}>Paste notes, PDF, URL, or image to create flashcards</Text>
+                  </View>
+                </View>
+                <Switch
+                  value={importWithAi}
+                  onValueChange={setImportWithAi}
+                  trackColor={{ false: colors.border, true: colors.primary + '80' }}
+                  thumbColor={importWithAi ? colors.primary : colors.textMuted}
+                />
+              </View>
+
+              {importWithAi && (
+                <View style={styles.aiImportBox}>
+                  <Text style={styles.aiUsage}>
+                    Pro feature — included with FlashStudy Pro
+                  </Text>
+                  <AiSourceForm form={sourceForm} compact />
+                </View>
+              )}
+
+              <Text style={styles.pickerLabel}>ICON</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.emojiRow}>
               {TOPIC_ICONS.map((item) => (
                 <TouchableOpacity
@@ -261,55 +360,91 @@ export default function TopicListScreen() {
               ))}
             </View>
 
-            <Text style={styles.pickerLabel}>FRONT OF CARDS</Text>
-            <Text style={styles.pickerHint}>Language for the question side (e.g. English)</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.langRow}>
-              {LANGUAGES.map((l) => (
-                <TouchableOpacity
-                  key={`source-${l.code}`}
-                  style={[styles.langChip, selectedSourceLang === l.code && { backgroundColor: selectedColor + '30', borderColor: selectedColor }]}
-                  onPress={() => setSelectedSourceLang(l.code)}
-                >
-                  <View style={[styles.langCodeBadge, selectedSourceLang === l.code && { backgroundColor: selectedColor + '40' }]}>
-                    <Text style={[styles.langCode, selectedSourceLang === l.code && { color: colors.white }]}>
-                      {l.code.toUpperCase()}
-                    </Text>
-                  </View>
-                  <Text style={[styles.langLabel, selectedSourceLang === l.code && { color: colors.white }]}>{l.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            <View style={styles.languageOptionsRow}>
+              <View style={styles.languageOptionsLabel}>
+                <Ionicons name="language-outline" size={18} color={colors.primary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.languageOptionsTitle}>Language deck</Text>
+                  <Text style={styles.pickerHint}>Questions in English, answers in another language</Text>
+                </View>
+              </View>
+              <Switch
+                value={languageOptions}
+                onValueChange={setLanguageOptions}
+                trackColor={{ false: colors.border, true: colors.primary + '80' }}
+                thumbColor={languageOptions ? colors.primary : colors.textMuted}
+              />
+            </View>
 
-            <Text style={styles.pickerLabel}>LEARNING LANGUAGE</Text>
-            <Text style={styles.pickerHint}>Language for the answer side (e.g. Japanese)</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.langRow}>
-              {LANGUAGES.map((l) => (
-                <TouchableOpacity
-                  key={l.code}
-                  style={[styles.langChip, selectedLang === l.code && { backgroundColor: selectedColor + '30', borderColor: selectedColor }]}
-                  onPress={() => setSelectedLang(l.code)}
-                >
-                  <View style={[styles.langCodeBadge, selectedLang === l.code && { backgroundColor: selectedColor + '40' }]}>
-                    <Text style={[styles.langCode, selectedLang === l.code && { color: colors.white }]}>
-                      {l.code.toUpperCase()}
-                    </Text>
-                  </View>
-                  <Text style={[styles.langLabel, selectedLang === l.code && { color: colors.white }]}>{l.label}</Text>
-                </TouchableOpacity>
-              ))}
+            {languageOptions && (
+              <>
+                <Text style={styles.pickerLabel}>LEARNING LANGUAGE</Text>
+                <Text style={styles.pickerHint}>Language for the answer side (e.g. Japanese)</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.langRow}>
+                  {LANGUAGES.filter((l) => l.code !== 'en').map((l) => (
+                    <TouchableOpacity
+                      key={l.code}
+                      style={[styles.langChip, selectedLang === l.code && { backgroundColor: selectedColor + '30', borderColor: selectedColor }]}
+                      onPress={() => setSelectedLang(l.code)}
+                    >
+                      <View style={[styles.langCodeBadge, selectedLang === l.code && { backgroundColor: selectedColor + '40' }]}>
+                        <Text style={[styles.langCode, selectedLang === l.code && { color: colors.white }]}>
+                          {l.code.toUpperCase()}
+                        </Text>
+                      </View>
+                      <Text style={[styles.langLabel, selectedLang === l.code && { color: colors.white }]}>{l.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </>
+            )}
             </ScrollView>
 
             <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowModal(false)}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => { setShowModal(false); resetForm(); }}>
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.createBtn, { backgroundColor: selectedColor }]} onPress={handleCreate} disabled={creating}>
-                {creating ? <ActivityIndicator color={colors.white} /> : <Text style={styles.createText}>Create</Text>}
+              <TouchableOpacity
+                style={[styles.createBtn, { backgroundColor: selectedColor }]}
+                onPress={handleCreate}
+                disabled={creating || generating}
+              >
+                {(creating || generating) ? (
+                  <ActivityIndicator color={colors.white} />
+                ) : (
+                  <Text style={styles.createText}>
+                    {importWithAi ? 'Generate deck' : 'Create'}
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
           </Animated.View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
+
+      <ReviewGeneratedCardsModal
+        visible={showReviewModal}
+        topicId={pendingTopic?.id ?? ''}
+        initialCards={generatedCards}
+        onClose={() => {
+          setShowReviewModal(false);
+          setGeneratedCards([]);
+          if (pendingTopic) {
+            navigation.navigate('TopicDetail', { topicId: pendingTopic.id, topicTitle: pendingTopic.title });
+          }
+          setPendingTopic(null);
+        }}
+        onSaved={(count) => {
+          setShowReviewModal(false);
+          setGeneratedCards([]);
+          const topic = pendingTopic;
+          setPendingTopic(null);
+          Alert.alert('Deck ready', `${count} card${count === 1 ? '' : 's'} added to your new deck.`);
+          if (topic) {
+            navigation.navigate('TopicDetail', { topicId: topic.id, topicTitle: topic.title });
+          }
+        }}
+      />
 
       <PaywallModal
         visible={showPaywall}
@@ -356,9 +491,35 @@ const styles = StyleSheet.create({
   metaChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.background, borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 3 },
   metaText: { fontSize: 12, color: colors.textMuted },
   modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: colors.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.lg, paddingBottom: 40 },
+  modalContent: {
+    backgroundColor: colors.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
+    padding: spacing.lg, paddingBottom: 40, maxHeight: '92%',
+  },
+  modalScroll: { maxHeight: 480 },
   modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginBottom: spacing.md },
   modalTitle: { ...typography.h3, marginBottom: spacing.md },
+  aiImportRow: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+    marginTop: spacing.md, paddingVertical: spacing.md, paddingHorizontal: spacing.md,
+    backgroundColor: colors.primary + '10', borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.primary + '30',
+  },
+  aiImportLabel: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md, paddingRight: spacing.xs },
+  aiImportTitle: { ...typography.body, fontWeight: '600', fontSize: 14 },
+  aiImportBox: {
+    marginTop: spacing.md, marginBottom: spacing.sm,
+    padding: spacing.lg, backgroundColor: colors.background,
+    borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+  },
+  aiUsage: { ...typography.small, color: colors.primary, marginBottom: spacing.md },
+  languageOptionsRow: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+    marginTop: spacing.md, paddingVertical: spacing.md, paddingHorizontal: spacing.md,
+    backgroundColor: colors.background, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.border,
+  },
+  languageOptionsLabel: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md, paddingRight: spacing.xs },
+  languageOptionsTitle: { ...typography.body, fontWeight: '600', fontSize: 14 },
   modalInput: {
     backgroundColor: colors.background, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
     paddingHorizontal: spacing.md, paddingVertical: spacing.md, ...typography.body, color: colors.textPrimary,

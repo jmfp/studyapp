@@ -102,7 +102,9 @@ export interface DailyActivity {
 
 export interface WeakCard {
   _id: string;
+  topicId?: string;
   question: string;
+  answer?: string;
   accuracy: number;
   timesReviewed: number;
   easeFactor: number;
@@ -153,6 +155,52 @@ export interface AiUsage {
 export interface GenerateCardsResponse {
   cards: DraftCard[];
   usage: AiUsage;
+}
+
+export type ImprovementType =
+  | 'shorten_answer'
+  | 'split_card'
+  | 'mnemonic'
+  | 'clarify_question';
+
+export interface CardImprovementSuggestion {
+  id: string;
+  type: ImprovementType;
+  title: string;
+  explanation: string;
+  suggestedQuestion?: string;
+  suggestedAnswer?: string;
+  additionalCards?: DraftCard[];
+  mnemonic?: string;
+}
+
+export interface CardImprovementResult {
+  suggestions: CardImprovementSuggestion[];
+  isWeakCard: boolean;
+}
+
+export interface StudyCoachResult {
+  explanation: string;
+  memoryHook: string;
+  compareCard?: {
+    question: string;
+    answer: string;
+    reason: string;
+  };
+}
+
+export interface AnalyticsInsightsResult {
+  summary: string;
+  recommendation: string;
+  focusArea?: string;
+}
+
+export interface MultilingualAssistResult {
+  translated?: string;
+  examples?: string[];
+  romaji?: string;
+  nativeScript?: string;
+  reverseCard?: { question: string; answer: string };
 }
 
 export interface Analytics {

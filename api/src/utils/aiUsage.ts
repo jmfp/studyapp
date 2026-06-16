@@ -28,11 +28,28 @@ export async function getAiUsage(userId: string) {
   };
 }
 
-export async function checkAiGenerationAllowed(userId: string) {
+export async function requireProForAi(userId: string) {
+  const user = await User.findById(userId);
+  if (!user) throw new Error('User not found');
+
   const usage = await getAiUsage(userId);
+  if (user.subscriptionTier !== 'pro') {
+    return { allowed: false as const, usage };
+  }
+  return { allowed: true as const, usage };
+}
+
+export async function checkAiGenerationAllowed(userId: string) {
+  const proCheck = await requireProForAi(userId);
+  if (!proCheck.allowed) {
+    return { allowed: false, usage: proCheck.usage, code: 'AI_PRO_REQUIRED' as const };
+  }
+
+  const usage = proCheck.usage;
   return {
     allowed: usage.remaining > 0,
     usage,
+    code: usage.remaining > 0 ? undefined : ('AI_LIMIT_REACHED' as const),
   };
 }
 

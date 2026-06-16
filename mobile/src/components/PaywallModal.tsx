@@ -19,9 +19,13 @@ const { width, height } = Dimensions.get('window');
 
 const PRO_FEATURES = [
   { icon: 'infinite', label: 'Unlimited decks', sub: `Create more than ${FREE_DECK_LIMIT} study decks` },
-  { icon: 'sparkles', label: 'Unlimited AI deck generation', sub: 'Generate flashcards from notes, URLs, and images' },
+  { icon: 'sparkles', label: 'AI deck generation', sub: 'Build full decks from notes, PDFs, URLs, site crawls & photos' },
+  { icon: 'school', label: 'Study coach', sub: 'Memory hooks and hints when you miss a card in quiz' },
+  { icon: 'bulb', label: 'Smart card improve', sub: 'AI suggestions to shorten, split, or add mnemonics' },
+  { icon: 'language', label: 'Multilingual AI', sub: 'Translations, native script answers, examples & reverse cards' },
+  { icon: 'analytics', label: 'AI weekly insights', sub: 'Personalized study summaries and recommendations' },
   { icon: 'bar-chart', label: 'Advanced analytics', sub: 'Forecasts, recall quality, weak cards & session history' },
-];
+] as const;
 
 interface PaywallModalProps {
   visible: boolean;

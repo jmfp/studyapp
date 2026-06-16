@@ -16,7 +16,11 @@ import MultilingualTextInput from '../../components/MultilingualTextInput';
 import GenerateCardsModal from '../../components/GenerateCardsModal';
 import ReviewGeneratedCardsModal from '../../components/ReviewGeneratedCardsModal';
 import PaywallModal from '../../components/PaywallModal';
+import CardImproveModal from '../../components/CardImproveModal';
+import MultilingualAiToolbar from '../../components/MultilingualAiToolbar';
 import type { DraftCard } from '../../types';
+import { isWeakCard } from '../../utils/cardStats';
+import { useAiProGate } from '../../hooks/useAiProGate';
 
 type Nav = CompositeNavigationProp<
   NativeStackNavigationProp<TopicsStackParamList, 'TopicDetail'>,
@@ -24,9 +28,9 @@ type Nav = CompositeNavigationProp<
 >;
 type Route = RouteProp<TopicsStackParamList, 'TopicDetail'>;
 
-function AnimatedCard({ card, index, onFlip, isFlipped, onDelete }: {
+function AnimatedCard({ card, index, onFlip, isFlipped, onDelete, onImprove }: {
   card: Card; index: number; isFlipped: boolean;
-  onFlip: () => void; onDelete: () => void;
+  onFlip: () => void; onDelete: () => void; onImprove: () => void;
 }) {
   const entranceAnim = useRef(new Animated.Value(0)).current;
   const flipAnim = useRef(new Animated.Value(0)).current;
@@ -53,6 +57,15 @@ function AnimatedCard({ card, index, onFlip, isFlipped, onDelete }: {
   const frontRotate = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
   const backRotate = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['180deg', '360deg'] });
   const accuracy = card.timesReviewed > 0 ? Math.round((card.timesCorrect / card.timesReviewed) * 100) : null;
+  const weak = isWeakCard(card);
+
+  const handleLongPress = () => {
+    Alert.alert('Card options', undefined, [
+      { text: 'Improve with AI', onPress: onImprove },
+      { text: 'Delete', style: 'destructive', onPress: onDelete },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
 
   return (
     <Animated.View style={{
@@ -66,7 +79,7 @@ function AnimatedCard({ card, index, onFlip, isFlipped, onDelete }: {
       <TouchableOpacity
         style={styles.cardOuter}
         onPress={onFlip}
-        onLongPress={onDelete}
+        onLongPress={handleLongPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         activeOpacity={1}
@@ -75,6 +88,12 @@ function AnimatedCard({ card, index, onFlip, isFlipped, onDelete }: {
         <Animated.View style={[styles.cardFace, styles.cardFront, { transform: [{ rotateY: frontRotate }] }]}>
           <View style={styles.cardTopRow}>
             <View style={styles.cardSide}><Text style={styles.cardSideText}>QUESTION</Text></View>
+            {weak && (
+              <View style={styles.weakBadge}>
+                <Ionicons name="alert-circle" size={12} color={colors.error} />
+                <Text style={styles.weakBadgeText}>Needs work</Text>
+              </View>
+            )}
             {accuracy !== null && (
               <Text style={[styles.accuracyText, { color: accuracy >= 70 ? colors.success : accuracy >= 40 ? colors.warning : colors.error }]}>
                 {accuracy}%
@@ -96,9 +115,12 @@ function AnimatedCard({ card, index, onFlip, isFlipped, onDelete }: {
             <View style={[styles.cardSide, { backgroundColor: colors.primary + '30' }]}>
               <Text style={[styles.cardSideText, { color: colors.primaryLight }]}>ANSWER</Text>
             </View>
+            <TouchableOpacity style={styles.improveBtn} onPress={onImprove} hitSlop={8}>
+              <Ionicons name="sparkles" size={16} color={colors.primary} />
+            </TouchableOpacity>
           </View>
           <Text style={[styles.cardText, { color: colors.primaryLight }]}>{card.answer}</Text>
-          <Text style={styles.cardMeta}>Long press to delete</Text>
+          <Text style={styles.cardMeta}>Long press for options</Text>
         </Animated.View>
       </TouchableOpacity>
     </Animated.View>
@@ -119,6 +141,10 @@ export default function TopicDetailScreen() {
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showImproveModal, setShowImproveModal] = useState(false);
+  const [improveCard, setImproveCard] = useState<Card | null>(null);
+  const [improveTrigger, setImproveTrigger] = useState<'manual' | 'weak_card'>('manual');
+  const { requirePro } = useAiProGate(() => setShowPaywall(true));
   const [generatedCards, setGeneratedCards] = useState<DraftCard[]>([]);
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
@@ -166,6 +192,13 @@ export default function TopicDetailScreen() {
     ]);
   };
 
+  const openImprove = (card: Card, trigger: 'manual' | 'weak_card' = 'manual') => {
+    if (!requirePro()) return;
+    setImproveCard(card);
+    setImproveTrigger(isWeakCard(card) ? 'weak_card' : trigger);
+    setShowImproveModal(true);
+  };
+
   const toggleFlip = (id: string) => {
     setFlippedCards((prev) => {
       const n = new Set(prev);
@@ -188,7 +221,7 @@ export default function TopicDetailScreen() {
           <Text style={styles.title}>{topicTitle}</Text>
         </View>
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.aiBtn} onPress={() => setShowGenerateModal(true)}>
+          <TouchableOpacity style={styles.aiBtn} onPress={() => { if (requirePro()) setShowGenerateModal(true); }}>
             <Ionicons name="sparkles" size={20} color={colors.primary} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.addBtn} onPress={openModal}>
@@ -231,14 +264,14 @@ export default function TopicDetailScreen() {
           <TouchableOpacity style={styles.emptyBtn} onPress={openModal}>
             <Text style={styles.emptyBtnText}>Add Card</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.emptyAiBtn} onPress={() => setShowGenerateModal(true)}>
+          <TouchableOpacity style={styles.emptyAiBtn} onPress={() => { if (requirePro()) setShowGenerateModal(true); }}>
             <Ionicons name="sparkles" size={18} color={colors.primary} />
             <Text style={styles.emptyAiBtnText}>Generate with AI</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-          <Text style={styles.tapHint}>Tap a card to flip · Long press to delete</Text>
+          <Text style={styles.tapHint}>Tap to flip · Long press for AI improve or delete</Text>
           {cards?.map((card, i) => (
             <AnimatedCard
               key={card._id}
@@ -247,6 +280,7 @@ export default function TopicDetailScreen() {
               isFlipped={flippedCards.has(card._id)}
               onFlip={() => toggleFlip(card._id)}
               onDelete={() => handleDelete(card)}
+              onImprove={() => openImprove(card)}
             />
           ))}
           <View style={{ height: 100 }} />
@@ -293,6 +327,23 @@ export default function TopicDetailScreen() {
               textAlignVertical="top"
             />
 
+            {(frontLang !== backLang || frontLang !== 'en' || backLang !== 'en') && (
+              <MultilingualAiToolbar
+                topicId={topicId}
+                sourceLanguage={frontLang}
+                language={backLang}
+                question={question}
+                answer={answer}
+                onQuestionChange={setQuestion}
+                onAnswerChange={setAnswer}
+                onReverseCard={(q, a) => {
+                  setQuestion(q);
+                  setAnswer(a);
+                }}
+                onRequirePro={() => setShowPaywall(true)}
+              />
+            )}
+
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => { setShowModal(false); setQuestion(''); setAnswer(''); }}>
                 <Text style={styles.cancelText}>Cancel</Text>
@@ -338,6 +389,18 @@ export default function TopicDetailScreen() {
         visible={showPaywall}
         onClose={() => setShowPaywall(false)}
         onSuccess={() => setShowPaywall(false)}
+      />
+
+      <CardImproveModal
+        visible={showImproveModal}
+        topicId={topicId}
+        card={improveCard}
+        trigger={improveTrigger}
+        onRequirePro={() => setShowPaywall(true)}
+        onClose={() => {
+          setShowImproveModal(false);
+          setImproveCard(null);
+        }}
       />
     </View>
   );
@@ -399,6 +462,16 @@ const styles = StyleSheet.create({
   cardSide: { backgroundColor: colors.surfaceElevated, borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 3 },
   cardSideText: { fontSize: 10, fontWeight: '700', color: colors.textMuted, letterSpacing: 1 },
   accuracyText: { fontSize: 12, fontWeight: '600' },
+  weakBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: colors.error + '18', borderRadius: radius.full,
+    paddingHorizontal: 8, paddingVertical: 2,
+  },
+  weakBadgeText: { fontSize: 10, fontWeight: '700', color: colors.error },
+  improveBtn: {
+    width: 30, height: 30, borderRadius: 15,
+    backgroundColor: colors.primary + '20', alignItems: 'center', justifyContent: 'center',
+  },
   cardText: { ...typography.body, lineHeight: 22, fontSize: 15, flex: 1 },
   cardMeta: { ...typography.small, fontSize: 11, marginTop: 4 },
   modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },

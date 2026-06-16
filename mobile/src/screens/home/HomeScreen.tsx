@@ -1,12 +1,16 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, ActivityIndicator, Animated,
+  View, Text, ScrollView, StyleSheet, ActivityIndicator, Animated, TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, typography, shadow } from '../../theme';
 import { useGetTopicsQuery, useGetAnalyticsQuery } from '../../services/api';
 import { useAppSelector } from '../../hooks/redux';
-import type { DailyActivity, ReviewSession } from '../../types';
+import type { Card, DailyActivity, ReviewSession } from '../../types';
+import CardImproveModal from '../../components/CardImproveModal';
+import PaywallModal from '../../components/PaywallModal';
+import { weakCardToCard } from '../../utils/cardStats';
+import { useAiProGate } from '../../hooks/useAiProGate';
 
 function useFadeSlideIn(delay = 0) {
   const anim = useRef(new Animated.Value(0)).current;
@@ -100,6 +104,20 @@ export default function HomeScreen() {
   const user = useAppSelector((s) => s.auth.user);
   const { data: topics } = useGetTopicsQuery();
   const { data: analytics, isLoading } = useGetAnalyticsQuery({});
+  const [improveCard, setImproveCard] = useState<Card | null>(null);
+  const [improveTopicId, setImproveTopicId] = useState<string | null>(null);
+  const [showImproveModal, setShowImproveModal] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const { requirePro } = useAiProGate(() => setShowPaywall(true));
+
+  const openWeakImprove = (weak: NonNullable<typeof analytics>['weakCards'][number]) => {
+    if (!requirePro()) return;
+    const card = weakCardToCard(weak);
+    if (!card || !weak.topicId) return;
+    setImproveCard(card);
+    setImproveTopicId(weak.topicId);
+    setShowImproveModal(true);
+  };
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
@@ -172,10 +190,17 @@ export default function HomeScreen() {
                     <Ionicons name="alert-circle-outline" size={17} color={colors.error} />
                     <Text style={styles.weakCardQuestion} numberOfLines={1}>{card.question}</Text>
                   </View>
-                  <View style={[styles.accuracyBadge, { backgroundColor: card.accuracy < 50 ? colors.error + '20' : colors.warning + '20' }]}>
-                    <Text style={[styles.accuracyText, { color: card.accuracy < 50 ? colors.error : colors.warning }]}>
-                      {card.accuracy}%
-                    </Text>
+                  <View style={styles.weakCardRight}>
+                    <View style={[styles.accuracyBadge, { backgroundColor: card.accuracy < 50 ? colors.error + '20' : colors.warning + '20' }]}>
+                      <Text style={[styles.accuracyText, { color: card.accuracy < 50 ? colors.error : colors.warning }]}>
+                        {card.accuracy}%
+                      </Text>
+                    </View>
+                    {card.topicId && (
+                      <TouchableOpacity style={styles.improveChip} onPress={() => openWeakImprove(card)}>
+                        <Ionicons name="sparkles" size={14} color={colors.primary} />
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </View>
               ))}
@@ -198,6 +223,27 @@ export default function HomeScreen() {
         </>
       )}
       <View style={{ height: 100 }} />
+
+      {improveTopicId && (
+        <CardImproveModal
+          visible={showImproveModal}
+          topicId={improveTopicId}
+          card={improveCard}
+          trigger="weak_card"
+          onRequirePro={() => setShowPaywall(true)}
+          onClose={() => {
+            setShowImproveModal(false);
+            setImproveCard(null);
+            setImproveTopicId(null);
+          }}
+        />
+      )}
+
+      <PaywallModal
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        onSuccess={() => setShowPaywall(false)}
+      />
     </ScrollView>
   );
 }
@@ -247,7 +293,12 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border,
   },
   weakCardLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 },
+  weakCardRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   weakCardQuestion: { ...typography.body, flex: 1, fontSize: 14 },
+  improveChip: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: colors.primary + '18', alignItems: 'center', justifyContent: 'center',
+  },
   accuracyBadge: { borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 3 },
   accuracyText: { fontSize: 13, fontWeight: '600' },
   emptyState: { alignItems: 'center', paddingVertical: spacing.lg, gap: spacing.sm },
