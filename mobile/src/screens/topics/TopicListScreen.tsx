@@ -11,10 +11,8 @@ import {
   useGetTopicsQuery, useCreateTopicMutation, useDeleteTopicMutation,
   useGenerateCardsMutation,
 } from '../../services/api';
-import { useAppSelector } from '../../hooks/redux';
 import { FREE_DECK_LIMIT } from '../../services/revenueCat';
-import PaywallModal from '../../components/PaywallModal';
-import { useAiProGate } from '../../hooks/useAiProGate';
+import { useAiProGate, useIsPro } from '../../hooks/useAiProGate';
 import AiSourceForm, { useAiSourceForm } from '../../components/AiSourceForm';
 import ReviewGeneratedCardsModal from '../../components/ReviewGeneratedCardsModal';
 import type { TopicsStackParamList, Topic, DraftCard } from '../../types';
@@ -99,9 +97,8 @@ export default function TopicListScreen() {
   const [generateCards, { isLoading: generating }] = useGenerateCardsMutation();
   const [showModal, setShowModal] = useState(false);
   const sourceForm = useAiSourceForm();
-  const { requirePro } = useAiProGate(() => setShowPaywall(true));
-  const subscriptionTier = useAppSelector((s) => s.subscription.tier);
-  const [showPaywall, setShowPaywall] = useState(false);
+  const { requirePro } = useAiProGate();
+  const isPro = useIsPro();
   const [importWithAi, setImportWithAi] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [pendingTopic, setPendingTopic] = useState<{ id: string; title: string } | null>(null);
@@ -113,14 +110,24 @@ export default function TopicListScreen() {
   const [selectedLang, setSelectedLang] = useState('ja');
   const [languageOptions, setLanguageOptions] = useState(false);
 
-  const isAtFreeLimit = subscriptionTier === 'free' && (topics?.length ?? 0) >= FREE_DECK_LIMIT;
+  const isAtFreeLimit = !isPro && (topics?.length ?? 0) >= FREE_DECK_LIMIT;
 
   const handleAddPressed = () => {
     if (isAtFreeLimit) {
-      setShowPaywall(true);
+      requirePro();
     } else {
-      openModal();
+      openModal(false);
     }
+  };
+
+  const handleGenerateAiPressed = () => {
+    if (!requirePro()) return;
+    openModal(true);
+  };
+
+  const handleAiImportToggle = (enabled: boolean) => {
+    if (enabled && !requirePro()) return;
+    setImportWithAi(enabled);
   };
 
   const headerAnim = useRef(new Animated.Value(0)).current;
@@ -134,9 +141,9 @@ export default function TopicListScreen() {
     ]).start();
   }, []);
 
-  const openModal = () => {
+  const openModal = (withAi = false) => {
     setShowModal(true);
-    setImportWithAi(false);
+    setImportWithAi(withAi);
     setLanguageOptions(false);
     sourceForm.reset();
     modalContentAnim.setValue(0);
@@ -199,7 +206,7 @@ export default function TopicListScreen() {
         setShowModal(false);
         resetForm();
         if (code === 'AI_LIMIT_REACHED' || code === 'AI_PRO_REQUIRED') {
-          setShowPaywall(true);
+          requirePro();
           Alert.alert('Deck created', 'Your deck was saved. Upgrade to Pro to generate cards with AI.', [
             { text: 'Open deck', onPress: () => navigation.navigate('TopicDetail', { topicId: topic._id, topicTitle: topic.title }) },
           ]);
@@ -212,6 +219,11 @@ export default function TopicListScreen() {
         }
       }
     } catch (err: any) {
+      const code = err?.data?.code;
+      if (code === 'FREE_TIER_LIMIT') {
+        requirePro();
+        return;
+      }
       Alert.alert('Error', err?.data?.message || 'Failed to create topic');
     }
   };
@@ -236,9 +248,14 @@ export default function TopicListScreen() {
           transform: [{ scale: addBtnAnim }],
           opacity: addBtnAnim,
         }}>
-          <TouchableOpacity style={[styles.addBtn, isAtFreeLimit && styles.addBtnLocked]} onPress={handleAddPressed}>
-            <Ionicons name={isAtFreeLimit ? 'lock-closed' : 'add'} size={24} color={colors.white} />
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity style={styles.aiHeaderBtn} onPress={handleGenerateAiPressed} activeOpacity={0.85}>
+              <Ionicons name="sparkles" size={22} color={colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.addBtn} onPress={handleAddPressed}>
+              <Ionicons name="add" size={24} color={colors.white} />
+            </TouchableOpacity>
+          </View>
         </Animated.View>
       </View>
 
@@ -254,12 +271,16 @@ export default function TopicListScreen() {
           <TouchableOpacity style={styles.emptyBtn} onPress={handleAddPressed}>
             <Text style={styles.emptyBtnText}>Create Topic</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.emptyAiBtn} onPress={handleGenerateAiPressed} activeOpacity={0.85}>
+            <Ionicons name="sparkles" size={18} color={colors.primary} />
+            <Text style={styles.emptyAiBtnText}>Generate Topic with AI</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
           {/* Free tier banner */}
-          {subscriptionTier === 'free' && (
-            <TouchableOpacity style={styles.freeBanner} onPress={() => setShowPaywall(true)} activeOpacity={0.8}>
+          {!isPro && (
+            <TouchableOpacity style={styles.freeBanner} onPress={() => requirePro()} activeOpacity={0.8}>
               <View style={styles.freeBannerLeft}>
                 <Ionicons name="flash" size={18} color={colors.primary} />
                 <View>
@@ -311,26 +332,33 @@ export default function TopicListScreen() {
                 onChangeText={setDescription}
               />
 
-              <View style={styles.aiImportRow}>
+              <TouchableOpacity
+                style={styles.aiImportRow}
+                onPress={() => handleAiImportToggle(!importWithAi)}
+                activeOpacity={0.85}
+              >
                 <View style={styles.aiImportLabel}>
                   <Ionicons name="sparkles" size={18} color={colors.primary} />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.aiImportTitle}>Generate deck from material</Text>
                     <Text style={styles.pickerHint}>Paste notes, PDF, URL, or image to create flashcards</Text>
+                    {!isPro && (
+                      <Text style={styles.aiProHint}>Pro feature — tap to upgrade</Text>
+                    )}
                   </View>
                 </View>
                 <Switch
                   value={importWithAi}
-                  onValueChange={setImportWithAi}
+                  onValueChange={handleAiImportToggle}
                   trackColor={{ false: colors.border, true: colors.primary + '80' }}
                   thumbColor={importWithAi ? colors.primary : colors.textMuted}
                 />
-              </View>
+              </TouchableOpacity>
 
               {importWithAi && (
                 <View style={styles.aiImportBox}>
                   <Text style={styles.aiUsage}>
-                    Pro feature — included with FlashStudy Pro
+                    Pro feature — included with StuhDee Pro
                   </Text>
                   <AiSourceForm form={sourceForm} compact />
                 </View>
@@ -446,11 +474,6 @@ export default function TopicListScreen() {
         }}
       />
 
-      <PaywallModal
-        visible={showPaywall}
-        onClose={() => setShowPaywall(false)}
-        onSuccess={() => setShowPaywall(false)}
-      />
     </View>
   );
 }
@@ -462,6 +485,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg, paddingTop: 60, paddingBottom: spacing.lg,
   },
   title: { ...typography.h1 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  aiHeaderBtn: {
+    width: 46, height: 46, borderRadius: radius.full,
+    backgroundColor: colors.primary + '18', alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: colors.primary + '35',
+  },
   addBtn: {
     width: 46, height: 46, borderRadius: radius.full,
     backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
@@ -476,6 +505,13 @@ const styles = StyleSheet.create({
   emptySubtitle: { ...typography.bodyMuted, textAlign: 'center', marginTop: spacing.sm, marginBottom: spacing.xl },
   emptyBtn: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
   emptyBtnText: { ...typography.h4, color: colors.white },
+  emptyAiBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    marginTop: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
+    borderRadius: radius.full, borderWidth: 1, borderColor: colors.primary + '40',
+    backgroundColor: colors.primary + '12',
+  },
+  emptyAiBtnText: { color: colors.primary, fontWeight: '700' },
   list: { paddingHorizontal: spacing.lg, paddingTop: spacing.xs },
   topicCard: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
@@ -506,6 +542,7 @@ const styles = StyleSheet.create({
   },
   aiImportLabel: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md, paddingRight: spacing.xs },
   aiImportTitle: { ...typography.body, fontWeight: '600', fontSize: 14 },
+  aiProHint: { ...typography.small, color: colors.primary, marginTop: 4, fontWeight: '600' },
   aiImportBox: {
     marginTop: spacing.md, marginBottom: spacing.sm,
     padding: spacing.lg, backgroundColor: colors.background,

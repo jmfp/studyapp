@@ -1,4 +1,4 @@
-# FlashStudy
+# StuhDee
 
 A full-stack spaced-repetition flashcard study app.
 

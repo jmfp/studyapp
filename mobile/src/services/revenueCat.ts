@@ -3,7 +3,7 @@ import Purchases, {
   type CustomerInfo,
   type PurchasesPackage,
 } from 'react-native-purchases';
-import { Platform } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import Constants from 'expo-constants';
 
 export const RC_ENTITLEMENT = 'pro';
@@ -56,4 +56,44 @@ export async function restorePurchases(): Promise<CustomerInfo> {
 
 export async function logOut(): Promise<void> {
   await Purchases.logOut();
+}
+
+const SUBSCRIPTION_SETTINGS_URL = Platform.select({
+  ios: 'https://apps.apple.com/account/subscriptions',
+  android: 'https://play.google.com/store/account/subscriptions',
+  default: 'https://www.revenuecat.com',
+});
+
+export function addCustomerInfoListener(
+  listener: (info: CustomerInfo) => void,
+): () => void {
+  Purchases.addCustomerInfoUpdateListener(listener);
+  return () => Purchases.removeCustomerInfoUpdateListener(listener);
+}
+
+/** Opens the platform subscription management UI (cancel, change plan, etc.). */
+export async function openSubscriptionManagement(): Promise<void> {
+  if (!canUseRevenueCat()) {
+    if (SUBSCRIPTION_SETTINGS_URL) await Linking.openURL(SUBSCRIPTION_SETTINGS_URL);
+    return;
+  }
+
+  try {
+    await Purchases.showManageSubscriptions();
+    return;
+  } catch {
+    // Fall through to management URL / store settings
+  }
+
+  const info = await getCustomerInfo();
+  if (info.managementURL) {
+    await Linking.openURL(info.managementURL);
+    return;
+  }
+
+  if (SUBSCRIPTION_SETTINGS_URL) await Linking.openURL(SUBSCRIPTION_SETTINGS_URL);
+}
+
+export function getProEntitlement(info: CustomerInfo) {
+  return info.entitlements.active[RC_ENTITLEMENT];
 }

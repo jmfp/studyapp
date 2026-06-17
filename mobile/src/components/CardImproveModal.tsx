@@ -10,6 +10,7 @@ import {
   useCreateCardMutation,
 } from '../services/api';
 import type { Card, CardImprovementSuggestion, ImprovementType } from '../types';
+import { useAiProGate } from '../hooks/useAiProGate';
 
 const TYPE_META: Record<ImprovementType, { icon: keyof typeof Ionicons.glyphMap; color: string }> = {
   shorten_answer: { icon: 'cut-outline', color: colors.warning },
@@ -34,6 +35,7 @@ export default function CardImproveModal({
   const [improveCard, { isLoading }] = useImproveCardMutation();
   const [updateCard] = useUpdateCardMutation();
   const [createCard] = useCreateCardMutation();
+  const { requirePro } = useAiProGate(onRequirePro);
   const [suggestions, setSuggestions] = useState<CardImprovementSuggestion[]>([]);
   const [isWeakCard, setIsWeakCard] = useState(false);
   const [applyingId, setApplyingId] = useState<string | null>(null);
@@ -47,6 +49,11 @@ export default function CardImproveModal({
     }
 
     if (loadedCardId === card._id) return;
+
+    if (!requirePro()) {
+      onClose();
+      return;
+    }
 
     (async () => {
       try {

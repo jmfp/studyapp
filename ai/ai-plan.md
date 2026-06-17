@@ -1,4 +1,4 @@
-# FlashStudy AI Plan
+# StuhDee AI Plan
 
 Your app already has a solid foundation — SM-2 scheduling, multilingual cards, quality ratings, and analytics. Most competitors win on **content creation** and **personalization**, not on the algorithm itself. That's where AI can differentiate you.
 
@@ -13,7 +13,7 @@ Your app already has a solid foundation — SM-2 scheduling, multilingual cards,
 | **Knowt / RemNote** | AI deck generation from notes | Weak mobile UX, generic output |
 | **Duolingo / Memrise** | Language polish | Not general-purpose, not user-owned decks |
 
-FlashStudy's angle: **serious spaced repetition + beautiful mobile UX + AI that respects your SM-2 data** — not just "generate 20 flashcards from this PDF."
+StuhDee's angle: **serious spaced repetition + beautiful mobile UX + AI that respects your SM-2 data** — not just "generate 20 flashcards from this PDF."
 
 ---
 
@@ -160,7 +160,7 @@ api    → rate limit by tier → call OpenAI/Anthropic → validate JSON schema
 
 ## Positioning One-Liner
 
-> **"FlashStudy: spaced repetition that thinks — AI builds your decks, coaches your weak spots, and speaks your language."**
+> **"StuhDee: spaced repetition that thinks — AI builds your decks, coaches your weak spots, and speaks your language."**
 
 That separates you from Anki (manual), Quizlet (shallow), and Knowt (generate-only).
 

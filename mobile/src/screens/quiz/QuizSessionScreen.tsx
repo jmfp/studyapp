@@ -16,7 +16,6 @@ import {
 } from '../../services/api';
 import type { QuizStackParamList, ReviewQuality, QualityOption, StudyCoachResult } from '../../types';
 import StudyCoachModal from '../../components/StudyCoachModal';
-import PaywallModal from '../../components/PaywallModal';
 import { useAiProGate, isAiProRequiredError } from '../../hooks/useAiProGate';
 
 type Nav = NativeStackNavigationProp<QuizStackParamList, 'QuizSession'>;
@@ -78,8 +77,7 @@ export default function QuizSessionScreen() {
   const [coachData, setCoachData] = useState<StudyCoachResult | null>(null);
   const [coachAfterRating, setCoachAfterRating] = useState(false);
   const [pendingQuality, setPendingQuality] = useState<ReviewQuality | null>(null);
-  const [showPaywall, setShowPaywall] = useState(false);
-  const { requirePro } = useAiProGate(() => setShowPaywall(true));
+  const { requirePro } = useAiProGate();
 
   // Animation refs
   const flipAnim = useRef(new Animated.Value(0)).current;
@@ -239,7 +237,7 @@ export default function QuizSessionScreen() {
       return true;
     } catch (err) {
       if (isAiProRequiredError(err)) {
-        setShowPaywall(true);
+        requirePro();
       } else if (afterRating) {
         Alert.alert('Study coach unavailable', 'Continuing to the next card.');
       } else {
@@ -308,6 +306,11 @@ export default function QuizSessionScreen() {
           ]).start();
 
           if (needsCoach) {
+            if (!requirePro()) {
+              await advanceAfterReview(quality);
+              setIsSubmitting(false);
+              return;
+            }
             setPendingQuality(quality);
             const shown = await showCoachHints(card._id, quality, true);
             if (!shown) {
@@ -623,11 +626,6 @@ export default function QuizSessionScreen() {
         continueLabel={coachAfterRating ? 'Continue' : 'Got it'}
       />
 
-      <PaywallModal
-        visible={showPaywall}
-        onClose={() => setShowPaywall(false)}
-        onSuccess={() => setShowPaywall(false)}
-      />
     </View>
   );
 }

@@ -8,9 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { colors, spacing, radius, typography } from '../../theme';
 import { useGetAnalyticsQuery, useGetTopicsQuery, useGenerateAnalyticsInsightsMutation } from '../../services/api';
-import { useAppSelector } from '../../hooks/redux';
 import { TopicIcon } from '../../constants/topicIcons';
-import PaywallModal from '../../components/PaywallModal';
 import CardImproveModal from '../../components/CardImproveModal';
 import { PRO_PRICE } from '../../services/revenueCat';
 import type { Card, MainTabParamList, AnalyticsInsightsResult } from '../../types';
@@ -26,17 +24,13 @@ export default function AnalyticsScreen() {
   const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
   const insets = useSafeAreaInsets();
   const bottomPad = TAB_BAR_CLEARANCE + insets.bottom;
-  const subscriptionTier = useAppSelector((s) => s.subscription.tier);
-  const userTier = useAppSelector((s) => s.auth.user?.subscriptionTier);
-  const isPro = subscriptionTier === 'pro' || userTier === 'pro';
-  const [showPaywall, setShowPaywall] = useState(false);
+  const { isPro, requirePro } = useAiProGate();
   const [selectedTopicId, setSelectedTopicId] = useState<string | undefined>(undefined);
-  const { requirePro } = useAiProGate(() => setShowPaywall(true));
   const [showImproveModal, setShowImproveModal] = useState(false);
   const [improveCard, setImproveCard] = useState<Card | null>(null);
   const [improveTopicId, setImproveTopicId] = useState<string | null>(null);
   const { data: topics } = useGetTopicsQuery();
-  const { data: analytics, isLoading } = useGetAnalyticsQuery({ topicId: isPro ? selectedTopicId : undefined });
+  const { data: analytics, isLoading } = useGetAnalyticsQuery({ topicId: selectedTopicId });
   const [generateInsights, { isLoading: insightsLoading, isError: insightsError }] = useGenerateAnalyticsInsightsMutation();
   const [insights, setInsights] = useState<AnalyticsInsightsResult | null>(null);
 
@@ -47,6 +41,16 @@ export default function AnalyticsScreen() {
   const maxActivity = analytics ? Math.max(...analytics.dailyActivity.map((d) => d.cardsReviewed), 1) : 1;
   const maxForecast = analytics ? Math.max(...analytics.forecast.map((d) => d.dueCount), 1) : 1;
   const totalQuality = analytics?.qualityDistribution.reduce((s, q) => s + q.count, 0) || 1;
+
+  const selectTopicFilter = (topicId: string | undefined) => {
+    if (topicId && !requirePro()) return;
+    setSelectedTopicId(topicId);
+  };
+
+  const toggleTopicFilter = (topicId: string) => {
+    const next = selectedTopicId === topicId ? undefined : topicId;
+    selectTopicFilter(next);
+  };
 
   const openWeakImprove = (weak: NonNullable<typeof analytics>['weakCards'][number]) => {
     if (!requirePro()) return;
@@ -75,7 +79,7 @@ export default function AnalyticsScreen() {
       setInsights(result);
     } catch (err) {
       if (isAiProRequiredError(err)) {
-        setShowPaywall(true);
+        requirePro();
         return;
       }
       setInsights(null);
@@ -90,31 +94,27 @@ export default function AnalyticsScreen() {
     >
       <View style={styles.header}>
         <Text style={styles.title}>Analytics</Text>
-        <Text style={styles.subtitle}>
-          {isPro ? 'Spaced repetition insights' : 'Basic overview · upgrade for full insights'}
-        </Text>
+        <Text style={styles.subtitle}>Spaced repetition insights</Text>
       </View>
 
-      {isPro && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={styles.filterContent}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={styles.filterContent}>
+        <TouchableOpacity
+          style={[styles.filterChip, !selectedTopicId && styles.filterChipActive]}
+          onPress={() => selectTopicFilter(undefined)}
+        >
+          <Text style={[styles.filterText, !selectedTopicId && styles.filterTextActive]}>All Topics</Text>
+        </TouchableOpacity>
+        {topics?.map((t) => (
           <TouchableOpacity
-            style={[styles.filterChip, !selectedTopicId && styles.filterChipActive]}
-            onPress={() => setSelectedTopicId(undefined)}
+            key={t._id}
+            style={[styles.filterChip, selectedTopicId === t._id && styles.filterChipActive]}
+            onPress={() => toggleTopicFilter(t._id)}
           >
-            <Text style={[styles.filterText, !selectedTopicId && styles.filterTextActive]}>All Topics</Text>
+            <TopicIcon emoji={t.emoji} size={14} color={selectedTopicId === t._id ? colors.white : t.color} />
+            <Text style={[styles.filterText, selectedTopicId === t._id && styles.filterTextActive]}>{t.title}</Text>
           </TouchableOpacity>
-          {topics?.map((t) => (
-            <TouchableOpacity
-              key={t._id}
-              style={[styles.filterChip, selectedTopicId === t._id && styles.filterChipActive]}
-              onPress={() => setSelectedTopicId(selectedTopicId === t._id ? undefined : t._id)}
-            >
-              <TopicIcon emoji={t.emoji} size={14} color={selectedTopicId === t._id ? colors.white : t.color} />
-              <Text style={[styles.filterText, selectedTopicId === t._id && styles.filterTextActive]}>{t.title}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      )}
+        ))}
+      </ScrollView>
 
       {isLoading ? (
         <ActivityIndicator color={colors.primary} style={{ marginTop: 60 }} />
@@ -148,7 +148,7 @@ export default function AnalyticsScreen() {
             {insightsLoading && (
               <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />
             )}
-            {insightsError && !insightsLoading && isPro && (
+            {insightsError && !insightsLoading && (
               <>
                 <Text style={styles.insightsMuted}>Could not generate insight — check your API key.</Text>
                 <TouchableOpacity style={styles.generateInsightsBtn} onPress={handleGenerateInsights}>
@@ -157,7 +157,7 @@ export default function AnalyticsScreen() {
                 </TouchableOpacity>
               </>
             )}
-            {insights && !insightsLoading && isPro && (
+            {insights && !insightsLoading && (
               <>
                 {insights.focusArea && (
                   <View style={styles.focusChip}>
@@ -262,15 +262,7 @@ export default function AnalyticsScreen() {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Cards Needing Work</Text>
             <Text style={styles.cardSub}>Reviewed ≥3 times, lowest accuracy</Text>
-            {!isPro ? (
-              <View style={styles.lockedSection}>
-                <Ionicons name="lock-closed" size={28} color={colors.textMuted} />
-                <Text style={styles.lockedSectionText}>Pro feature — see which cards need the most practice.</Text>
-                <TouchableOpacity style={styles.lockedSectionBtn} onPress={() => setShowPaywall(true)}>
-                  <Text style={styles.lockedSectionBtnText}>Unlock with Pro</Text>
-                </TouchableOpacity>
-              </View>
-            ) : analytics.weakCards.length > 0 ? (
+            {analytics.weakCards.length > 0 ? (
               analytics.weakCards.map((card) => (
                 <View key={card._id} style={styles.weakRow}>
                   <View style={[styles.weakIcon, { backgroundColor: card.accuracy < 50 ? colors.error + '20' : colors.warning + '20' }]}>
@@ -299,15 +291,7 @@ export default function AnalyticsScreen() {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Mastered Cards</Text>
             <Text style={styles.cardSub}>Mature cards with highest ease factor</Text>
-            {!isPro ? (
-              <View style={styles.lockedSection}>
-                <Ionicons name="lock-closed" size={28} color={colors.textMuted} />
-                <Text style={styles.lockedSectionText}>Pro feature — track your strongest, most retained cards.</Text>
-                <TouchableOpacity style={styles.lockedSectionBtn} onPress={() => setShowPaywall(true)}>
-                  <Text style={styles.lockedSectionBtnText}>Unlock with Pro</Text>
-                </TouchableOpacity>
-              </View>
-            ) : analytics.strongCards && analytics.strongCards.length > 0 ? (
+            {analytics.strongCards && analytics.strongCards.length > 0 ? (
               analytics.strongCards.map((card) => (
                 <View key={card._id} style={styles.weakRow}>
                   <View style={[styles.weakIcon, { backgroundColor: colors.success + '20' }]}>
@@ -421,17 +405,17 @@ export default function AnalyticsScreen() {
               </View>
               <Text style={styles.proUpsellTitle}>Advanced analytics</Text>
               <Text style={styles.proUpsellSub}>
-                Unlock review forecasts, recall quality breakdown, weak & mastered cards, and per-topic filters.
+                Unlock review forecasts, recall quality breakdown, and card state tracking.
               </Text>
               <View style={styles.proUpsellList}>
-                {['Review forecast', 'Recall quality', 'Weak & mastered cards', 'Per-topic filters'].map((item) => (
+                {['Review forecast', 'Recall quality', 'Card states'].map((item) => (
                   <View key={item} style={styles.proUpsellRow}>
                     <Ionicons name="lock-closed" size={14} color={colors.textMuted} />
                     <Text style={styles.proUpsellItem}>{item}</Text>
                   </View>
                 ))}
               </View>
-              <TouchableOpacity style={styles.proUpsellBtn} onPress={() => setShowPaywall(true)} activeOpacity={0.85}>
+              <TouchableOpacity style={styles.proUpsellBtn} onPress={() => requirePro()} activeOpacity={0.85}>
                 <Ionicons name="flash" size={18} color={colors.background} />
                 <Text style={styles.proUpsellBtnText}>Upgrade to Pro · {PRO_PRICE}</Text>
               </TouchableOpacity>
@@ -440,19 +424,13 @@ export default function AnalyticsScreen() {
         </>
       )}
 
-      <PaywallModal
-        visible={showPaywall}
-        onClose={() => setShowPaywall(false)}
-        onSuccess={() => setShowPaywall(false)}
-      />
-
       {improveTopicId && (
         <CardImproveModal
           visible={showImproveModal}
           topicId={improveTopicId}
           card={improveCard}
           trigger="weak_card"
-          onRequirePro={() => setShowPaywall(true)}
+          onRequirePro={requirePro}
           onClose={() => {
             setShowImproveModal(false);
             setImproveCard(null);
@@ -470,6 +448,14 @@ const styles = StyleSheet.create({
   title: { ...typography.h1 },
   subtitle: { ...typography.bodyMuted, marginTop: 4 },
   filterRow: { paddingVertical: spacing.sm },
+  filterLockedRow: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    marginHorizontal: spacing.lg, marginBottom: spacing.sm,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+    backgroundColor: colors.surface, borderRadius: radius.full,
+    borderWidth: 1, borderColor: colors.border,
+  },
+  filterLockedText: { fontSize: 13, color: colors.textSecondary, fontWeight: '600' },
   filterContent: { paddingHorizontal: spacing.lg, gap: spacing.sm },
   filterChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border },
   filterChipActive: { backgroundColor: colors.primary + '20', borderColor: colors.primary },

@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, typography } from '../../theme';
 import { useLoginMutation } from '../../services/api';
 import { setCredentials } from '../../store/authSlice';
+import { setTier } from '../../store/subscriptionSlice';
 import { useAppDispatch } from '../../hooks/redux';
 import type { AuthStackParamList } from '../../types';
 
@@ -29,7 +30,9 @@ export default function LoginScreen() {
     }
     try {
       const result = await login({ email: email.trim().toLowerCase(), password }).unwrap();
-      dispatch(setCredentials({ user: { ...result.user, subscriptionTier: (result.user.subscriptionTier as 'free' | 'pro') ?? 'free' }, token: result.token }));
+      const tier = (result.user.subscriptionTier as 'free' | 'pro') ?? 'free';
+      dispatch(setCredentials({ user: { ...result.user, subscriptionTier: tier }, token: result.token }));
+      dispatch(setTier(tier));
     } catch (err: any) {
       Alert.alert('Login Failed', err?.data?.message || 'Something went wrong');
     }
@@ -42,7 +45,7 @@ export default function LoginScreen() {
           <View style={styles.logoContainer}>
             <Ionicons name="flash" size={40} color={colors.primary} />
           </View>
-          <Text style={styles.title}>FlashStudy</Text>
+          <Text style={styles.title}>StuhDee</Text>
           <Text style={styles.subtitle}>Master anything, one card at a time</Text>
         </View>
 

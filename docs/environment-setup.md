@@ -1,4 +1,4 @@
-# FlashStudy — Environment & Deployment Guide
+# StuhDee — Environment & Deployment Guide
 
 ## Overview
 
@@ -19,7 +19,7 @@
 3. Under **Database Access** → create a user with `readWrite` on your database
 4. Click **Connect** → **Drivers** → copy the connection string:
    ```
-   mongodb+srv://<user>:<password>@cluster0.xxxxx.mongodb.net/flashstudy?retryWrites=true&w=majority
+   mongodb+srv://<user>:<password>@cluster0.xxxxx.mongodb.net/stuhdee?retryWrites=true&w=majority
    ```
 5. Paste this as `MONGODB_URI` in your API environment (see section 3)
 
@@ -35,7 +35,7 @@ sudo systemctl start mongod
 sudo systemctl enable mongod
 ```
 
-Then use `MONGODB_URI=mongodb://localhost:27017/flashstudy`
+Then use `MONGODB_URI=mongodb://localhost:27017/stuhdee`
 
 ---
 
@@ -75,19 +75,19 @@ export PROJECT_ID=your-gcp-project-id
 export REGION=us-central1
 
 # Create repository
-gcloud artifacts repositories create flashstudy \
+gcloud artifacts repositories create stuhdee \
   --repository-format=docker \
   --location=$REGION
 
 # Build and push
-gcloud builds submit --tag $REGION-docker.pkg.dev/$PROJECT_ID/flashstudy/api:latest ./api
+gcloud builds submit --tag $REGION-docker.pkg.dev/$PROJECT_ID/stuhdee/api:latest ./api
 ```
 
 #### Step 3 — Deploy to Cloud Run
 
 ```bash
-gcloud run deploy flashstudy-api \
-  --image $REGION-docker.pkg.dev/$PROJECT_ID/flashstudy/api:latest \
+gcloud run deploy stuhdee-api \
+  --image $REGION-docker.pkg.dev/$PROJECT_ID/stuhdee/api:latest \
   --platform managed \
   --region $REGION \
   --allow-unauthenticated \
@@ -100,7 +100,7 @@ gcloud run deploy flashstudy-api \
 
 After deploy you'll get a public URL like:
 ```
-https://flashstudy-api-xxxxxxxxxx-uc.a.run.app
+https://stuhdee-api-xxxxxxxxxx-uc.a.run.app
 ```
 
 > **Copy this URL** — you'll need it for the mobile app env variable.
@@ -121,17 +121,17 @@ npm run build
 
 # Install PM2 to keep it running
 npm install -g pm2
-pm2 start dist/server.js --name flashstudy-api
+pm2 start dist/server.js --name stuhdee-api
 pm2 startup    # auto-start on reboot
 pm2 save
 ```
 
 Open port 5000 in your GCP firewall:
 ```bash
-gcloud compute firewall-rules create allow-flashstudy \
+gcloud compute firewall-rules create allow-stuhdee \
   --allow tcp:5000 \
-  --target-tags=flashstudy-api \
-  --description="FlashStudy API"
+  --target-tags=stuhdee-api \
+  --description="StuhDee API"
 ```
 
 ---
@@ -142,7 +142,7 @@ Create `/api/.env` (never commit this):
 
 ```env
 # Required
-MONGODB_URI=mongodb+srv://<user>:<pass>@cluster0.xxxxx.mongodb.net/flashstudy
+MONGODB_URI=mongodb+srv://<user>:<pass>@cluster0.xxxxx.mongodb.net/stuhdee
 JWT_SECRET=change_this_to_a_long_random_string_min_32_chars
 
 # Optional
@@ -174,7 +174,7 @@ EXPO_PUBLIC_API_URL=http://192.168.x.x:5000/api
 ### Production (after GCP deploy)
 
 ```env
-EXPO_PUBLIC_API_URL=https://flashstudy-api-xxxxxxxxxx-uc.a.run.app/api
+EXPO_PUBLIC_API_URL=https://stuhdee-api-xxxxxxxxxx-uc.a.run.app/api
 ```
 
 > Expo reads `EXPO_PUBLIC_*` variables at build time. You must rebuild the app after changing this.
@@ -231,7 +231,7 @@ Add an `eas.json` at `/mobile/eas.json`:
   "build": {
     "production": {
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://flashstudy-api-xxxxxxxxxx-uc.a.run.app/api"
+        "EXPO_PUBLIC_API_URL": "https://stuhdee-api-xxxxxxxxxx-uc.a.run.app/api"
       }
     }
   }
@@ -251,11 +251,11 @@ echo -n "your_jwt_secret"  | gcloud secrets create JWT_SECRET --data-file=-
 
 # Grant Cloud Run access
 gcloud secrets add-iam-policy-binding MONGODB_URI \
-  --member="serviceAccount:$(gcloud run services describe flashstudy-api --format='value(spec.template.spec.serviceAccountName)')" \
+  --member="serviceAccount:$(gcloud run services describe stuhdee-api --format='value(spec.template.spec.serviceAccountName)')" \
   --role="roles/secretmanager.secretAccessor"
 
 # Re-deploy referencing secrets
-gcloud run deploy flashstudy-api \
+gcloud run deploy stuhdee-api \
   --set-secrets "MONGODB_URI=MONGODB_URI:latest,JWT_SECRET=JWT_SECRET:latest"
 ```
 

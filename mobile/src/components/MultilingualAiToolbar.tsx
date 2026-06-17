@@ -27,7 +27,7 @@ export default function MultilingualAiToolbar({
 }: MultilingualAiToolbarProps) {
   const [assist, { isLoading }] = useMultilingualAssistMutation();
   const [examples, setExamples] = useState<string[]>([]);
-  const { requirePro } = useAiProGate(() => onRequirePro?.());
+  const { requirePro } = useAiProGate(onRequirePro);
 
   const run = async (
     action: 'translate' | 'examples' | 'reverse' | 'nativeScript',
@@ -74,7 +74,7 @@ export default function MultilingualAiToolbar({
       }
     } catch (err: any) {
       if (isAiProRequiredError(err)) {
-        onRequirePro?.();
+        requirePro();
         return;
       }
       Alert.alert('AI assist failed', err?.data?.message || 'Try again');

@@ -1,7 +1,7 @@
 {
-  "name": "flashstudy-api",
+  "name": "stuhdee-api",
   "version": "1.0.0",
-  "description": "FlashStudy API - Express + Mongoose MVC",
+  "description": "StuhDee API - Express + Mongoose MVC",
   "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon --exec ts-node src/server.ts",

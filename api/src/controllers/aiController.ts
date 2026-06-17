@@ -46,7 +46,7 @@ export const generateCards = async (req: Request, res: Response) => {
       const isProRequired = quota.code === 'AI_PRO_REQUIRED';
       return res.status(403).json({
         message: isProRequired
-          ? 'AI features require FlashStudy Pro'
+          ? 'AI features require StuhDee Pro'
           : 'AI generation limit reached for this month',
         code: quota.code ?? 'AI_LIMIT_REACHED',
         usage: quota.usage,
@@ -93,7 +93,7 @@ export const improveCard = async (req: Request, res: Response) => {
     const proCheck = await requireProForAi(userId);
     if (!proCheck.allowed) {
       return res.status(403).json({
-        message: 'AI features require FlashStudy Pro',
+        message: 'AI features require StuhDee Pro',
         code: 'AI_PRO_REQUIRED',
         usage: proCheck.usage,
       });
@@ -143,7 +143,7 @@ export const studyCoach = async (req: Request, res: Response) => {
     const proCheck = await requireProForAi(userId);
     if (!proCheck.allowed) {
       return res.status(403).json({
-        message: 'AI features require FlashStudy Pro',
+        message: 'AI features require StuhDee Pro',
         code: 'AI_PRO_REQUIRED',
         usage: proCheck.usage,
       });
@@ -199,7 +199,7 @@ export const multilingualAssist = async (req: Request, res: Response) => {
     const proCheck = await requireProForAi(userId);
     if (!proCheck.allowed) {
       return res.status(403).json({
-        message: 'AI features require FlashStudy Pro',
+        message: 'AI features require StuhDee Pro',
         code: 'AI_PRO_REQUIRED',
         usage: proCheck.usage,
       });
@@ -237,7 +237,7 @@ export const getAnalyticsInsights = async (req: Request, res: Response) => {
     const proCheck = await requireProForAi((req as any).userId);
     if (!proCheck.allowed) {
       return res.status(403).json({
-        message: 'AI features require FlashStudy Pro',
+        message: 'AI features require StuhDee Pro',
         code: 'AI_PRO_REQUIRED',
         usage: proCheck.usage,
       });

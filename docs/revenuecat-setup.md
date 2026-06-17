@@ -2,7 +2,7 @@
 
 ## Overview
 
-FlashStudy uses [RevenueCat](https://www.revenuecat.com) to manage in-app subscriptions.
+StuhDee uses [RevenueCat](https://www.revenuecat.com) to manage in-app subscriptions.
 
 | Plan | Price | Decks |
 |---|---|---|
@@ -14,7 +14,7 @@ FlashStudy uses [RevenueCat](https://www.revenuecat.com) to manage in-app subscr
 ## 1. Create a RevenueCat Account
 
 1. Sign up at [app.revenuecat.com](https://app.revenuecat.com)
-2. Create a new **Project** → name it `FlashStudy`
+2. Create a new **Project** → name it `StuhDee`
 
 ---
 
@@ -23,16 +23,16 @@ FlashStudy uses [RevenueCat](https://www.revenuecat.com) to manage in-app subscr
 ### iOS (App Store Connect)
 1. Go to [App Store Connect](https://appstoreconnect.apple.com) → your app → **In-App Purchases**
 2. Create a **Auto-Renewable Subscription**:
-   - Reference Name: `FlashStudy Pro Monthly`
-   - Product ID: `com.flashstudy.app.pro_monthly`
+   - Reference Name: `StuhDee Pro Monthly`
+   - Product ID: `com.stuhdee.app.pro_monthly`
    - Price: $4.99/month
-   - Subscription Group: `FlashStudy Pro`
+   - Subscription Group: `StuhDee Pro`
 3. Complete the review information (screenshot, description)
 
 ### Android (Google Play Console)
 1. Go to [Google Play Console](https://play.google.com/console) → your app → **Monetize → Subscriptions**
 2. Create subscription:
-   - Product ID: `flashstudy_pro_monthly`
+   - Product ID: `stuhdee_pro_monthly`
    - Base plan: Monthly at $4.99
 
 ---
@@ -41,8 +41,8 @@ FlashStudy uses [RevenueCat](https://www.revenuecat.com) to manage in-app subscr
 
 In RevenueCat dashboard:
 
-1. **Products** → Add iOS product ID: `com.flashstudy.app.pro_monthly`
-2. **Products** → Add Android product ID: `flashstudy_pro_monthly`
+1. **Products** → Add iOS product ID: `com.stuhdee.app.pro_monthly`
+2. **Products** → Add Android product ID: `stuhdee_pro_monthly`
 3. **Entitlements** → Create entitlement:
    - Identifier: **`pro`** ← must match `RC_ENTITLEMENT` in `src/services/revenueCat.ts`
    - Attach both products to this entitlement
@@ -115,7 +115,7 @@ Set `LOG_LEVEL.DEBUG` in `initRevenueCat()` (already done in `__DEV__` mode) to 
 
 ## 9. Checklist
 
-- [ ] RevenueCat account created, project named `FlashStudy`
+- [ ] RevenueCat account created, project named `StuhDee`
 - [ ] iOS product created in App Store Connect
 - [ ] Android product created in Google Play Console
 - [ ] Products added to RevenueCat
@@ -125,3 +125,44 @@ Set `LOG_LEVEL.DEBUG` in `initRevenueCat()` (already done in `__DEV__` mode) to 
 - [ ] App Store shared secret pasted into RevenueCat
 - [ ] Test purchase works in simulator/device sandbox
 - [ ] Restore purchases tested
+
+---
+
+## 10. Production Launch Checklist
+
+Sandbox success does **not** require code changes — the same RevenueCat public SDK keys work in production. What you do need before App Store release:
+
+### App Store Connect
+- [ ] **Paid Apps Agreement** signed (Agreements, Tax, and Banking)
+- [ ] Subscription product `com.stuhdee.app.pro_monthly` status is **Ready to Submit**
+- [ ] Subscription localization, pricing, and **review screenshot** completed
+- [ ] Subscription attached to the app version you submit for review
+- [ ] **Privacy Policy URL** set on the app record (required for subscriptions)
+- [ ] App description mentions auto-renewing subscription terms (price, duration, cancel in Settings)
+
+### RevenueCat
+- [ ] iOS **App Store shared secret** (or App Store Connect API key) configured
+- [ ] `default` offering marked **Current**
+- [ ] Entitlement `pro` linked to production product IDs
+- [ ] (Recommended) **Webhook** → `https://stuhdee-api-897399001508.us-central1.run.app/api/webhooks/revenuecat` for `CANCELLATION` / `EXPIRATION` so the API downgrades users when subs lapse
+
+### Mobile app
+- [ ] `EXPO_PUBLIC_API_URL` points to production API (not localhost)
+- [ ] Ship a **production build** (EAS Build or `expo run:ios --configuration Release`) — not Expo Go
+- [ ] Profile → **Manage or cancel subscription** opens Apple/Google billing (already in app)
+- [ ] Paywall shows **Restore Purchases** (already in app)
+- [ ] Test one real purchase via **TestFlight** before public release
+
+### Android (when you ship Play Store)
+- [ ] Play Console subscription `stuhdee_pro_monthly` published
+- [ ] RevenueCat linked to Google Play via **service account**
+- [ ] `EXPO_PUBLIC_RC_API_KEY_ANDROID` in `.env`
+
+### What sandbox proved vs. production
+| Sandbox | Production |
+|---|---|
+| Subscriptions renew in minutes | Renews monthly |
+| Sandbox Apple ID | Real Apple ID + payment |
+| Works in dev build / TestFlight | App Store review + live users |
+
+No toggle to “turn on production” in the app — going live is App Store Connect + submitting a release build.

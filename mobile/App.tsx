@@ -6,9 +6,10 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { store } from './src/store';
 import type { RootState, AppDispatch } from './src/store';
 import AppNavigator from './src/navigation/AppNavigator';
-import { setTier, setRcInitialized } from './src/store/subscriptionSlice';
-import { initRevenueCat, getCustomerInfo, isPro, logOut, canUseRevenueCat } from './src/services/revenueCat';
-import { logout } from './src/store/authSlice';
+import { PaywallProvider } from './src/context/PaywallContext';
+import { setTier, setRcInitialized, setExpirationDate } from './src/store/subscriptionSlice';
+import { initRevenueCat, getCustomerInfo, isPro, logOut, canUseRevenueCat, addCustomerInfoListener, getProEntitlement, RC_ENTITLEMENT } from './src/services/revenueCat';
+import { logout, updateUser } from './src/store/authSlice';
 import { api } from './src/services/api';
 import { BYPASS_AUTH } from './src/config/dev';
 
@@ -32,7 +33,9 @@ function AppInit() {
         await initRevenueCat(user._id);
         const info = await getCustomerInfo();
         const pro = await isPro(info);
+        const entitlement = getProEntitlement(info);
         dispatch(setTier(pro ? 'pro' : 'free'));
+        dispatch(setExpirationDate(entitlement?.expirationDate ?? null));
         dispatch(setRcInitialized(true));
       } catch {
         // RevenueCat keys not yet configured — default to free
@@ -42,6 +45,27 @@ function AppInit() {
       }
     })();
   }, [user?._id]);
+
+  // Keep local + server tier in sync when RevenueCat reports changes (renewal, cancel, expire)
+  useEffect(() => {
+    if (!user || !token || BYPASS_AUTH || !canUseRevenueCat()) return;
+
+    const syncFromCustomerInfo = (info: Awaited<ReturnType<typeof getCustomerInfo>>) => {
+      const pro = info.entitlements.active[RC_ENTITLEMENT] !== undefined;
+      const tier = pro ? 'pro' : 'free';
+      const entitlement = getProEntitlement(info);
+
+      dispatch(setTier(tier));
+      dispatch(setExpirationDate(entitlement?.expirationDate ?? null));
+
+      if (user.subscriptionTier !== tier) {
+        dispatch(updateUser({ subscriptionTier: tier }));
+        dispatch(api.endpoints.updateSubscription.initiate({ subscriptionTier: tier }));
+      }
+    };
+
+    return addCustomerInfoListener(syncFromCustomerInfo);
+  }, [user?._id, user?.subscriptionTier, token]);
 
   // When user logs out, clean up RevenueCat
   useEffect(() => {
@@ -68,7 +92,9 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <Provider store={store}>
-          <Root />
+          <PaywallProvider>
+            <Root />
+          </PaywallProvider>
         </Provider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

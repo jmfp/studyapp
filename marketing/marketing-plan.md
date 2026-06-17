@@ -1,6 +1,6 @@
-# FlashStudy Marketing Plan
+# StuhDee Marketing Plan
 
-**Product:** FlashStudy — spaced-repetition flashcard app (iOS/Android)  
+**Product:** StuhDee — spaced-repetition flashcard app (iOS/Android)  
 **Model:** Freemium — 2 decks free, Pro at $4.99/month (unlimited decks + advanced analytics)  
 **Goal:** Grow installs, activate users into first study session, convert to Pro, retain long-term learners
 
@@ -45,10 +45,10 @@ Traffic → Install → Sign up → Create deck + 5 cards → Complete 1 quiz �
 Do this once before any paid or scaled organic push.
 
 - [ ] App Store / Play Store listings optimized (screenshots, keywords, preview video)
-- [ ] Landing page with email capture (`flashstudy.app` or similar)
+- [ ] Landing page with email capture (`stuhdee.app` or similar)
 - [ ] Analytics: Mixpanel/Amplitude + RevenueCat for subscription events
 - [ ] Deep links for campaigns (Branch or Expo linking)
-- [ ] Referral hook in-app (even a simple “Share FlashStudy” counts early)
+- [ ] Referral hook in-app (even a simple “Share StuhDee” counts early)
 - [ ] 2–3 short demo videos (15–30s) for social and ads
 - [ ] Press kit: logo, screenshots, founder story, one-pager
 
@@ -81,7 +81,7 @@ Refresh screenshots when AI features ship.
 **Impact:** Medium–high (3–6 month lag)
 
 **Blog / landing page topics:**
-- “Anki vs FlashStudy: which is right for you?”
+- “Anki vs StuhDee: which is right for you?”
 - “How to memorize Japanese kanji with spaced repetition”
 - “SM-2 explained in 5 minutes”
 - “Best flashcard apps for med students [2026]”
@@ -226,7 +226,7 @@ Use Search Match for discovery, then double down on converters.
 - Retargeting: landing page visitors who didn’t install
 
 **Creative angles:**
-- Side-by-side: cluttered vs FlashStudy UI
+- Side-by-side: cluttered vs StuhDee UI
 - “Hit the 2-deck limit?” → Pro upgrade
 - Language learner testimonial (UGC style)
 
@@ -376,7 +376,7 @@ Free traffic is wasted without a clear path to Pro.
 | Audience | Hook | CTA |
 |---|---|---|
 | Language learners | “Flashcards that work with Japanese, Korean, Arabic — not just English” | Download free |
-| Anki users | “SM-2 power without the 2005 UI” | Try FlashStudy |
+| Anki users | “SM-2 power without the 2005 UI” | Try StuhDee |
 | Students | “Remember more, study less — spaced repetition done right” | Start first deck |
 | Quizlet users | “Actually remember what you study — not just flip once” | Switch to SRS |
 

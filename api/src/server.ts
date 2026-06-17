@@ -28,6 +28,6 @@ app.use('/api', reviewRoutes);
 app.use((_req, res) => res.status(404).json({ message: 'Route not found' }));
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`FlashStudy API running on port ${PORT}`));
+app.listen(PORT, () => console.log(`StuhDee API running on port ${PORT}`));
 
 export default app;

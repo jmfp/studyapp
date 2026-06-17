@@ -1,6 +1,6 @@
 # UI References
 
-These images are design references for the FlashStudy app UI.
+These images are design references for the StuhDee app UI.
 
 ## Design Language
 - Dark backgrounds (#0D0D0D, #1A1A2E, #16213E)

@@ -8,7 +8,6 @@ import { useGetTopicsQuery, useGetAnalyticsQuery } from '../../services/api';
 import { useAppSelector } from '../../hooks/redux';
 import type { Card, DailyActivity, ReviewSession } from '../../types';
 import CardImproveModal from '../../components/CardImproveModal';
-import PaywallModal from '../../components/PaywallModal';
 import { weakCardToCard } from '../../utils/cardStats';
 import { useAiProGate } from '../../hooks/useAiProGate';
 
@@ -107,8 +106,7 @@ export default function HomeScreen() {
   const [improveCard, setImproveCard] = useState<Card | null>(null);
   const [improveTopicId, setImproveTopicId] = useState<string | null>(null);
   const [showImproveModal, setShowImproveModal] = useState(false);
-  const [showPaywall, setShowPaywall] = useState(false);
-  const { requirePro } = useAiProGate(() => setShowPaywall(true));
+  const { requirePro } = useAiProGate();
 
   const openWeakImprove = (weak: NonNullable<typeof analytics>['weakCards'][number]) => {
     if (!requirePro()) return;
@@ -230,7 +228,7 @@ export default function HomeScreen() {
           topicId={improveTopicId}
           card={improveCard}
           trigger="weak_card"
-          onRequirePro={() => setShowPaywall(true)}
+          onRequirePro={requirePro}
           onClose={() => {
             setShowImproveModal(false);
             setImproveCard(null);
@@ -239,11 +237,6 @@ export default function HomeScreen() {
         />
       )}
 
-      <PaywallModal
-        visible={showPaywall}
-        onClose={() => setShowPaywall(false)}
-        onSuccess={() => setShowPaywall(false)}
-      />
     </ScrollView>
   );
 }

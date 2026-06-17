@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "FlashStudy",
-    "slug": "flashstudy",
+    "name": "StuhDee",
+    "slug": "stuhdee",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -9,10 +9,11 @@
     "backgroundColor": "#0F0F1A",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.flashstudy.app"
+      "bundleIdentifier": "com.stuhdee.app",
+      "appleTeamId": "83S4G33QH8"
     },
     "android": {
-      "package": "com.flashstudy.app",
+      "package": "com.stuhdee.app",
       "adaptiveIcon": {
         "backgroundColor": "#0F0F1A",
         "foregroundImage": "./assets/android-icon-foreground.png",

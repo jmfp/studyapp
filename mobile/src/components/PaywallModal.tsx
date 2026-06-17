@@ -133,7 +133,7 @@ export default function PaywallModal({ visible, onClose, onSuccess }: PaywallMod
           subscriptionTier: 'pro',
           revenueCatUserId: user?._id,
         });
-        setSuccessMsg('Welcome to FlashStudy Pro!');
+        setSuccessMsg('Welcome to StuhDee Pro!');
         setTimeout(() => { onSuccess?.(); onClose(); }, 1600);
       } else {
         setErrorMsg('Purchase complete but entitlement not active. Try restoring.');
@@ -203,7 +203,7 @@ export default function PaywallModal({ visible, onClose, onSuccess }: PaywallMod
             </View>
           </Animated.View>
 
-          <Text style={styles.headline}>Unlock FlashStudy Pro</Text>
+          <Text style={styles.headline}>Unlock StuhDee Pro</Text>
           <Text style={styles.subheadline}>
             Get unlimited decks and advanced analytics for {PRO_PRICE}.
           </Text>

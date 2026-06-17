@@ -15,7 +15,6 @@ import { getLanguageLabel } from '../../constants/languages';
 import MultilingualTextInput from '../../components/MultilingualTextInput';
 import GenerateCardsModal from '../../components/GenerateCardsModal';
 import ReviewGeneratedCardsModal from '../../components/ReviewGeneratedCardsModal';
-import PaywallModal from '../../components/PaywallModal';
 import CardImproveModal from '../../components/CardImproveModal';
 import MultilingualAiToolbar from '../../components/MultilingualAiToolbar';
 import type { DraftCard } from '../../types';
@@ -140,11 +139,10 @@ export default function TopicDetailScreen() {
   const [showModal, setShowModal] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
-  const [showPaywall, setShowPaywall] = useState(false);
   const [showImproveModal, setShowImproveModal] = useState(false);
   const [improveCard, setImproveCard] = useState<Card | null>(null);
   const [improveTrigger, setImproveTrigger] = useState<'manual' | 'weak_card'>('manual');
-  const { requirePro } = useAiProGate(() => setShowPaywall(true));
+  const { requirePro } = useAiProGate();
   const [generatedCards, setGeneratedCards] = useState<DraftCard[]>([]);
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
@@ -221,7 +219,7 @@ export default function TopicDetailScreen() {
           <Text style={styles.title}>{topicTitle}</Text>
         </View>
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.aiBtn} onPress={() => { if (requirePro()) setShowGenerateModal(true); }}>
+          <TouchableOpacity style={styles.aiBtn} onPress={() => setShowGenerateModal(true)}>
             <Ionicons name="sparkles" size={20} color={colors.primary} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.addBtn} onPress={openModal}>
@@ -264,7 +262,7 @@ export default function TopicDetailScreen() {
           <TouchableOpacity style={styles.emptyBtn} onPress={openModal}>
             <Text style={styles.emptyBtnText}>Add Card</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.emptyAiBtn} onPress={() => { if (requirePro()) setShowGenerateModal(true); }}>
+          <TouchableOpacity style={styles.emptyAiBtn} onPress={() => setShowGenerateModal(true)}>
             <Ionicons name="sparkles" size={18} color={colors.primary} />
             <Text style={styles.emptyAiBtnText}>Generate with AI</Text>
           </TouchableOpacity>
@@ -340,7 +338,7 @@ export default function TopicDetailScreen() {
                   setQuestion(q);
                   setAnswer(a);
                 }}
-                onRequirePro={() => setShowPaywall(true)}
+                onRequirePro={requirePro}
               />
             )}
 
@@ -362,7 +360,7 @@ export default function TopicDetailScreen() {
         onClose={() => setShowGenerateModal(false)}
         onUpgrade={() => {
           setShowGenerateModal(false);
-          setShowPaywall(true);
+          requirePro();
         }}
         onGenerated={(cards) => {
           setGeneratedCards(cards);
@@ -385,18 +383,12 @@ export default function TopicDetailScreen() {
         }}
       />
 
-      <PaywallModal
-        visible={showPaywall}
-        onClose={() => setShowPaywall(false)}
-        onSuccess={() => setShowPaywall(false)}
-      />
-
       <CardImproveModal
         visible={showImproveModal}
         topicId={topicId}
         card={improveCard}
         trigger={improveTrigger}
-        onRequirePro={() => setShowPaywall(true)}
+        onRequirePro={requirePro}
         onClose={() => {
           setShowImproveModal(false);
           setImproveCard(null);

@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { usePaywall } from '../context/PaywallContext';
 import { useAppSelector } from './redux';
 
 export function useIsPro(): boolean {
@@ -7,14 +8,17 @@ export function useIsPro(): boolean {
   return subscriptionTier === 'pro' || userTier === 'pro';
 }
 
-export function useAiProGate(showPaywall: () => void) {
+/** Gate AI / Pro features — shows the global paywall when the user is on the free tier. */
+export function useAiProGate(onBlocked?: () => void) {
   const isPro = useIsPro();
+  const { showPaywall } = usePaywall();
 
   const requirePro = useCallback((): boolean => {
     if (isPro) return true;
     showPaywall();
+    onBlocked?.();
     return false;
-  }, [isPro, showPaywall]);
+  }, [isPro, showPaywall, onBlocked]);
 
   return { isPro, requirePro };
 }

@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, typography } from '../../theme';
 import { useRegisterMutation } from '../../services/api';
 import { setCredentials } from '../../store/authSlice';
+import { setTier } from '../../store/subscriptionSlice';
 import { useAppDispatch } from '../../hooks/redux';
 import type { AuthStackParamList } from '../../types';
 
@@ -34,7 +35,9 @@ export default function RegisterScreen() {
     }
     try {
       const result = await register({ name: name.trim(), email: email.trim().toLowerCase(), password }).unwrap();
-      dispatch(setCredentials({ user: { ...result.user, subscriptionTier: (result.user.subscriptionTier as 'free' | 'pro') ?? 'free' }, token: result.token }));
+      const tier = (result.user.subscriptionTier as 'free' | 'pro') ?? 'free';
+      dispatch(setCredentials({ user: { ...result.user, subscriptionTier: tier }, token: result.token }));
+      dispatch(setTier(tier));
     } catch (err: any) {
       Alert.alert('Registration Failed', err?.data?.message || 'Something went wrong');
     }

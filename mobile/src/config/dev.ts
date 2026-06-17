@@ -5,7 +5,7 @@ export const BYPASS_AUTH = process.env.EXPO_PUBLIC_BYPASS_AUTH === 'true';
 export const DEV_USER: User = {
   _id: 'dev-user',
   name: 'Demo User',
-  email: 'demo@flashstudy.app',
+  email: 'demo@stuhdee.app',
   subscriptionTier: 'pro',
 };
 

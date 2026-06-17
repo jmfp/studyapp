@@ -5,7 +5,7 @@ import {
   MAX_SOURCE_CHARS,
 } from '../constants/ai';
 
-const USER_AGENT = 'FlashStudy/1.0 (+https://flashstudy.app)';
+const USER_AGENT = 'StuhDee/1.0 (+https://stuhdee.app)';
 
 export function htmlToText(html: string): string {
   return html
