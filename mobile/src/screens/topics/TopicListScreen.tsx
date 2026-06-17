@@ -126,7 +126,7 @@ export default function TopicListScreen() {
   };
 
   const handleAiImportToggle = (enabled: boolean) => {
-    if (enabled && !requirePro()) return;
+    if (!isPro) return;
     setImportWithAi(enabled);
   };
 
@@ -143,7 +143,7 @@ export default function TopicListScreen() {
 
   const openModal = (withAi = false) => {
     setShowModal(true);
-    setImportWithAi(withAi);
+    setImportWithAi(isPro && withAi);
     setLanguageOptions(false);
     sourceForm.reset();
     modalContentAnim.setValue(0);
@@ -332,36 +332,34 @@ export default function TopicListScreen() {
                 onChangeText={setDescription}
               />
 
-              <TouchableOpacity
-                style={styles.aiImportRow}
-                onPress={() => handleAiImportToggle(!importWithAi)}
-                activeOpacity={0.85}
-              >
-                <View style={styles.aiImportLabel}>
-                  <Ionicons name="sparkles" size={18} color={colors.primary} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.aiImportTitle}>Generate deck from material</Text>
-                    <Text style={styles.pickerHint}>Paste notes, PDF, URL, or image to create flashcards</Text>
-                    {!isPro && (
-                      <Text style={styles.aiProHint}>Pro feature — tap to upgrade</Text>
-                    )}
-                  </View>
-                </View>
-                <Switch
-                  value={importWithAi}
-                  onValueChange={handleAiImportToggle}
-                  trackColor={{ false: colors.border, true: colors.primary + '80' }}
-                  thumbColor={importWithAi ? colors.primary : colors.textMuted}
-                />
-              </TouchableOpacity>
+              {isPro && (
+                <>
+                  <TouchableOpacity
+                    style={styles.aiImportRow}
+                    onPress={() => handleAiImportToggle(!importWithAi)}
+                    activeOpacity={0.85}
+                  >
+                    <View style={styles.aiImportLabel}>
+                      <Ionicons name="sparkles" size={18} color={colors.primary} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.aiImportTitle}>Generate deck from material</Text>
+                        <Text style={styles.pickerHint}>Paste notes, PDF, URL, or image to create flashcards</Text>
+                      </View>
+                    </View>
+                    <Switch
+                      value={importWithAi}
+                      onValueChange={handleAiImportToggle}
+                      trackColor={{ false: colors.border, true: colors.primary + '80' }}
+                      thumbColor={importWithAi ? colors.primary : colors.textMuted}
+                    />
+                  </TouchableOpacity>
 
-              {importWithAi && (
-                <View style={styles.aiImportBox}>
-                  <Text style={styles.aiUsage}>
-                    Pro feature — included with StuhDee Pro
-                  </Text>
-                  <AiSourceForm form={sourceForm} compact />
-                </View>
+                  {importWithAi && (
+                    <View style={styles.aiImportBox}>
+                      <AiSourceForm form={sourceForm} compact />
+                    </View>
+                  )}
+                </>
               )}
 
               <Text style={styles.pickerLabel}>ICON</Text>
@@ -542,13 +540,11 @@ const styles = StyleSheet.create({
   },
   aiImportLabel: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md, paddingRight: spacing.xs },
   aiImportTitle: { ...typography.body, fontWeight: '600', fontSize: 14 },
-  aiProHint: { ...typography.small, color: colors.primary, marginTop: 4, fontWeight: '600' },
   aiImportBox: {
     marginTop: spacing.md, marginBottom: spacing.sm,
     padding: spacing.lg, backgroundColor: colors.background,
     borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
   },
-  aiUsage: { ...typography.small, color: colors.primary, marginBottom: spacing.md },
   languageOptionsRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
     marginTop: spacing.md, paddingVertical: spacing.md, paddingHorizontal: spacing.md,

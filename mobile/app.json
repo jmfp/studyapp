@@ -10,7 +10,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.stuhdee.app",
-      "appleTeamId": "83S4G33QH8"
+      "appleTeamId": "83S4G33QH8",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.stuhdee.app",
@@ -29,7 +32,10 @@
       "expo-secure-store"
     ],
     "extra": {
-      "apiUrl": "http://localhost:5000/api"
+      "apiUrl": "http://localhost:5000/api",
+      "eas": {
+        "projectId": "5a091862-774c-41f3-9d65-d060789320a1"
+      }
     }
   }
 }
