@@ -3,6 +3,8 @@ import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolk
 import type { RootState } from '../store';
 import type { Topic, Card, ReviewSession, Analytics, SubmitReviewResponse, ReviewQuality, GenerateCardsResponse, AiUsage, DraftCard, CardImprovementResult, StudyCoachResult, AnalyticsInsightsResult, MultilingualAssistResult } from '../types';
 import { BYPASS_AUTH, DEV_USER } from '../config/dev';
+import { demoAnalytics, demoTopics } from '../mocks/demoData';
+import { analyticsQuerySuffix } from '../utils/localDate';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -378,7 +380,7 @@ export const api = createApi({
     }),
     generateAnalyticsInsights: builder.mutation<AnalyticsInsightsResult, { topicId?: string }>({
       query: ({ topicId } = {}) => ({
-        url: `/ai/insights${topicId ? `?topicId=${topicId}` : ''}`,
+        url: `/ai/insights${analyticsQuerySuffix(topicId)}`,
         method: 'GET',
       }),
     }),
@@ -396,7 +398,8 @@ export const api = createApi({
         method: 'POST',
         body,
       }),
-      invalidatesTags: (_r, _e, { topicId }) => [...cardTags(topicId), 'Analytics'],
+      // Don't refetch due cards mid-session — quiz snapshots the deck at start
+      invalidatesTags: ['Analytics'],
     }),
     completeSession: builder.mutation<ReviewSession, string>({
       query: (sessionId) => ({ url: `/sessions/${sessionId}/complete`, method: 'POST' }),
@@ -411,7 +414,7 @@ export const api = createApi({
       providesTags: (_r, _e, topicId) => [{ type: 'Session', id: topicId }],
     }),
     getAnalytics: builder.query<Analytics, { topicId?: string }>({
-      query: ({ topicId } = {}) => `/analytics${topicId ? `?topicId=${topicId}` : ''}`,
+      query: ({ topicId } = {}) => `/analytics${analyticsQuerySuffix(topicId)}`,
       providesTags: ['Analytics'],
     }),
   }),

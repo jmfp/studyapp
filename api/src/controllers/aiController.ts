@@ -10,6 +10,13 @@ import { generateAnalyticsInsights } from '../services/analyticsInsightsService'
 import ReviewSession from '../models/ReviewSession';
 import mongoose from 'mongoose';
 import { MAX_BULK_CARDS } from '../constants/ai';
+import {
+  computeStudyStreak,
+  getTimezoneOffsetFromQuery,
+  localDayBounds,
+  toLocalDateKey,
+  addDaysToDateKey,
+} from '../utils/localDate';
 
 export const getAiUsageStats = async (req: Request, res: Response) => {
   try {
@@ -229,6 +236,9 @@ export const getAnalyticsInsights = async (req: Request, res: Response) => {
   try {
     const userId = new mongoose.Types.ObjectId((req as any).userId);
     const { topicId } = req.query;
+    const tzOffset = getTimezoneOffsetFromQuery(req);
+    const todayKey = toLocalDateKey(new Date(), tzOffset);
+    const tomorrowKey = addDaysToDateKey(todayKey, 1);
 
     if (!isAiConfigured()) {
       return res.status(503).json({ message: 'AI is not configured', code: 'AI_NOT_CONFIGURED' });
@@ -274,31 +284,22 @@ export const getAnalyticsInsights = async (req: Request, res: Response) => {
     const lowQualityCount = weekQualities.filter((q) => q <= 2).length;
     const totalReviewsThisWeek = weekQualities.length;
 
-    const now = new Date();
-    const dueToday = allCards.filter((c) => !c.nextReviewAt || c.nextReviewAt <= now).length;
+    const { end: todayEnd } = localDayBounds(todayKey, tzOffset);
+    const dueToday = allCards.filter((c) => !c.nextReviewAt || c.nextReviewAt <= todayEnd).length;
 
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(23, 59, 59, 999);
-    const tomorrowStart = new Date(tomorrow);
-    tomorrowStart.setHours(0, 0, 0, 0);
+    const { start: tomorrowStart, end: tomorrowEnd } = localDayBounds(tomorrowKey, tzOffset);
     const dueTomorrow = allCards.filter(
-      (c) => c.nextReviewAt && c.nextReviewAt >= tomorrowStart && c.nextReviewAt <= tomorrow,
+      (c) => c.nextReviewAt && c.nextReviewAt >= tomorrowStart && c.nextReviewAt <= tomorrowEnd,
     ).length;
 
     const totalCorrect = sessions.reduce((s, r) => s + r.correctCount, 0);
     const totalCardsReviewed = sessions.reduce((s, r) => s + r.totalCards, 0);
     const retentionRate = totalCardsReviewed > 0 ? Math.round((totalCorrect / totalCardsReviewed) * 100) : 0;
 
-    const sessionDays = [...new Set(sessions.map((s) => s.completedAt?.toISOString().split('T')[0]))]
-      .filter(Boolean).sort().reverse() as string[];
-    let streakDays = 0;
-    for (let i = 0; i < sessionDays.length; i++) {
-      const expected = new Date();
-      expected.setDate(expected.getDate() - i);
-      if (sessionDays[i] === expected.toISOString().split('T')[0]) streakDays++;
-      else break;
-    }
+    const streakDays = computeStudyStreak(
+      sessions.map((s) => s.completedAt).filter((d): d is Date => !!d),
+      tzOffset,
+    );
 
     const weakCards = allCards
       .filter((c) => c.timesReviewed >= 3)

@@ -14,7 +14,7 @@ import {
   useSubmitReviewMutation, useCompleteSessionMutation,
   useGetStudyCoachMutation,
 } from '../../services/api';
-import type { QuizStackParamList, ReviewQuality, QualityOption, StudyCoachResult } from '../../types';
+import type { QuizStackParamList, ReviewQuality, QualityOption, StudyCoachResult, Card } from '../../types';
 import StudyCoachModal from '../../components/StudyCoachModal';
 import { useAiProGate, isAiProRequiredError } from '../../hooks/useAiProGate';
 
@@ -57,7 +57,8 @@ export default function QuizSessionScreen() {
   const bottomPad = TAB_BAR_CLEARANCE + insets.bottom;
   const { topicId, topicTitle } = route.params;
 
-  const { data: dueCards, isLoading } = useGetDueCardsQuery(topicId);
+  const { data: dueCardsQuery, isLoading } = useGetDueCardsQuery(topicId);
+  const [sessionCards, setSessionCards] = useState<Card[] | null>(null);
   const [startSession] = useStartSessionMutation();
   const [submitReview] = useSubmitReviewMutation();
   const [completeSession] = useCompleteSessionMutation();
@@ -101,6 +102,16 @@ export default function QuizSessionScreen() {
   const isFlippedRef = useRef(isFlipped);
   const isSubmittingRef = useRef(isSubmitting);
   const handleQualityRef = useRef<(quality: ReviewQuality) => void>(() => {});
+  const mountedRef = useRef(true);
+  const reviewTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (reviewTimeoutRef.current) clearTimeout(reviewTimeoutRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     isFlippedRef.current = isFlipped;
@@ -131,7 +142,7 @@ export default function QuizSessionScreen() {
   }, []);
 
   const flipCard = () => {
-    if (isFlipped || isSubmitting) return;
+    if (isFlipped || isSubmittingRef.current) return;
 
     Vibration.vibrate(8);
 
@@ -155,21 +166,21 @@ export default function QuizSessionScreen() {
         ]),
       ]),
     ]).start(() => {
+      isFlippedRef.current = true;
       setIsFlipped(true);
       Animated.spring(buttonsAnim, { toValue: 1, tension: 48, friction: 7, useNativeDriver: true }).start();
     });
   };
 
   useEffect(() => {
-    if (isStarted && dueCards) {
-      animateCardIn();
-      Animated.spring(headerAnim, { toValue: 1, tension: 60, friction: 8, useNativeDriver: true }).start();
-      Animated.spring(progressWidth, {
-        toValue: dueCards.length > 0 ? (currentIndex / dueCards.length) * 100 : 0,
-        tension: 40, friction: 8, useNativeDriver: false,
-      }).start();
-    }
-  }, [isStarted, currentIndex]);
+    if (!isStarted || sessionCards === null) return;
+    animateCardIn();
+    Animated.spring(headerAnim, { toValue: 1, tension: 60, friction: 8, useNativeDriver: true }).start();
+    Animated.spring(progressWidth, {
+      toValue: sessionCards.length > 0 ? (currentIndex / sessionCards.length) * 100 : 0,
+      tension: 40, friction: 8, useNativeDriver: false,
+    }).start();
+  }, [isStarted, currentIndex, sessionCards]);
 
   const shakeCard = () => {
     Animated.sequence([
@@ -204,13 +215,14 @@ export default function QuizSessionScreen() {
   };
 
   const advanceAfterReview = async (quality: ReviewQuality) => {
-    if (!sessionId || !dueCards) return;
+    if (!sessionId || !sessionCards || !mountedRef.current) return;
 
     const nextIndex = currentIndex + 1;
-    if (nextIndex >= dueCards.length) {
+    if (nextIndex >= sessionCards.length) {
       const allQ = [...qualityScores, quality];
       const avgQ = allQ.reduce((a, b) => a + b, 0) / allQ.length;
       const session = await completeSession(sessionId).unwrap();
+      if (!mountedRef.current) return;
       navigation.replace('QuizResult', {
         sessionId: session._id, topicId,
         score: session.score,
@@ -221,6 +233,7 @@ export default function QuizSessionScreen() {
       });
     } else {
       setIsFlipped(false);
+      isFlippedRef.current = false;
       setCurrentIndex(nextIndex);
       setCardStartTime(Date.now());
       cardRotation.setValue(0);
@@ -257,25 +270,31 @@ export default function QuizSessionScreen() {
       try {
         await advanceAfterReview(quality);
       } catch {
-        Alert.alert('Error', 'Failed to continue session');
+        if (mountedRef.current) Alert.alert('Error', 'Failed to continue session');
       } finally {
+        isSubmittingRef.current = false;
         setIsSubmitting(false);
       }
     }
   };
 
   const handleHelpRemember = async () => {
-    if (!dueCards || isSubmitting || coachLoading) return;
+    if (!sessionCards || isSubmittingRef.current || coachLoading) return;
     if (!requirePro()) return;
-    const card = dueCards[currentIndex];
+    const card = sessionCards[currentIndex];
+    if (!card) return;
     await showCoachHints(card._id, 2, false);
   };
 
   const handleQuality = async (quality: ReviewQuality) => {
-    if (!sessionId || !dueCards || isSubmitting) return;
-    const card = dueCards[currentIndex];
-    const timeSpentMs = Date.now() - cardStartTime;
+    if (!sessionId || !sessionCards || isSubmittingRef.current) return;
+    const card = sessionCards[currentIndex];
+    if (!card) return;
+
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
+
+    const timeSpentMs = Date.now() - cardStartTime;
 
     const opt = QUALITY_OPTIONS.find((o) => o.quality === quality) || QUALITY_OPTIONS[1];
     const isCorrect = quality >= 3;
@@ -291,11 +310,15 @@ export default function QuizSessionScreen() {
     setQualityScores((qs) => [...qs, quality]);
     const needsCoach = quality <= 2;
 
-    setTimeout(() => {
+    if (reviewTimeoutRef.current) clearTimeout(reviewTimeoutRef.current);
+    reviewTimeoutRef.current = setTimeout(() => {
+      if (!mountedRef.current || !isSubmittingRef.current) return;
       exitCard(isCorrect ? 'right' : 'left', async () => {
+        if (!mountedRef.current) return;
         resultOverlayOpacity.setValue(0);
         try {
           const resp = await submitReview({ sessionId, cardId: card._id, topicId, quality, timeSpentMs }).unwrap();
+          if (!mountedRef.current) return;
           setLastSm2({ label: resp.sm2Result.nextReviewLabel, quality });
 
           sm2LabelAnim.setValue(0);
@@ -308,6 +331,7 @@ export default function QuizSessionScreen() {
           if (needsCoach) {
             if (!requirePro()) {
               await advanceAfterReview(quality);
+              isSubmittingRef.current = false;
               setIsSubmitting(false);
               return;
             }
@@ -315,15 +339,23 @@ export default function QuizSessionScreen() {
             const shown = await showCoachHints(card._id, quality, true);
             if (!shown) {
               await advanceAfterReview(quality);
+              isSubmittingRef.current = false;
               setIsSubmitting(false);
             }
           } else {
             await advanceAfterReview(quality);
+            isSubmittingRef.current = false;
             setIsSubmitting(false);
           }
         } catch {
+          if (!mountedRef.current) return;
           Alert.alert('Error', 'Failed to submit review');
+          isSubmittingRef.current = false;
           setIsSubmitting(false);
+          cardTranslateX.setValue(0);
+          cardRotation.setValue(0);
+          cardOpacity.setValue(1);
+          animateCardIn();
         }
       });
     }, 380);
@@ -384,7 +416,7 @@ export default function QuizSessionScreen() {
 
   if (isLoading) return <View style={s.center}><ActivityIndicator color={colors.primary} size="large" /></View>;
 
-  if (!dueCards || dueCards.length === 0) {
+  if (!dueCardsQuery || dueCardsQuery.length === 0) {
     return (
       <View style={s.center}>
         <Animated.View style={{ transform: [{ scale: startScreenAnim }], alignItems: 'center' }}>
@@ -419,7 +451,7 @@ export default function QuizSessionScreen() {
           <Text style={s.startTopic}>{topicTitle}</Text>
 
           <View style={s.startStatsBox}>
-            <Text style={s.startStatNum}>{dueCards.length}</Text>
+            <Text style={s.startStatNum}>{dueCardsQuery.length}</Text>
             <Text style={s.startStatLabel}>Cards Due</Text>
           </View>
 
@@ -447,6 +479,7 @@ export default function QuizSessionScreen() {
             try {
               const session = await startSession(topicId).unwrap();
               setSessionId(session._id);
+              setSessionCards([...dueCardsQuery]);
               setIsStarted(true);
               setCardStartTime(Date.now());
             } catch { Alert.alert('Error', 'Failed to start session'); }
@@ -459,7 +492,22 @@ export default function QuizSessionScreen() {
     );
   }
 
-  const card = dueCards[currentIndex];
+  if (!sessionCards || sessionCards.length === 0) {
+    return (
+      <View style={s.center}>
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    );
+  }
+
+  const card = sessionCards[currentIndex];
+  if (!card) {
+    return (
+      <View style={s.center}>
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    );
+  }
 
   return (
     <View style={s.container}>
@@ -481,7 +529,7 @@ export default function QuizSessionScreen() {
               width: progressWidth.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }),
             }]} />
           </View>
-          <Text style={s.progressText}>{currentIndex + 1} / {dueCards.length}</Text>
+          <Text style={s.progressText}>{currentIndex + 1} / {sessionCards.length}</Text>
         </View>
 
         <View style={s.scoreRow}>
@@ -537,7 +585,7 @@ export default function QuizSessionScreen() {
             <TouchableOpacity style={s.cardInner} onPress={flipCard} activeOpacity={0.95}>
               <View style={s.cardTopRow}>
                 <View style={s.cardTag}><Text style={s.cardTagText}>QUESTION</Text></View>
-                <Text style={s.cardNum}>{currentIndex + 1}/{dueCards.length}</Text>
+                <Text style={s.cardNum}>{currentIndex + 1}/{sessionCards.length}</Text>
               </View>
               <Text style={s.questionText}>{card.question}</Text>
               <View style={s.tapHintRow}>
@@ -634,8 +682,17 @@ function QualityButton({ option, onPress, disabled }: {
   option: QualityOption; onPress: () => void; disabled: boolean;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
-  const pressIn = () => Animated.spring(scale, { toValue: 0.90, tension: 200, friction: 5, useNativeDriver: true }).start();
-  const pressOut = () => Animated.spring(scale, { toValue: 1, tension: 200, friction: 5, useNativeDriver: true }).start();
+  const pressIn = () => {
+    if (disabled) return;
+    Animated.spring(scale, { toValue: 0.90, tension: 200, friction: 5, useNativeDriver: true }).start();
+  };
+  const pressOut = () => {
+    Animated.spring(scale, { toValue: 1, tension: 200, friction: 5, useNativeDriver: true }).start();
+  };
+  const handlePress = () => {
+    if (disabled) return;
+    onPress();
+  };
 
   return (
     <Animated.View style={[s.ratingBtnWrap, { transform: [{ scale }] }]}>
@@ -644,7 +701,7 @@ function QualityButton({ option, onPress, disabled }: {
           backgroundColor: option.color + '18',
           borderColor: option.color + '60',
         }]}
-        onPress={onPress}
+        onPress={handlePress}
         onPressIn={pressIn}
         onPressOut={pressOut}
         disabled={disabled}

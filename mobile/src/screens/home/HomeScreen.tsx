@@ -10,6 +10,7 @@ import type { Card, DailyActivity, ReviewSession } from '../../types';
 import CardImproveModal from '../../components/CardImproveModal';
 import { weakCardToCard } from '../../utils/cardStats';
 import { useAiProGate } from '../../hooks/useAiProGate';
+import { isTodayDateKey, weekdayLetterFromDateKey } from '../../utils/localDate';
 
 function useFadeSlideIn(delay = 0) {
   const anim = useRef(new Animated.Value(0)).current;
@@ -38,32 +39,35 @@ function StatCard({
   );
 }
 
-function ActivityBar({ day, index, maxCards }: { day: DailyActivity; index: number; maxCards: number }) {
-  const heightPct = day.cardsReviewed / maxCards;
-  const isToday = index === 6;
+function ActivityBar({ day, maxCards }: { day: DailyActivity; maxCards: number }) {
+  const heightPct = maxCards > 0 ? day.cardsReviewed / maxCards : 0;
+  const isToday = isTodayDateKey(day.date);
   const barHeight = useRef(new Animated.Value(0)).current;
+  const hasActivity = day.cardsReviewed > 0;
 
   useEffect(() => {
+    const target = hasActivity ? Math.max(heightPct * 90, 12) : 0;
     Animated.spring(barHeight, {
-      toValue: Math.max(heightPct * 90, 4),
-      tension: 50, friction: 7, delay: 400 + index * 60, useNativeDriver: false,
+      toValue: target,
+      tension: 50, friction: 7, delay: 400, useNativeDriver: false,
     }).start();
-  }, [barHeight, heightPct, index]);
+  }, [barHeight, heightPct, hasActivity]);
 
   return (
     <View style={styles.barWrapper}>
-      {day.cardsReviewed > 0 && (
+      {hasActivity && (
         <Text style={styles.barValue}>{day.cardsReviewed}</Text>
       )}
       <View style={styles.barTrack}>
         <Animated.View style={[styles.bar, {
           height: barHeight,
-          backgroundColor: isToday ? colors.primary : colors.surfaceElevated,
-          borderWidth: isToday ? 0 : 1, borderColor: colors.border,
+          backgroundColor: isToday ? colors.primary : colors.primary + '55',
+          borderWidth: isToday ? 0 : 1,
+          borderColor: colors.primary + '40',
         }]} />
       </View>
       <Text style={[styles.barLabel, isToday && { color: colors.primary, fontWeight: '700' }]}>
-        {['M', 'T', 'W', 'T', 'F', 'S', 'S'][new Date(day.date).getDay()]}
+        {weekdayLetterFromDateKey(day.date)}
       </Text>
     </View>
   );
@@ -174,7 +178,7 @@ export default function HomeScreen() {
             </View>
             <View style={styles.barChartContainer}>
               {analytics?.dailyActivity.map((day, i) => (
-                <ActivityBar key={day.date} day={day} index={i} maxCards={maxCards} />
+                <ActivityBar key={day.date} day={day} maxCards={maxCards} />
               ))}
             </View>
           </Animated.View>

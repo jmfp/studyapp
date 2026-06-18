@@ -3,6 +3,14 @@ import mongoose from 'mongoose';
 import ReviewSession from '../models/ReviewSession';
 import Card from '../models/Card';
 import { sm2, sessionScore, intervalLabel } from '../utils/sm2';
+import {
+  computeStudyStreak,
+  getTimezoneOffsetFromQuery,
+  lastNDaysIncludingToday,
+  localDayBounds,
+  nextNDaysIncludingToday,
+  toLocalDateKey,
+} from '../utils/localDate';
 import type { ReviewQuality } from '../models/ReviewSession';
 
 export const startSession = async (req: Request, res: Response) => {
@@ -144,6 +152,7 @@ export const getAnalytics = async (req: Request, res: Response) => {
   try {
     const userId = new mongoose.Types.ObjectId((req as any).userId);
     const { topicId } = req.query;
+    const tzOffset = getTimezoneOffsetFromQuery(req);
 
     const matchStage: Record<string, unknown> = { userId, completedAt: { $exists: true } };
     if (topicId) matchStage.topicId = new mongoose.Types.ObjectId(topicId as string);
@@ -171,15 +180,13 @@ export const getAnalytics = async (req: Request, res: Response) => {
       ? +((allQualities as number[]).reduce((a, b) => a + b, 0) / allQualities.length).toFixed(2)
       : 0;
 
-    // ─── 7-day daily activity ─────────────────────────────────────────────────
-    const last7Days = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - (6 - i));
-      return d.toISOString().split('T')[0];
-    });
+    // ─── 7-day daily activity (client-local calendar days) ───────────────────
+    const last7Days = lastNDaysIncludingToday(7, tzOffset);
 
     const dailyActivity = last7Days.map((day) => {
-      const daySessions = sessions.filter((s) => s.completedAt?.toISOString().split('T')[0] === day);
+      const daySessions = sessions.filter(
+        (s) => s.completedAt && toLocalDateKey(s.completedAt, tzOffset) === day,
+      );
       const dayQualities = daySessions.flatMap((s) => s.reviews.map((r) => r.quality));
       return {
         date: day,
@@ -203,9 +210,9 @@ export const getAnalytics = async (req: Request, res: Response) => {
     const youngCards = reviewedCards.filter((c) => !c.isMature).length;
     const newCards = allCards.filter((c) => c.timesReviewed === 0).length;
 
-    // ─── Due cards ───────────────────────────────────────────────────────────
-    const now = new Date();
-    const dueToday = allCards.filter((c) => !c.nextReviewAt || c.nextReviewAt <= now).length;
+    // ─── Due cards (through end of local today) ──────────────────────────────
+    const { end: todayEnd } = localDayBounds(toLocalDateKey(new Date(), tzOffset), tzOffset);
+    const dueToday = allCards.filter((c) => !c.nextReviewAt || c.nextReviewAt <= todayEnd).length;
 
     // ─── Weak cards (lowest accuracy, reviewed at least 3 times) ────────────
     const weakCards = reviewedCards
@@ -242,38 +249,23 @@ export const getAnalytics = async (req: Request, res: Response) => {
     // ─── Retention rate (% of reviews that were quality >= 3) ───────────────
     const retentionRate = totalCardsReviewed > 0 ? Math.round((totalCorrect / totalCardsReviewed) * 100) : 0;
 
-    // ─── Forecast: cards due per day for next 7 days ─────────────────────────
-    const forecast = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() + i);
-      d.setHours(23, 59, 59, 999);
-      const startOfDay = new Date(d);
-      startOfDay.setHours(0, 0, 0, 0);
+    // ─── Forecast: cards due per local day for next 7 days ───────────────────
+    const forecast = nextNDaysIncludingToday(7, tzOffset).map((dayKey, i) => {
+      const { start, end } = localDayBounds(dayKey, tzOffset);
       return {
-        date: startOfDay.toISOString().split('T')[0],
+        date: dayKey,
         dueCount: allCards.filter((c) => {
           if (!c.nextReviewAt) return i === 0;
-          return c.nextReviewAt >= startOfDay && c.nextReviewAt <= d;
+          return c.nextReviewAt >= start && c.nextReviewAt <= end;
         }).length,
       };
     });
 
-    // ─── Study streak ─────────────────────────────────────────────────────────
-    const sessionDays = [
-      ...new Set(sessions.map((s) => s.completedAt?.toISOString().split('T')[0])),
-    ]
-      .filter(Boolean)
-      .sort()
-      .reverse() as string[];
-
-    let streakDays = 0;
-    for (let i = 0; i < sessionDays.length; i++) {
-      const expected = new Date();
-      expected.setDate(expected.getDate() - i);
-      const exp = expected.toISOString().split('T')[0];
-      if (sessionDays[i] === exp) streakDays++;
-      else break;
-    }
+    // ─── Study streak (consecutive local calendar days) ──────────────────────
+    const streakDays = computeStudyStreak(
+      sessions.map((s) => s.completedAt).filter((d): d is Date => !!d),
+      tzOffset,
+    );
 
     res.json({
       // Totals

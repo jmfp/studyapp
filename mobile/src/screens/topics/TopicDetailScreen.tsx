@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  ActivityIndicator, Alert, Modal, Animated, KeyboardAvoidingView, Platform,
+  ActivityIndicator, Alert, Modal, Animated, Keyboard, Platform, useWindowDimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, type CompositeNavigationProp, type RouteProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -130,6 +131,9 @@ export default function TopicDetailScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const { topicId, topicTitle } = route.params;
+  const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const { data: topic } = useGetTopicQuery(topicId);
   const { data: cards, isLoading } = useGetCardsQuery(topicId);
@@ -150,6 +154,36 @@ export default function TopicDetailScreen() {
 
   const headerAnim = useRef(new Animated.Value(0)).current;
   const modalAnim = useRef(new Animated.Value(0)).current;
+  const modalScrollRef = useRef<ScrollView>(null);
+  const questionSectionY = useRef(0);
+  const answerSectionY = useRef(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const show = Keyboard.addListener(showEvent, (e) => setKeyboardHeight(e.endCoordinates.height));
+    const hide = Keyboard.addListener(hideEvent, () => setKeyboardHeight(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
+  const scrollModalToSection = (y: number) => {
+    setTimeout(() => modalScrollRef.current?.scrollTo({ y: Math.max(0, y - spacing.sm), animated: true }), 80);
+  };
+
+  const closeCardModal = () => {
+    setShowModal(false);
+    setQuestion('');
+    setAnswer('');
+    setKeyboardHeight(0);
+    Keyboard.dismiss();
+  };
+
+  const modalMaxHeight = keyboardHeight > 0
+    ? windowHeight - keyboardHeight - spacing.sm
+    : windowHeight * 0.88;
 
   useEffect(() => {
     Animated.spring(headerAnim, { toValue: 1, tension: 60, friction: 8, useNativeDriver: true }).start();
@@ -176,8 +210,7 @@ export default function TopicDetailScreen() {
         answer: answer.trim(),
         language: backLang,
       }).unwrap();
-      setQuestion(''); setAnswer('');
-      setShowModal(false);
+      closeCardModal();
     } catch (err: any) {
       Alert.alert('Error', err?.data?.message || 'Failed to create card');
     }
@@ -286,72 +319,89 @@ export default function TopicDetailScreen() {
       )}
 
       <Modal visible={showModal} animationType="slide" transparent>
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
+        <View style={styles.modalOverlay}>
           <Animated.View style={[styles.modalContent, {
             transform: [{ translateY: modalAnim.interpolate({ inputRange: [0, 1], outputRange: [60, 0] }) }],
             opacity: modalAnim,
+            marginBottom: keyboardHeight,
+            maxHeight: modalMaxHeight,
+            paddingBottom: keyboardHeight > 0 ? spacing.md : Math.max(insets.bottom, spacing.lg),
           }]}>
             <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>New Flashcard</Text>
-            <Text style={styles.modalSubtitle}>
-              {getLanguageLabel(frontLang)} front · {getLanguageLabel(backLang)} back
-            </Text>
+            <ScrollView
+              ref={modalScrollRef}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+              contentContainerStyle={styles.modalScrollContent}
+            >
+              <Text style={styles.modalTitle}>New Flashcard</Text>
+              <Text style={styles.modalSubtitle}>
+                {getLanguageLabel(frontLang)} front · {getLanguageLabel(backLang)} back
+              </Text>
 
-            <Text style={styles.inputLabel}>QUESTION — {getLanguageLabel(frontLang).toUpperCase()}</Text>
-            <MultilingualTextInput
-              languageCode={frontLang}
-              placeholder={`Type the ${getLanguageLabel(frontLang).toLowerCase()} prompt...`}
-              value={question}
-              onChangeText={setQuestion}
-              multiline
-              numberOfLines={3}
-              autoFocus
-              textAlignVertical="top"
-            />
+              <View onLayout={(e) => { questionSectionY.current = e.nativeEvent.layout.y; }}>
+                <Text style={styles.inputLabel}>QUESTION — {getLanguageLabel(frontLang).toUpperCase()}</Text>
+                <MultilingualTextInput
+                  languageCode={frontLang}
+                  placeholder={`Type the ${getLanguageLabel(frontLang).toLowerCase()} prompt...`}
+                  value={question}
+                  onChangeText={setQuestion}
+                  onFocus={() => scrollModalToSection(questionSectionY.current)}
+                  multiline
+                  numberOfLines={3}
+                  autoFocus
+                  textAlignVertical="top"
+                />
+              </View>
 
-            <Text style={[styles.inputLabel, { marginTop: spacing.md }]}>
-              ANSWER — {getLanguageLabel(backLang).toUpperCase()}
-            </Text>
-            <MultilingualTextInput
-              languageCode={backLang}
-              placeholder={`Type or tap characters below...`}
-              value={answer}
-              onChangeText={setAnswer}
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-            />
+              <View
+                style={{ marginTop: spacing.md }}
+                onLayout={(e) => { answerSectionY.current = e.nativeEvent.layout.y; }}
+              >
+                <Text style={styles.inputLabel}>
+                  ANSWER — {getLanguageLabel(backLang).toUpperCase()}
+                </Text>
+                <MultilingualTextInput
+                  languageCode={backLang}
+                  placeholder="Type or tap characters below..."
+                  value={answer}
+                  onChangeText={setAnswer}
+                  onFocus={() => scrollModalToSection(answerSectionY.current)}
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                />
+              </View>
 
-            {(frontLang !== backLang || frontLang !== 'en' || backLang !== 'en') && (
-              <MultilingualAiToolbar
-                topicId={topicId}
-                sourceLanguage={frontLang}
-                language={backLang}
-                question={question}
-                answer={answer}
-                onQuestionChange={setQuestion}
-                onAnswerChange={setAnswer}
-                onReverseCard={(q, a) => {
-                  setQuestion(q);
-                  setAnswer(a);
-                }}
-                onRequirePro={requirePro}
-              />
-            )}
+              {(frontLang !== backLang || frontLang !== 'en' || backLang !== 'en') && (
+                <MultilingualAiToolbar
+                  topicId={topicId}
+                  sourceLanguage={frontLang}
+                  language={backLang}
+                  question={question}
+                  answer={answer}
+                  onQuestionChange={setQuestion}
+                  onAnswerChange={setAnswer}
+                  onReverseCard={(q, a) => {
+                    setQuestion(q);
+                    setAnswer(a);
+                  }}
+                  onRequirePro={requirePro}
+                />
+              )}
 
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => { setShowModal(false); setQuestion(''); setAnswer(''); }}>
-                <Text style={styles.cancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.createBtn} onPress={handleCreate} disabled={creating}>
-                {creating ? <ActivityIndicator color={colors.white} /> : <Text style={styles.createText}>Add Card</Text>}
-              </TouchableOpacity>
-            </View>
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.cancelBtn} onPress={closeCardModal}>
+                  <Text style={styles.cancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.createBtn} onPress={handleCreate} disabled={creating}>
+                  {creating ? <ActivityIndicator color={colors.white} /> : <Text style={styles.createText}>Add Card</Text>}
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
           </Animated.View>
-        </KeyboardAvoidingView>
+        </View>
       </Modal>
 
       <GenerateCardsModal
@@ -467,7 +517,14 @@ const styles = StyleSheet.create({
   cardText: { ...typography.body, lineHeight: 22, fontSize: 15, flex: 1 },
   cardMeta: { ...typography.small, fontSize: 11, marginTop: 4 },
   modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: colors.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.lg, paddingBottom: 40 },
+  modalContent: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    paddingTop: spacing.lg,
+    paddingHorizontal: spacing.lg,
+  },
+  modalScrollContent: { paddingBottom: spacing.sm },
   modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginBottom: spacing.md },
   modalTitle: { ...typography.h3, marginBottom: 4 },
   modalSubtitle: { ...typography.small, marginBottom: spacing.md },

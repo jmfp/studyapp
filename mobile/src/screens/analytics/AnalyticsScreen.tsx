@@ -14,6 +14,7 @@ import { PRO_PRICE } from '../../services/revenueCat';
 import type { Card, MainTabParamList, AnalyticsInsightsResult } from '../../types';
 import { weakCardToCard } from '../../utils/cardStats';
 import { useAiProGate, isAiProRequiredError } from '../../hooks/useAiProGate';
+import { isTodayDateKey, weekdayShortFromDateKey } from '../../utils/localDate';
 
 const TAB_BAR_CLEARANCE = Platform.OS === 'ios' ? 96 : 80;
 
@@ -208,18 +209,20 @@ export default function AnalyticsScreen() {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>7-Day Activity</Text>
             <View style={styles.weekChart}>
-              {analytics.dailyActivity.map((day, i) => {
-                const h = Math.max((day.cardsReviewed / maxActivity) * 88, 4);
-                const isToday = i === 6;
-                const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+              {analytics.dailyActivity.map((day) => {
+                const h = Math.max((day.cardsReviewed / maxActivity) * 88, day.cardsReviewed > 0 ? 12 : 4);
+                const isToday = isTodayDateKey(day.date);
                 return (
                   <View key={day.date} style={styles.dayCol}>
                     {day.cardsReviewed > 0 && <Text style={styles.dayNum}>{day.cardsReviewed}</Text>}
                     <View style={styles.dayBarTrack}>
-                      <View style={[styles.dayBar, { height: h, backgroundColor: isToday ? colors.primary : colors.surfaceElevated }]} />
+                      <View style={[styles.dayBar, {
+                        height: h,
+                        backgroundColor: isToday ? colors.primary : colors.primary + '55',
+                      }]} />
                     </View>
                     <Text style={[styles.dayLabel, isToday && { color: colors.primary, fontWeight: '700' }]}>
-                      {dayLabels[new Date(day.date).getDay()]}
+                      {weekdayShortFromDateKey(day.date)}
                     </Text>
                     {day.avgQuality > 0 && <Text style={styles.dayQuality}>q{day.avgQuality}</Text>}
                   </View>
@@ -375,11 +378,10 @@ export default function AnalyticsScreen() {
                   <Text style={styles.cardTitle}>Review Forecast</Text>
                   <Text style={styles.cardSub}>Cards due per day (next 7 days)</Text>
                   <View style={styles.weekChart}>
-                    {analytics.forecast.map((day, i) => {
-                      const h = Math.max((day.dueCount / maxForecast) * 80, 4);
-                      const isToday = i === 0;
-                      const d = new Date(day.date);
-                      const label = isToday ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' });
+                    {analytics.forecast.map((day) => {
+                      const h = Math.max((day.dueCount / maxForecast) * 80, day.dueCount > 0 ? 12 : 4);
+                      const isToday = isTodayDateKey(day.date);
+                      const label = isToday ? 'Today' : weekdayShortFromDateKey(day.date);
                       return (
                         <View key={day.date} style={styles.dayCol}>
                           {day.dueCount > 0 && <Text style={styles.dayNum}>{day.dueCount}</Text>}
