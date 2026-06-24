@@ -263,6 +263,9 @@ export const api = createApi({
       query: (body) => ({ url: '/auth/subscription', method: 'POST', body }),
       invalidatesTags: ['Topic'],
     }),
+    deleteAccount: builder.mutation<{ message: string }, void>({
+      query: () => ({ url: '/auth/me', method: 'DELETE' }),
+    }),
 
     // Topics
     getTopics: builder.query<Topic[], void>({
@@ -425,6 +428,7 @@ export const {
   useRegisterMutation,
   useGetMeQuery,
   useUpdateSubscriptionMutation,
+  useDeleteAccountMutation,
   useGetTopicsQuery,
   useGetTopicQuery,
   useCreateTopicMutation,

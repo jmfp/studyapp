@@ -2,6 +2,9 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
+import Topic from '../models/Topic';
+import Card from '../models/Card';
+import ReviewSession from '../models/ReviewSession';
 
 const signToken = (id: string) =>
   jwt.sign({ id }, process.env.JWT_SECRET as string, { expiresIn: '30d' });
@@ -56,6 +59,24 @@ export const getMe = async (req: Request, res: Response) => {
     const user = await User.findById((req as any).userId).select('-password');
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err });
+  }
+};
+
+export const deleteAccount = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId;
+
+    // Delete all user data then the account itself
+    await Promise.all([
+      Topic.deleteMany({ userId }),
+      Card.deleteMany({ userId }),
+      ReviewSession.deleteMany({ userId }),
+    ]);
+    await User.findByIdAndDelete(userId);
+
+    res.json({ message: 'Account deleted' });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err });
   }

@@ -1,5 +1,8 @@
 node_modules/
 .env
 dist/
+
+# Separate repo — see web/
+web/
 *.log
 .DS_Store

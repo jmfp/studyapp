@@ -1,17 +1,18 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, typography, shadow } from '../../theme';
 import { useAppSelector, useAppDispatch } from '../../hooks/redux';
 import { logout, updateUser } from '../../store/authSlice';
 import { resetSubscription, setTier, setExpirationDate } from '../../store/subscriptionSlice';
-import { useGetTopicsQuery, useGetAnalyticsQuery, useUpdateSubscriptionMutation } from '../../services/api';
+import { useGetTopicsQuery, useGetAnalyticsQuery, useUpdateSubscriptionMutation, useDeleteAccountMutation } from '../../services/api';
 import { api } from '../../services/api';
 import { usePaywall } from '../../context/PaywallContext';
 import { useIsPro } from '../../hooks/useAiProGate';
 import {
   canUseRevenueCat, getCustomerInfo, getProEntitlement, isPro, openSubscriptionManagement,
 } from '../../services/revenueCat';
+import { PRIVACY_POLICY_URL, TERMS_OF_USE_URL } from '../../constants/legal';
 
 export default function ProfileScreen() {
   const dispatch = useAppDispatch();
@@ -22,6 +23,7 @@ export default function ProfileScreen() {
   const { data: topics } = useGetTopicsQuery();
   const { data: analytics } = useGetAnalyticsQuery({});
   const [updateSubscription] = useUpdateSubscriptionMutation();
+  const [deleteAccount] = useDeleteAccountMutation();
   const [managingSub, setManagingSub] = useState(false);
   const [willRenew, setWillRenew] = useState(true);
 
@@ -76,6 +78,44 @@ export default function ProfileScreen() {
     dispatch(api.util.resetApiState());
     dispatch(resetSubscription());
     dispatch(logout());
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your account and all your decks, cards, and study history. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete My Account',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Are you sure?',
+              'All your data will be deleted permanently.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Yes, Delete',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      await deleteAccount().unwrap();
+                    } catch {
+                      // Even if API call fails, log out locally
+                    } finally {
+                      dispatch(api.util.resetApiState());
+                      dispatch(resetSubscription());
+                      dispatch(logout());
+                    }
+                  },
+                },
+              ],
+            );
+          },
+        },
+      ],
+    );
   };
 
   const MenuItem = ({ icon, label, value, color = colors.primary }: { icon: string; label: string; value?: string; color?: string }) => (
@@ -155,7 +195,7 @@ export default function ProfileScreen() {
               <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
             </TouchableOpacity>
             <Text style={styles.manageHint}>
-              Canceling keeps Pro until the end of your billing period. Apple or Google handles billing.
+              Canceling keeps Pro until the end of your billing period. Apple handles billing.
             </Text>
           </View>
         ) : (
@@ -170,6 +210,15 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={18} color={colors.primary} />
           </TouchableOpacity>
         )}
+        <View style={styles.legalLinks}>
+          <TouchableOpacity onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}>
+            <Text style={styles.legalLink}>Privacy Policy</Text>
+          </TouchableOpacity>
+          <Text style={styles.legalLinkSep}>·</Text>
+          <TouchableOpacity onPress={() => Linking.openURL(TERMS_OF_USE_URL)}>
+            <Text style={styles.legalLink}>Terms of Use</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.section}>
@@ -179,6 +228,12 @@ export default function ProfileScreen() {
             <Ionicons name="log-out-outline" size={20} color={colors.error} />
           </View>
           <Text style={[styles.menuLabel, { color: colors.error }]}>Sign Out</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.menuItem, styles.logoutItem]} onPress={handleDeleteAccount}>
+          <View style={[styles.menuIcon, { backgroundColor: colors.error + '15' }]}>
+            <Ionicons name="trash-outline" size={20} color={colors.error} />
+          </View>
+          <Text style={[styles.menuLabel, { color: colors.error, opacity: 0.75 }]}>Delete Account</Text>
         </TouchableOpacity>
       </View>
 
@@ -243,4 +298,11 @@ const styles = StyleSheet.create({
   upgradeLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flex: 1 },
   upgradeTitle: { ...typography.body, fontWeight: '700', color: colors.white, fontSize: 15 },
   upgradeSub: { ...typography.small, color: colors.primary, fontSize: 12 },
+  legalLinks: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: spacing.xs, marginTop: spacing.md, paddingTop: spacing.md,
+    borderTopWidth: 1, borderTopColor: colors.border,
+  },
+  legalLink: { fontSize: 13, color: colors.primary, textDecorationLine: 'underline', fontWeight: '600' },
+  legalLinkSep: { fontSize: 13, color: colors.textMuted },
 });

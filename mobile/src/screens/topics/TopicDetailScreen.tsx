@@ -9,7 +9,7 @@ import { useNavigation, useRoute, type CompositeNavigationProp, type RouteProp }
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, radius, typography, shadow } from '../../theme';
-import { useGetCardsQuery, useGetTopicQuery, useCreateCardMutation, useDeleteCardMutation } from '../../services/api';
+import { useGetCardsQuery, useGetTopicQuery, useCreateCardMutation, useUpdateCardMutation, useDeleteCardMutation } from '../../services/api';
 import type { TopicsStackParamList, MainTabParamList, Card } from '../../types';
 import { TopicIcon } from '../../constants/topicIcons';
 import { getLanguageLabel } from '../../constants/languages';
@@ -28,9 +28,9 @@ type Nav = CompositeNavigationProp<
 >;
 type Route = RouteProp<TopicsStackParamList, 'TopicDetail'>;
 
-function AnimatedCard({ card, index, onFlip, isFlipped, onDelete, onImprove }: {
+function AnimatedCard({ card, index, onFlip, isFlipped, onDelete, onImprove, onEdit }: {
   card: Card; index: number; isFlipped: boolean;
-  onFlip: () => void; onDelete: () => void; onImprove: () => void;
+  onFlip: () => void; onDelete: () => void; onImprove: () => void; onEdit: () => void;
 }) {
   const entranceAnim = useRef(new Animated.Value(0)).current;
   const flipAnim = useRef(new Animated.Value(0)).current;
@@ -61,6 +61,7 @@ function AnimatedCard({ card, index, onFlip, isFlipped, onDelete, onImprove }: {
 
   const handleLongPress = () => {
     Alert.alert('Card options', undefined, [
+      { text: 'Edit', onPress: onEdit },
       { text: 'Improve with AI', onPress: onImprove },
       { text: 'Delete', style: 'destructive', onPress: onDelete },
       { text: 'Cancel', style: 'cancel' },
@@ -115,12 +116,17 @@ function AnimatedCard({ card, index, onFlip, isFlipped, onDelete, onImprove }: {
             <View style={[styles.cardSide, { backgroundColor: colors.primary + '30' }]}>
               <Text style={[styles.cardSideText, { color: colors.primaryLight }]}>ANSWER</Text>
             </View>
-            <TouchableOpacity style={styles.improveBtn} onPress={onImprove} hitSlop={8}>
-              <Ionicons name="sparkles" size={16} color={colors.primary} />
-            </TouchableOpacity>
+            <View style={styles.cardBackActions}>
+              <TouchableOpacity style={styles.improveBtn} onPress={onEdit} hitSlop={8}>
+                <Ionicons name="pencil" size={16} color={colors.textSecondary} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.improveBtn} onPress={onImprove} hitSlop={8}>
+                <Ionicons name="sparkles" size={16} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
           </View>
           <Text style={[styles.cardText, { color: colors.primaryLight }]}>{card.answer}</Text>
-          <Text style={styles.cardMeta}>Long press for options</Text>
+          <Text style={styles.cardMeta}>Long press for edit, AI, or delete</Text>
         </Animated.View>
       </TouchableOpacity>
     </Animated.View>
@@ -138,9 +144,11 @@ export default function TopicDetailScreen() {
   const { data: topic } = useGetTopicQuery(topicId);
   const { data: cards, isLoading } = useGetCardsQuery(topicId);
   const [createCard, { isLoading: creating }] = useCreateCardMutation();
+  const [updateCard, { isLoading: updating }] = useUpdateCardMutation();
   const [deleteCard] = useDeleteCardMutation();
 
   const [showModal, setShowModal] = useState(false);
+  const [editingCard, setEditingCard] = useState<Card | null>(null);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showImproveModal, setShowImproveModal] = useState(false);
@@ -175,10 +183,29 @@ export default function TopicDetailScreen() {
 
   const closeCardModal = () => {
     setShowModal(false);
+    setEditingCard(null);
     setQuestion('');
     setAnswer('');
     setKeyboardHeight(0);
     Keyboard.dismiss();
+  };
+
+  const openModal = () => {
+    setEditingCard(null);
+    setQuestion('');
+    setAnswer('');
+    setShowModal(true);
+    modalAnim.setValue(0);
+    Animated.spring(modalAnim, { toValue: 1, tension: 55, friction: 8, useNativeDriver: true }).start();
+  };
+
+  const openEditModal = (card: Card) => {
+    setEditingCard(card);
+    setQuestion(card.question);
+    setAnswer(card.answer);
+    setShowModal(true);
+    modalAnim.setValue(0);
+    Animated.spring(modalAnim, { toValue: 1, tension: 55, friction: 8, useNativeDriver: true }).start();
   };
 
   const modalMaxHeight = keyboardHeight > 0
@@ -189,30 +216,37 @@ export default function TopicDetailScreen() {
     Animated.spring(headerAnim, { toValue: 1, tension: 60, friction: 8, useNativeDriver: true }).start();
   }, []);
 
-  const openModal = () => {
-    setShowModal(true);
-    modalAnim.setValue(0);
-    Animated.spring(modalAnim, { toValue: 1, tension: 55, friction: 8, useNativeDriver: true }).start();
-  };
-
   const frontLang = topic?.sourceLanguage ?? 'en';
   const backLang = topic?.language ?? 'en';
+  const isSaving = creating || updating;
 
-  const handleCreate = async () => {
+  const handleSave = async () => {
     if (!question.trim() || !answer.trim()) {
       Alert.alert('Error', 'Both question and answer are required');
       return;
     }
     try {
-      await createCard({
-        topicId,
-        question: question.trim(),
-        answer: answer.trim(),
-        language: backLang,
-      }).unwrap();
+      if (editingCard) {
+        await updateCard({
+          id: editingCard._id,
+          topicId,
+          data: {
+            question: question.trim(),
+            answer: answer.trim(),
+            language: backLang,
+          },
+        }).unwrap();
+      } else {
+        await createCard({
+          topicId,
+          question: question.trim(),
+          answer: answer.trim(),
+          language: backLang,
+        }).unwrap();
+      }
       closeCardModal();
     } catch (err: any) {
-      Alert.alert('Error', err?.data?.message || 'Failed to create card');
+      Alert.alert('Error', err?.data?.message || `Failed to ${editingCard ? 'update' : 'create'} card`);
     }
   };
 
@@ -302,7 +336,7 @@ export default function TopicDetailScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-          <Text style={styles.tapHint}>Tap to flip · Long press for AI improve or delete</Text>
+          <Text style={styles.tapHint}>Tap to flip · Long press to edit, improve, or delete</Text>
           {cards?.map((card, i) => (
             <AnimatedCard
               key={card._id}
@@ -312,6 +346,7 @@ export default function TopicDetailScreen() {
               onFlip={() => toggleFlip(card._id)}
               onDelete={() => handleDelete(card)}
               onImprove={() => openImprove(card)}
+              onEdit={() => openEditModal(card)}
             />
           ))}
           <View style={{ height: 100 }} />
@@ -335,7 +370,7 @@ export default function TopicDetailScreen() {
               keyboardDismissMode="interactive"
               contentContainerStyle={styles.modalScrollContent}
             >
-              <Text style={styles.modalTitle}>New Flashcard</Text>
+              <Text style={styles.modalTitle}>{editingCard ? 'Edit Flashcard' : 'New Flashcard'}</Text>
               <Text style={styles.modalSubtitle}>
                 {getLanguageLabel(frontLang)} front · {getLanguageLabel(backLang)} back
               </Text>
@@ -350,7 +385,7 @@ export default function TopicDetailScreen() {
                   onFocus={() => scrollModalToSection(questionSectionY.current)}
                   multiline
                   numberOfLines={3}
-                  autoFocus
+                  autoFocus={!editingCard}
                   textAlignVertical="top"
                 />
               </View>
@@ -395,8 +430,10 @@ export default function TopicDetailScreen() {
                 <TouchableOpacity style={styles.cancelBtn} onPress={closeCardModal}>
                   <Text style={styles.cancelText}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.createBtn} onPress={handleCreate} disabled={creating}>
-                  {creating ? <ActivityIndicator color={colors.white} /> : <Text style={styles.createText}>Add Card</Text>}
+                <TouchableOpacity style={styles.createBtn} onPress={handleSave} disabled={isSaving}>
+                  {isSaving ? <ActivityIndicator color={colors.white} /> : (
+                    <Text style={styles.createText}>{editingCard ? 'Save Changes' : 'Add Card'}</Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -514,6 +551,7 @@ const styles = StyleSheet.create({
     width: 30, height: 30, borderRadius: 15,
     backgroundColor: colors.primary + '20', alignItems: 'center', justifyContent: 'center',
   },
+  cardBackActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   cardText: { ...typography.body, lineHeight: 22, fontSize: 15, flex: 1 },
   cardMeta: { ...typography.small, fontSize: 11, marginTop: 4 },
   modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },

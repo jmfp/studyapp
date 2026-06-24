@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Modal,
-  ScrollView, Animated, Dimensions, ActivityIndicator,
+  ScrollView, Animated, Dimensions, ActivityIndicator, Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, typography, shadow } from '../theme';
@@ -13,6 +13,7 @@ import { useUpdateSubscriptionMutation } from '../services/api';
 import {
   getOfferings, purchasePackage, restorePurchases, isPro, FREE_DECK_LIMIT, PRO_PRICE,
 } from '../services/revenueCat';
+import { PRIVACY_POLICY_URL, TERMS_OF_USE_URL } from '../constants/legal';
 import type { PurchasesPackage } from 'react-native-purchases';
 
 const { width, height } = Dimensions.get('window');
@@ -230,8 +231,9 @@ export default function PaywallModal({ visible, onClose, onSuccess }: PaywallMod
           {/* Price card */}
           <View style={styles.priceCard}>
             <View style={styles.priceLeft}>
+              <Text style={styles.pricePlanName}>StuhDee Pro Monthly</Text>
               <Text style={styles.priceAmount}>{priceLabel}</Text>
-              <Text style={styles.pricePeriod}>per month · cancel anytime</Text>
+              <Text style={styles.pricePeriod}>1 month · auto-renewing subscription</Text>
             </View>
             <View style={styles.priceBadge}>
               <Text style={styles.priceBadgeText}>MOST POPULAR</Text>
@@ -280,9 +282,19 @@ export default function PaywallModal({ visible, onClose, onSuccess }: PaywallMod
           </TouchableOpacity>
 
           <Text style={styles.legalText}>
-            Subscription auto-renews monthly. Cancel anytime in App Store / Google Play settings.
-            Payment charged to your account at confirmation.
+            StuhDee Pro auto-renews monthly at $4.99/month. Cancel anytime in your App Store subscription settings.
+            Payment is charged to your Apple ID account at confirmation of purchase.
           </Text>
+
+          <View style={styles.legalLinks}>
+            <TouchableOpacity onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}>
+              <Text style={styles.legalLink}>Privacy Policy</Text>
+            </TouchableOpacity>
+            <Text style={styles.legalLinkSep}>·</Text>
+            <TouchableOpacity onPress={() => Linking.openURL(TERMS_OF_USE_URL)}>
+              <Text style={styles.legalLink}>Terms of Use</Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </Animated.View>
     </Modal>
@@ -360,6 +372,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md, borderWidth: 1.5, borderColor: colors.primary + '50',
   },
   priceLeft: {},
+  pricePlanName: { ...typography.small, color: colors.textSecondary, fontWeight: '600', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
   priceAmount: { ...typography.h2, color: colors.primary, fontSize: 30, fontWeight: '900' },
   pricePeriod: { ...typography.small, color: colors.textSecondary, marginTop: 2 },
   priceBadge: {
@@ -401,5 +414,16 @@ const styles = StyleSheet.create({
     ...typography.small, fontSize: 10,
     color: colors.textMuted, textAlign: 'center', lineHeight: 16,
     paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  legalLinks: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: spacing.xs, paddingBottom: spacing.sm,
+  },
+  legalLink: {
+    fontSize: 12, color: colors.primary, textDecorationLine: 'underline', fontWeight: '600',
+  },
+  legalLinkSep: {
+    fontSize: 11, color: colors.textMuted,
   },
 });
