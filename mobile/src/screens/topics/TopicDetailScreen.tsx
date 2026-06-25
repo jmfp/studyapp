@@ -28,10 +28,16 @@ type Nav = CompositeNavigationProp<
 >;
 type Route = RouteProp<TopicsStackParamList, 'TopicDetail'>;
 
+const MIN_CARD_HEIGHT = 120;
+
 function AnimatedCard({ card, index, onFlip, isFlipped, onDelete, onImprove, onEdit }: {
   card: Card; index: number; isFlipped: boolean;
   onFlip: () => void; onDelete: () => void; onImprove: () => void; onEdit: () => void;
 }) {
+  const [frontHeight, setFrontHeight] = useState(0);
+  const [backHeight, setBackHeight] = useState(0);
+  const cardHeight = Math.max(frontHeight, backHeight, MIN_CARD_HEIGHT);
+
   const entranceAnim = useRef(new Animated.Value(0)).current;
   const flipAnim = useRef(new Animated.Value(0)).current;
   const pressScale = useRef(new Animated.Value(1)).current;
@@ -77,8 +83,45 @@ function AnimatedCard({ card, index, onFlip, isFlipped, onDelete, onImprove, onE
       ],
       marginBottom: spacing.sm,
     }}>
+      {/* Measure both faces so the flip container fits the taller side */}
+      <View style={styles.measureContainer} pointerEvents="none" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+        <View style={styles.measureFace} onLayout={(e) => setFrontHeight(e.nativeEvent.layout.height)}>
+          <View style={styles.cardTopRow}>
+            <View style={styles.cardSide}><Text style={styles.cardSideText}>QUESTION</Text></View>
+            {weak && (
+              <View style={styles.weakBadge}>
+                <Ionicons name="alert-circle" size={12} color={colors.error} />
+                <Text style={styles.weakBadgeText}>Needs work</Text>
+              </View>
+            )}
+            {accuracy !== null && (
+              <Text style={[styles.accuracyText, { color: accuracy >= 70 ? colors.success : accuracy >= 40 ? colors.warning : colors.error }]}>
+                {accuracy}%
+              </Text>
+            )}
+          </View>
+          <Text style={styles.cardText}>{card.question}</Text>
+          <Text style={styles.cardMeta}>
+            {card.timesReviewed > 0 ? `Reviewed ${card.timesReviewed}× · tap to flip` : 'Tap to flip'}
+          </Text>
+        </View>
+        <View style={styles.measureFace} onLayout={(e) => setBackHeight(e.nativeEvent.layout.height)}>
+          <View style={styles.cardTopRow}>
+            <View style={[styles.cardSide, { backgroundColor: colors.primary + '30' }]}>
+              <Text style={[styles.cardSideText, { color: colors.primaryLight }]}>ANSWER</Text>
+            </View>
+            <View style={styles.cardBackActions}>
+              <View style={styles.improveBtn}><Ionicons name="pencil" size={16} color={colors.textSecondary} /></View>
+              <View style={styles.improveBtn}><Ionicons name="sparkles" size={16} color={colors.primary} /></View>
+            </View>
+          </View>
+          <Text style={[styles.cardText, { color: colors.primaryLight }]}>{card.answer}</Text>
+          <Text style={styles.cardMeta}>Long press for edit, AI, or delete</Text>
+        </View>
+      </View>
+
       <TouchableOpacity
-        style={styles.cardOuter}
+        style={[styles.cardOuter, { height: cardHeight }]}
         onPress={onFlip}
         onLongPress={handleLongPress}
         onPressIn={handlePressIn}
@@ -525,8 +568,19 @@ const styles = StyleSheet.create({
   emptyAiBtnText: { color: colors.primary, fontWeight: '700' },
   list: { paddingHorizontal: spacing.lg, paddingTop: spacing.xs },
   tapHint: { ...typography.small, textAlign: 'center', marginBottom: spacing.md, color: colors.textMuted, fontSize: 12 },
+  measureContainer: {
+    position: 'absolute',
+    opacity: 0,
+    width: '100%',
+    zIndex: -1,
+  },
+  measureFace: {
+    padding: spacing.lg,
+    width: '100%',
+  },
   cardOuter: {
-    height: 160, backgroundColor: colors.surface,
+    minHeight: MIN_CARD_HEIGHT,
+    backgroundColor: colors.surface,
     borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     ...shadow.sm,
   },
@@ -534,6 +588,7 @@ const styles = StyleSheet.create({
     position: 'absolute', width: '100%', height: '100%',
     borderRadius: radius.lg, padding: spacing.lg,
     backfaceVisibility: 'hidden',
+    flexDirection: 'column',
   },
   cardFront: { backgroundColor: colors.surface },
   cardBack: { backgroundColor: colors.surfaceElevated, borderWidth: 1, borderColor: colors.primary + '30' },
@@ -552,7 +607,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary + '20', alignItems: 'center', justifyContent: 'center',
   },
   cardBackActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  cardText: { ...typography.body, lineHeight: 22, fontSize: 15, flex: 1 },
+  cardText: { ...typography.body, lineHeight: 22, fontSize: 15, flexShrink: 0 },
   cardMeta: { ...typography.small, fontSize: 11, marginTop: 4 },
   modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
   modalContent: {
