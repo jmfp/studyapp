@@ -14,6 +14,7 @@ import { PRO_PRICE } from '../../services/revenueCat';
 import type { Card, MainTabParamList, AnalyticsInsightsResult } from '../../types';
 import { weakCardToCard } from '../../utils/cardStats';
 import { useAiProGate, isAiProRequiredError } from '../../hooks/useAiProGate';
+import ProBadge from '../../components/ProBadge';
 import { isTodayDateKey, weekdayShortFromDateKey } from '../../utils/localDate';
 
 const TAB_BAR_CLEARANCE = Platform.OS === 'ios' ? 96 : 80;
@@ -125,16 +126,12 @@ export default function AnalyticsScreen() {
             <View style={styles.insightsHeader}>
               <Ionicons name="sparkles" size={18} color={colors.primary} />
               <Text style={styles.insightsTitle}>AI weekly insight</Text>
-              {!isPro && (
-                <View style={styles.proBadge}>
-                  <Text style={styles.proBadgeText}>PRO</Text>
-                </View>
-              )}
+              <ProBadge compact />
             </View>
             {!insights && !insightsLoading && !insightsError && (
               <>
                 <Text style={styles.insightsMuted}>
-                  Get a personalized summary of your weak spots and what to study next.
+                  Requires StuhDee Pro subscription ({PRO_PRICE}/month). Get a personalized summary of your weak spots and what to study next.
                 </Text>
                 <TouchableOpacity
                   style={styles.generateInsightsBtn}

@@ -15,6 +15,7 @@ import { FREE_DECK_LIMIT } from '../../services/revenueCat';
 import { useAiProGate, useIsPro } from '../../hooks/useAiProGate';
 import AiSourceForm, { useAiSourceForm } from '../../components/AiSourceForm';
 import ReviewGeneratedCardsModal from '../../components/ReviewGeneratedCardsModal';
+import ProBadge from '../../components/ProBadge';
 import type { TopicsStackParamList, Topic, DraftCard } from '../../types';
 import { TOPIC_ICONS, TopicIcon } from '../../constants/topicIcons';
 import { LANGUAGES, getLanguageLabel } from '../../constants/languages';
@@ -251,6 +252,9 @@ export default function TopicListScreen() {
           <View style={styles.headerActions}>
             <TouchableOpacity style={styles.aiHeaderBtn} onPress={handleGenerateAiPressed} activeOpacity={0.85}>
               <Ionicons name="sparkles" size={22} color={colors.primary} />
+              <View style={styles.aiHeaderProBadge}>
+                <ProBadge compact />
+              </View>
             </TouchableOpacity>
             <TouchableOpacity style={styles.addBtn} onPress={handleAddPressed}>
               <Ionicons name="add" size={24} color={colors.white} />
@@ -274,6 +278,7 @@ export default function TopicListScreen() {
           <TouchableOpacity style={styles.emptyAiBtn} onPress={handleGenerateAiPressed} activeOpacity={0.85}>
             <Ionicons name="sparkles" size={18} color={colors.primary} />
             <Text style={styles.emptyAiBtnText}>Generate Topic with AI</Text>
+            <ProBadge compact />
           </TouchableOpacity>
         </View>
       ) : (
@@ -285,7 +290,7 @@ export default function TopicListScreen() {
                 <Ionicons name="flash" size={18} color={colors.primary} />
                 <View>
                   <Text style={styles.freeBannerTitle}>Free plan: {topics?.length ?? 0}/{FREE_DECK_LIMIT} decks used</Text>
-                  <Text style={styles.freeBannerSub}>Upgrade to Pro for unlimited decks</Text>
+                  <Text style={styles.freeBannerSub}>Upgrade to Pro for unlimited decks & AI features</Text>
                 </View>
               </View>
               <View style={styles.freeBannerBadge}>
@@ -488,6 +493,10 @@ const styles = StyleSheet.create({
     width: 46, height: 46, borderRadius: radius.full,
     backgroundColor: colors.primary + '18', alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: colors.primary + '35',
+    position: 'relative',
+  },
+  aiHeaderProBadge: {
+    position: 'absolute', bottom: -4, right: -6,
   },
   addBtn: {
     width: 46, height: 46, borderRadius: radius.full,

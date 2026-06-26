@@ -8,6 +8,7 @@ import { colors, spacing, radius, typography } from '../theme';
 import { useGenerateCardsMutation, useGetAiUsageQuery } from '../services/api';
 import AiSourceForm, { useAiSourceForm } from './AiSourceForm';
 import { useAiProGate, isAiProRequiredError } from '../hooks/useAiProGate';
+import ProBadge from './ProBadge';
 import type { DraftCard } from '../types';
 
 interface GenerateCardsModalProps {
@@ -95,12 +96,15 @@ export default function GenerateCardsModal({
             <View style={styles.titleRow}>
               <Ionicons name="sparkles" size={22} color={colors.primary} />
               <Text style={styles.title}>Generate with AI</Text>
+              <ProBadge compact />
             </View>
             <TouchableOpacity onPress={handleClose} hitSlop={12}>
               <Ionicons name="close" size={24} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
-          <Text style={styles.subtitle}>Paste notes, import a PDF, add a URL, or use a photo — review before saving.</Text>
+          <Text style={styles.subtitle}>
+            Requires StuhDee Pro subscription. Paste notes, import a PDF, add a URL, or use a photo — review before saving.
+          </Text>
           <Text style={styles.usage}>{usageLabel}</Text>
 
           <ScrollView style={styles.bodyScroll} keyboardShouldPersistTaps="handled">

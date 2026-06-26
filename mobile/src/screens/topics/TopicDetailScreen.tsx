@@ -21,6 +21,7 @@ import MultilingualAiToolbar from '../../components/MultilingualAiToolbar';
 import type { DraftCard } from '../../types';
 import { isWeakCard } from '../../utils/cardStats';
 import { useAiProGate } from '../../hooks/useAiProGate';
+import ProBadge from '../../components/ProBadge';
 
 type Nav = CompositeNavigationProp<
   NativeStackNavigationProp<TopicsStackParamList, 'TopicDetail'>,
@@ -331,6 +332,9 @@ export default function TopicDetailScreen() {
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.aiBtn} onPress={() => setShowGenerateModal(true)}>
             <Ionicons name="sparkles" size={20} color={colors.primary} />
+            <View style={styles.aiBtnProBadge}>
+              <ProBadge compact />
+            </View>
           </TouchableOpacity>
           <TouchableOpacity style={styles.addBtn} onPress={openModal}>
             <Ionicons name="add" size={22} color={colors.white} />
@@ -368,13 +372,14 @@ export default function TopicDetailScreen() {
             <Ionicons name="layers-outline" size={52} color={colors.textMuted} />
           </View>
           <Text style={styles.emptyTitle}>No cards yet</Text>
-          <Text style={styles.emptySubtitle}>Add cards manually or generate a deck with AI</Text>
+          <Text style={styles.emptySubtitle}>Add cards manually or generate a deck with AI (Pro)</Text>
           <TouchableOpacity style={styles.emptyBtn} onPress={openModal}>
             <Text style={styles.emptyBtnText}>Add Card</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.emptyAiBtn} onPress={() => setShowGenerateModal(true)}>
             <Ionicons name="sparkles" size={18} color={colors.primary} />
             <Text style={styles.emptyAiBtnText}>Generate with AI</Text>
+            <ProBadge compact />
           </TouchableOpacity>
         </View>
       ) : (
@@ -543,7 +548,9 @@ const styles = StyleSheet.create({
     width: 40, height: 40, borderRadius: radius.full,
     backgroundColor: colors.primary + '18', alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: colors.primary + '35',
+    position: 'relative',
   },
+  aiBtnProBadge: { position: 'absolute', bottom: -4, right: -6 },
   addBtn: { width: 40, height: 40, borderRadius: radius.full, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg, marginBottom: spacing.md },
   metaChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full },

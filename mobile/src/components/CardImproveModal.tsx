@@ -11,6 +11,7 @@ import {
 } from '../services/api';
 import type { Card, CardImprovementSuggestion, ImprovementType } from '../types';
 import { useAiProGate } from '../hooks/useAiProGate';
+import ProBadge from './ProBadge';
 
 const TYPE_META: Record<ImprovementType, { icon: keyof typeof Ionicons.glyphMap; color: string }> = {
   shorten_answer: { icon: 'cut-outline', color: colors.warning },
@@ -155,6 +156,7 @@ export default function CardImproveModal({
             <View style={styles.titleRow}>
               <Ionicons name="sparkles" size={22} color={colors.primary} />
               <Text style={styles.title}>Improve card</Text>
+              <ProBadge compact />
             </View>
             <TouchableOpacity onPress={onClose} hitSlop={12}>
               <Ionicons name="close" size={24} color={colors.textMuted} />
