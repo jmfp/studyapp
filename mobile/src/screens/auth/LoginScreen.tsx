@@ -49,6 +49,21 @@ export default function LoginScreen() {
           <Text style={styles.subtitle}>Master anything, one card at a time</Text>
         </View>
 
+        <View style={styles.whyAccount}>
+          <View style={styles.whyRow}>
+            <Ionicons name="cloud-outline" size={16} color={colors.primary} />
+            <Text style={styles.whyText}>Cards sync across all your devices</Text>
+          </View>
+          <View style={styles.whyRow}>
+            <Ionicons name="repeat-outline" size={16} color={colors.primary} />
+            <Text style={styles.whyText}>Spaced repetition progress saved to your account</Text>
+          </View>
+          <View style={styles.whyRow}>
+            <Ionicons name="bar-chart-outline" size={16} color={colors.primary} />
+            <Text style={styles.whyText}>Study analytics and streaks tracked per user</Text>
+          </View>
+        </View>
+
         <View style={styles.form}>
           <Text style={styles.formTitle}>Welcome back</Text>
 
@@ -113,8 +128,8 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  inner: { flexGrow: 1, paddingHorizontal: spacing.lg, paddingTop: 80, paddingBottom: 40 },
-  header: { alignItems: 'center', marginBottom: spacing.xxl },
+  inner: { flexGrow: 1, paddingHorizontal: spacing.lg, paddingTop: 60, paddingBottom: 40 },
+  header: { alignItems: 'center', marginBottom: spacing.lg },
   logoContainer: {
     width: 80, height: 80, borderRadius: radius.xl,
     backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center',
@@ -123,6 +138,17 @@ const styles = StyleSheet.create({
   },
   title: { ...typography.h1, marginBottom: spacing.xs },
   subtitle: { ...typography.bodyMuted, textAlign: 'center' },
+  whyAccount: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    gap: spacing.sm,
+  },
+  whyRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  whyText: { ...typography.small, color: colors.textSecondary, flex: 1 },
   form: {
     backgroundColor: colors.surface, borderRadius: radius.lg,
     padding: spacing.lg, borderWidth: 1, borderColor: colors.border,

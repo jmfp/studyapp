@@ -54,7 +54,7 @@ export default function RegisterScreen() {
             <Ionicons name="flash" size={40} color={colors.primary} />
           </View>
           <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Start your learning journey today</Text>
+          <Text style={styles.subtitle}>Your free account syncs all your decks, cards, and study progress across devices.</Text>
         </View>
 
         <View style={styles.form}>
