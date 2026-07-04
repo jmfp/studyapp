@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Modal,
-  ScrollView, Animated, Dimensions, ActivityIndicator, Linking,
+  ScrollView, Animated, Dimensions, ActivityIndicator, Linking, Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, typography, shadow } from '../theme';
@@ -69,7 +69,7 @@ export default function PaywallModal({ visible, onClose, onSuccess }: PaywallMod
 
       // Features stagger in
       Animated.stagger(80, featureAnims.map((a) =>
-        Animated.spring(a, { toValue: 1, tension: 60, friction: 8, delay: 300, useNativeDriver: true })
+        Animated.spring(a, { toValue: 1, tension: 65, friction: 7, delay: 300, useNativeDriver: true })
       )).start();
 
       // Button shimmer loop

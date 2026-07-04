@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
+  ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Animated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, typography } from '../../theme';
 import { useRegisterMutation } from '../../services/api';
-import { setCredentials } from '../../store/authSlice';
+import { setCredentials, setNeedsOnboarding } from '../../store/authSlice';
 import { setTier } from '../../store/subscriptionSlice';
 import { useAppDispatch } from '../../hooks/redux';
+import { useMountEntrance } from '../../hooks/useEntranceAnimation';
 import type { AuthStackParamList } from '../../types';
 
 type Nav = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
@@ -23,6 +24,8 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
+  const headerAnim = useMountEntrance({ delay: 0, variant: 'pop' });
+  const formAnim = useMountEntrance({ delay: 200, variant: 'slideLeft' });
 
   const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password.trim()) {
@@ -38,6 +41,7 @@ export default function RegisterScreen() {
       const tier = (result.user.subscriptionTier as 'free' | 'pro') ?? 'free';
       dispatch(setCredentials({ user: { ...result.user, subscriptionTier: tier }, token: result.token }));
       dispatch(setTier(tier));
+      dispatch(setNeedsOnboarding(true));
     } catch (err: any) {
       Alert.alert('Registration Failed', err?.data?.message || 'Something went wrong');
     }
@@ -46,7 +50,7 @@ export default function RegisterScreen() {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.inner} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
+        <Animated.View style={[styles.header, headerAnim]}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
@@ -55,9 +59,9 @@ export default function RegisterScreen() {
           </View>
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Your free account syncs all your decks, cards, and study progress across devices.</Text>
-        </View>
+        </Animated.View>
 
-        <View style={styles.form}>
+        <Animated.View style={[styles.form, formAnim]}>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>YOUR NAME</Text>
             <View style={styles.inputWrapper}>
@@ -120,7 +124,7 @@ export default function RegisterScreen() {
           <TouchableOpacity style={styles.linkBtn} onPress={() => navigation.navigate('Login')}>
             <Text style={styles.linkText}>Already have an account? <Text style={{ color: colors.primary }}>Sign in</Text></Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );

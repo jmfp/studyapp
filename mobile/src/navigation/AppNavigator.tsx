@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { View, StyleSheet, Platform } from 'react-native';
-import { useAppSelector } from '../hooks/redux';
+import { useAppSelector, useAppDispatch } from '../hooks/redux';
+import { setNeedsOnboarding, setShowDeckTip } from '../store/authSlice';
 import { colors, radius } from '../theme';
 
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
+import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
 import HomeScreen from '../screens/home/HomeScreen';
 import TopicListScreen from '../screens/topics/TopicListScreen';
 import TopicDetailScreen from '../screens/topics/TopicDetailScreen';
@@ -53,9 +55,10 @@ function QuizNavigator() {
 }
 
 function MainNavigator() {
+  const showDeckTip = useAppSelector((s) => s.auth.showDeckTip);
   return (
     <MainTab.Navigator
-      initialRouteName="HomeTab"
+      initialRouteName={showDeckTip ? 'TopicsTab' : 'HomeTab'}
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarShowLabel: false,
@@ -94,16 +97,28 @@ function MainNavigator() {
   );
 }
 
+function OnboardingWrapper() {
+  const dispatch = useAppDispatch();
+  const handleComplete = useCallback(() => {
+    dispatch(setNeedsOnboarding(false));
+    dispatch(setShowDeckTip(true));
+  }, [dispatch]);
+  return <OnboardingScreen onComplete={handleComplete} />;
+}
+
 export default function AppNavigator() {
   const token = useAppSelector((s) => s.auth.token);
+  const needsOnboarding = useAppSelector((s) => s.auth.needsOnboarding);
 
   return (
     <NavigationContainer>
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
-        {token ? (
-          <RootStack.Screen name="Main" component={MainNavigator} />
-        ) : (
+        {!token ? (
           <RootStack.Screen name="Auth" component={AuthNavigator} />
+        ) : needsOnboarding ? (
+          <RootStack.Screen name="Onboarding" component={OnboardingWrapper} />
+        ) : (
+          <RootStack.Screen name="Main" component={MainNavigator} />
         )}
       </RootStack.Navigator>
     </NavigationContainer>
@@ -117,7 +132,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: Platform.OS === 'ios' ? 24 : 16,
     marginHorizontal: 28,
-    backgroundColor: '#1A1A2E',
+    backgroundColor: colors.surface,
     borderRadius: 32,
     height: 64,
     borderTopWidth: 0,

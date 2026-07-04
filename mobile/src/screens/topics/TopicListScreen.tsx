@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  ActivityIndicator, Alert, TextInput, Modal, Animated, Switch, KeyboardAvoidingView, Platform,
+  ActivityIndicator, Alert, TextInput, Modal, Animated, Switch, KeyboardAvoidingView, Platform, Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -13,6 +13,10 @@ import {
 } from '../../services/api';
 import { FREE_DECK_LIMIT } from '../../services/revenueCat';
 import { useAiProGate, useIsPro } from '../../hooks/useAiProGate';
+import { useScreenEntrance, useFocusReplayKey, useListItemEntrance } from '../../hooks/useEntranceAnimation';
+import { useAppSelector, useAppDispatch } from '../../hooks/redux';
+import { setShowDeckTip } from '../../store/authSlice';
+import DeckTipOverlay from '../../components/DeckTipOverlay';
 import AiSourceForm, { useAiSourceForm } from '../../components/AiSourceForm';
 import ReviewGeneratedCardsModal from '../../components/ReviewGeneratedCardsModal';
 import ProBadge from '../../components/ProBadge';
@@ -24,20 +28,12 @@ type Nav = NativeStackNavigationProp<TopicsStackParamList, 'TopicList'>;
 
 const COLORS = ['#6C63FF', '#FF6B9D', '#4CAF50', '#FF9800', '#00BCD4', '#9C27B0', '#F44336', '#2196F3'];
 
-function AnimatedTopicCard({ topic, index, onPress, onLongPress }: {
-  topic: Topic; index: number;
+function AnimatedTopicCard({ topic, index, focusKey, onPress, onLongPress }: {
+  topic: Topic; index: number; focusKey: number;
   onPress: () => void; onLongPress: () => void;
 }) {
-  const anim = useRef(new Animated.Value(0)).current;
   const pressScale = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    Animated.spring(anim, {
-      toValue: 1, tension: 60, friction: 8,
-      delay: index * 70,
-      useNativeDriver: true,
-    }).start();
-  }, []);
+  const entrance = useListItemEntrance(index, focusKey, 65, index % 3 === 0 ? 'slideRight' : index % 3 === 1 ? 'rise' : 'pop');
 
   const handlePressIn = () => {
     Animated.spring(pressScale, { toValue: 0.96, tension: 200, friction: 5, useNativeDriver: true }).start();
@@ -47,13 +43,8 @@ function AnimatedTopicCard({ topic, index, onPress, onLongPress }: {
   };
 
   return (
-    <Animated.View style={[{
-      opacity: anim,
-      transform: [
-        { translateX: anim.interpolate({ inputRange: [0, 1], outputRange: [-30, 0] }) },
-        { scale: pressScale },
-      ],
-    }]}>
+    <Animated.View style={entrance}>
+      <Animated.View style={{ transform: [{ scale: pressScale }] }}>
       <TouchableOpacity
         style={[styles.topicCard, { borderLeftColor: topic.color, borderLeftWidth: 4 }]}
         onPress={onPress}
@@ -86,12 +77,15 @@ function AnimatedTopicCard({ topic, index, onPress, onLongPress }: {
         </View>
         <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
       </TouchableOpacity>
+      </Animated.View>
     </Animated.View>
   );
 }
 
 export default function TopicListScreen() {
   const navigation = useNavigation<Nav>();
+  const dispatch = useAppDispatch();
+  const showDeckTip = useAppSelector((s) => s.auth.showDeckTip);
   const { data: topics, isLoading } = useGetTopicsQuery();
   const [createTopic, { isLoading: creating }] = useCreateTopicMutation();
   const [deleteTopic] = useDeleteTopicMutation();
@@ -131,16 +125,12 @@ export default function TopicListScreen() {
     setImportWithAi(enabled);
   };
 
-  const headerAnim = useRef(new Animated.Value(0)).current;
-  const addBtnAnim = useRef(new Animated.Value(0)).current;
-  const modalContentAnim = useRef(new Animated.Value(0)).current;
+  const focusKey = useFocusReplayKey();
+  const headerStyle = useScreenEntrance({ delay: 0, variant: 'slideRight' });
+  const addBtnStyle = useScreenEntrance({ delay: 100, variant: 'pop' });
+  const emptyStyle = useScreenEntrance({ delay: 180, variant: 'scale' });
 
-  useEffect(() => {
-    Animated.stagger(80, [
-      Animated.spring(headerAnim, { toValue: 1, tension: 60, friction: 8, useNativeDriver: true }),
-      Animated.spring(addBtnAnim, { toValue: 1, tension: 80, friction: 6, useNativeDriver: true }),
-    ]).start();
-  }, []);
+  const modalContentAnim = useRef(new Animated.Value(0)).current;
 
   const openModal = (withAi = false) => {
     setShowModal(true);
@@ -148,7 +138,7 @@ export default function TopicListScreen() {
     setLanguageOptions(false);
     sourceForm.reset();
     modalContentAnim.setValue(0);
-    Animated.spring(modalContentAnim, { toValue: 1, tension: 55, friction: 8, useNativeDriver: true }).start();
+    Animated.spring(modalContentAnim, { toValue: 1, tension: 50, friction: 9, useNativeDriver: true }).start();
   };
 
   const resetForm = () => {
@@ -239,16 +229,10 @@ export default function TopicListScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Animated.Text style={[styles.title, {
-          opacity: headerAnim,
-          transform: [{ translateY: headerAnim.interpolate({ inputRange: [0, 1], outputRange: [-16, 0] }) }],
-        }]}>
+        <Animated.Text style={[styles.title, headerStyle]}>
           My Topics
         </Animated.Text>
-        <Animated.View style={{
-          transform: [{ scale: addBtnAnim }],
-          opacity: addBtnAnim,
-        }}>
+        <Animated.View style={addBtnStyle}>
           <View style={styles.headerActions}>
             <TouchableOpacity style={styles.aiHeaderBtn} onPress={handleGenerateAiPressed} activeOpacity={0.85}>
               <Ionicons name="sparkles" size={22} color={colors.primary} />
@@ -266,12 +250,12 @@ export default function TopicListScreen() {
       {isLoading ? (
         <ActivityIndicator color={colors.primary} style={{ marginTop: 80 }} />
       ) : topics?.length === 0 ? (
-        <View style={styles.emptyState}>
+        <Animated.View style={[styles.emptyState, emptyStyle]}>
           <View style={styles.emptyIcon}>
             <Ionicons name="book-outline" size={56} color={colors.textMuted} />
           </View>
-          <Text style={styles.emptyTitle}>No topics yet</Text>
-          <Text style={styles.emptySubtitle}>Create your first topic to get started</Text>
+          <Text style={styles.emptyTitle}>No decks yet</Text>
+          <Text style={styles.emptySubtitle}>Add a topic and start building flashcards</Text>
           <TouchableOpacity style={styles.emptyBtn} onPress={handleAddPressed}>
             <Text style={styles.emptyBtnText}>Create Topic</Text>
           </TouchableOpacity>
@@ -280,7 +264,7 @@ export default function TopicListScreen() {
             <Text style={styles.emptyAiBtnText}>Generate Topic with AI</Text>
             <ProBadge compact />
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       ) : (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
           {/* Free tier banner */}
@@ -303,6 +287,7 @@ export default function TopicListScreen() {
               key={topic._id}
               topic={topic}
               index={i}
+              focusKey={focusKey}
               onPress={() => navigation.navigate('TopicDetail', { topicId: topic._id, topicTitle: topic.title })}
               onLongPress={() => handleDelete(topic)}
             />
@@ -476,6 +461,10 @@ export default function TopicListScreen() {
           }
         }}
       />
+
+      {showDeckTip && (
+        <DeckTipOverlay onDismiss={() => dispatch(setShowDeckTip(false))} />
+      )}
 
     </View>
   );

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Platform,
+  View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Platform, Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,11 +16,40 @@ import { weakCardToCard } from '../../utils/cardStats';
 import { useAiProGate, isAiProRequiredError } from '../../hooks/useAiProGate';
 import ProBadge from '../../components/ProBadge';
 import { isTodayDateKey, weekdayShortFromDateKey } from '../../utils/localDate';
+import { useScreenEntrance, useFocusReplayKey, useListItemEntrance } from '../../hooks/useEntranceAnimation';
 
 const TAB_BAR_CLEARANCE = Platform.OS === 'ios' ? 96 : 80;
 
 const QUALITY_COLORS = ['#FF1744', '#FF6D00', '#FF9800', '#FFD740', '#00BCD4', '#00E676'];
 const QUALITY_LABELS = ['0-Blackout', '1-Wrong', '2-Saw it', '3-Hard', '4-Good', '5-Easy'];
+
+function AnalyticsSessionRow({
+  session, index, focusKey, scoreColor,
+}: {
+  session: { _id: string; score: number; totalCards: number; completedAt?: string; correctCount: number; wrongCount: number };
+  index: number;
+  focusKey: number;
+  scoreColor: string;
+}) {
+  const rowStyle = useListItemEntrance(index, focusKey, 70, index % 2 === 0 ? 'rise' : 'slideLeft');
+  return (
+    <Animated.View style={[styles.sessionRow, rowStyle]}>
+      <View style={[styles.sessionScore, { borderColor: scoreColor }]}>
+        <Text style={[styles.sessionScoreTxt, { color: scoreColor }]}>{session.score}%</Text>
+      </View>
+      <View style={styles.sessionInfo}>
+        <Text style={styles.sessionCards}>{session.totalCards} cards</Text>
+        <Text style={styles.sessionDate}>
+          {session.completedAt ? new Date(session.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+        </Text>
+      </View>
+      <View style={styles.sessionCounts}>
+        <Text style={{ color: colors.success, fontSize: 12, fontWeight: '600' }}>✓{session.correctCount}</Text>
+        <Text style={{ color: colors.error, fontSize: 12, fontWeight: '600' }}>✗{session.wrongCount}</Text>
+      </View>
+    </Animated.View>
+  );
+}
 
 export default function AnalyticsScreen() {
   const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
@@ -88,17 +117,30 @@ export default function AnalyticsScreen() {
     }
   };
 
+  const focusKey = useFocusReplayKey();
+  const headerStyle = useScreenEntrance({ delay: 0, variant: 'drop' });
+  const filterStyle = useScreenEntrance({ delay: 70, variant: 'slideRight' });
+  const insightsStyle = useScreenEntrance({ delay: 140, variant: 'scale' });
+  const statsStyle = useScreenEntrance({ delay: 220, variant: 'pop' });
+  const activityStyle = useScreenEntrance({ delay: 300, variant: 'slideLeft' });
+  const sessionsStyle = useScreenEntrance({ delay: 380, variant: 'fade' });
+  const weakStyle = useScreenEntrance({ delay: 450, variant: 'slideRight' });
+  const strongStyle = useScreenEntrance({ delay: 520, variant: 'rise' });
+  const qualityStyle = useScreenEntrance({ delay: 590, variant: 'scale' });
+  const forecastStyle = useScreenEntrance({ delay: 660, variant: 'drop' });
+
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={{ paddingBottom: bottomPad }}
       showsVerticalScrollIndicator={false}
     >
-      <View style={styles.header}>
+      <Animated.View style={[styles.header, headerStyle]}>
         <Text style={styles.title}>Analytics</Text>
         <Text style={styles.subtitle}>Spaced repetition insights</Text>
-      </View>
+      </Animated.View>
 
+      <Animated.View style={filterStyle}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={styles.filterContent}>
         <TouchableOpacity
           style={[styles.filterChip, !selectedTopicId && styles.filterChipActive]}
@@ -117,12 +159,13 @@ export default function AnalyticsScreen() {
           </TouchableOpacity>
         ))}
       </ScrollView>
+      </Animated.View>
 
       {isLoading ? (
         <ActivityIndicator color={colors.primary} style={{ marginTop: 60 }} />
       ) : !analytics ? null : (
         <>
-          <View style={styles.insightsCard}>
+          <Animated.View style={[styles.insightsCard, insightsStyle]}>
             <View style={styles.insightsHeader}>
               <Ionicons name="sparkles" size={18} color={colors.primary} />
               <Text style={styles.insightsTitle}>AI weekly insight</Text>
@@ -178,9 +221,9 @@ export default function AnalyticsScreen() {
                 </TouchableOpacity>
               </>
             )}
-          </View>
+          </Animated.View>
 
-          <View style={styles.topStats}>
+          <Animated.View style={[styles.topStats, statsStyle]}>
             <View style={[styles.bigStat, { borderColor: colors.error + '40' }]}>
               <Ionicons name="flame" size={22} color={colors.error} style={styles.bigStatIcon} />
               <Text style={[styles.bigStatVal, { color: colors.error }]}>{analytics.streakDays}</Text>
@@ -201,9 +244,9 @@ export default function AnalyticsScreen() {
               <Text style={[styles.bigStatVal, { color: colors.warning }]}>{analytics.avgQuality}</Text>
               <Text style={styles.bigStatLabel}>Avg Quality</Text>
             </View>
-          </View>
+          </Animated.View>
 
-          <View style={styles.card}>
+          <Animated.View style={[styles.card, activityStyle]}>
             <Text style={styles.cardTitle}>7-Day Activity</Text>
             <View style={styles.weekChart}>
               {analytics.dailyActivity.map((day) => {
@@ -226,40 +269,26 @@ export default function AnalyticsScreen() {
                 );
               })}
             </View>
-          </View>
+          </Animated.View>
 
-          <View style={styles.card}>
+          <Animated.View style={[styles.card, sessionsStyle]}>
             <Text style={styles.cardTitle}>Recent Sessions</Text>
             {analytics.recentSessions.length === 0 ? (
               <View style={styles.emptySection}>
                 <Ionicons name="play-circle-outline" size={32} color={colors.textMuted} />
-                <Text style={styles.emptySectionText}>No sessions yet. Complete a quiz to see your history here.</Text>
+                <Text style={styles.emptySectionText}>Study session history will show up here</Text>
               </View>
             ) : (
-              analytics.recentSessions.map((s) => {
+              analytics.recentSessions.map((s, i) => {
                 const sc = s.score >= 70 ? colors.success : s.score >= 40 ? colors.warning : colors.error;
                 return (
-                  <View key={s._id} style={styles.sessionRow}>
-                    <View style={[styles.sessionScore, { borderColor: sc }]}>
-                      <Text style={[styles.sessionScoreTxt, { color: sc }]}>{s.score}%</Text>
-                    </View>
-                    <View style={styles.sessionInfo}>
-                      <Text style={styles.sessionCards}>{s.totalCards} cards</Text>
-                      <Text style={styles.sessionDate}>
-                        {s.completedAt ? new Date(s.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
-                      </Text>
-                    </View>
-                    <View style={styles.sessionCounts}>
-                      <Text style={{ color: colors.success, fontSize: 12, fontWeight: '600' }}>✓{s.correctCount}</Text>
-                      <Text style={{ color: colors.error, fontSize: 12, fontWeight: '600' }}>✗{s.wrongCount}</Text>
-                    </View>
-                  </View>
+                  <AnalyticsSessionRow key={s._id} session={s} index={i} focusKey={focusKey} scoreColor={sc} />
                 );
               })
             )}
-          </View>
+          </Animated.View>
 
-          <View style={styles.card}>
+          <Animated.View style={[styles.card, weakStyle]}>
             <Text style={styles.cardTitle}>Cards Needing Work</Text>
             <Text style={styles.cardSub}>Reviewed ≥3 times, lowest accuracy</Text>
             {analytics.weakCards.length > 0 ? (
@@ -286,9 +315,9 @@ export default function AnalyticsScreen() {
                 <Text style={styles.emptySectionText}>Cards reviewed 3+ times with low accuracy will appear here.</Text>
               </View>
             )}
-          </View>
+          </Animated.View>
 
-          <View style={styles.card}>
+          <Animated.View style={[styles.card, strongStyle]}>
             <Text style={styles.cardTitle}>Mastered Cards</Text>
             <Text style={styles.cardSub}>Mature cards with highest ease factor</Text>
             {analytics.strongCards && analytics.strongCards.length > 0 ? (
@@ -310,12 +339,12 @@ export default function AnalyticsScreen() {
                 <Text style={styles.emptySectionText}>Mature cards with high ease factor will show up as you progress.</Text>
               </View>
             )}
-          </View>
+          </Animated.View>
 
           {isPro ? (
             <>
               {analytics.cardStates && (
-                <View style={styles.card}>
+                <Animated.View style={[styles.card, qualityStyle]}>
                   <Text style={styles.cardTitle}>Card States</Text>
                   <Text style={styles.cardSub}>Based on spaced repetition schedule</Text>
                   <View style={styles.statesRow}>
@@ -347,11 +376,11 @@ export default function AnalyticsScreen() {
                       </>
                     )}
                   </View>
-                </View>
+                </Animated.View>
               )}
 
               {analytics.qualityDistribution && (
-                <View style={styles.card}>
+                <Animated.View style={[styles.card, qualityStyle]}>
                   <Text style={styles.cardTitle}>Recall Quality Distribution</Text>
                   <Text style={styles.cardSub}>How you rated each card (0 = blackout, 5 = easy)</Text>
                   {analytics.qualityDistribution.map((q) => {
@@ -367,11 +396,11 @@ export default function AnalyticsScreen() {
                       </View>
                     );
                   })}
-                </View>
+                </Animated.View>
               )}
 
               {analytics.forecast && (
-                <View style={styles.card}>
+                <Animated.View style={[styles.card, forecastStyle]}>
                   <Text style={styles.cardTitle}>Review Forecast</Text>
                   <Text style={styles.cardSub}>Cards due per day (next 7 days)</Text>
                   <View style={styles.weekChart}>
@@ -393,7 +422,7 @@ export default function AnalyticsScreen() {
                       );
                     })}
                   </View>
-                </View>
+                </Animated.View>
               )}
 
             </>

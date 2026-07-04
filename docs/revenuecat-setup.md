@@ -166,3 +166,73 @@ Sandbox success does **not** require code changes — the same RevenueCat public
 | Works in dev build / TestFlight | App Store review + live users |
 
 No toggle to “turn on production” in the app — going live is App Store Connect + submitting a release build.
+
+---
+
+## 11. App Store rejection: Guideline 2.3.2 (duplicate IAP metadata)
+
+Apple rejects when **Promoted In-App Purchase** and/or **Win-Back Offer** use the **same display name or description** as each other (or as the base subscription). This is fixed only in **App Store Connect** — no app rebuild required unless you also change app version notes.
+
+### Option A — You are NOT promoting the subscription on the App Store
+
+1. [App Store Connect](https://appstoreconnect.apple.com) → **Apps** → **StuhDee** → **In-App Purchases**
+2. Open `com.stuhdee.app.pro_monthly` (StuhDee Pro Monthly)
+3. Find **App Store Promotion** (promotional image / promoted IAP section)
+4. **Remove the promotional image** (or turn off promotion)
+5. If you created a **Win-Back Offer**, either delete it or give it unique metadata (Option B)
+6. Save → reply to App Review in Resolution Center: *"Removed promotional IAP image / updated win-back metadata. Promoted IAP metadata is no longer duplicated."*
+7. **Resubmit** the same build (1.0 build 7) — no new binary needed
+
+### Option B — You ARE promoting (or using win-back) — use unique copy
+
+Each field must be **different**. Limits: **display name ≤ 30 chars**, **description ≤ 45 chars**.
+
+| Field | Where | Suggested text |
+|---|---|---|
+| Subscription name | Subscription → English localization | `StuhDee Pro` |
+| Subscription description | Same screen (longer) | `Unlimited decks, AI flashcard generation, study coach, and advanced analytics.` |
+| **Promoted display name** | App Store Promotion | `StuhDee Pro Monthly` (22 chars) |
+| **Promoted description** | App Store Promotion | `AI decks, unlimited topics & analytics` (40 chars) |
+| **Win-back display name** | Win-Back Offer (if any) | `Return to StuhDee Pro` (21 chars) |
+| **Win-back description** | Win-Back Offer (if any) | `Unlock AI cards & unlimited study decks` (39 chars) |
+
+Do **not** use `StuhDee Pro` for every promoted/win-back display name **and** the same sentence for every description.
+
+### Steps in App Store Connect
+
+1. **Apps** → **StuhDee** → **Subscriptions** → group **StuhDee Pro** → product **StuhDee Pro Monthly**
+2. **App Store Localization** — set the standard subscription name/description (table above)
+3. Scroll to **App Store Promotion** → edit **Promotional Image** metadata:
+   - Display Name: `StuhDee Pro Monthly`
+   - Description: `AI decks, unlimited topics & analytics`
+4. If **Win-Back Offers** exists (Subscriptions → offer or separate win-back section):
+   - Display Name: `Return to StuhDee Pro`
+   - Description: `Unlock AI cards & unlimited study decks`
+5. **Save** all localizations
+6. **App Store** → your version **1.0** → ensure the subscription is still attached
+7. **Reply** to the rejection in Resolution Center (example below)
+8. Click **Submit for Review** again (same build is fine)
+
+### Reply to paste in App Store Connect
+
+```
+Hello,
+
+We updated the In-App Purchase metadata for com.stuhdee.app.pro_monthly:
+
+- Promoted IAP display name: StuhDee Pro Monthly
+- Promoted IAP description: AI decks, unlimited topics & analytics
+- [If applicable] Win-back display name: Return to StuhDee Pro
+- [If applicable] Win-back description: Unlock AI cards & unlimited study decks
+
+[If you removed promotion instead:]
+We removed the App Store promotional image for this subscription since we are not promoting it on the store listing.
+
+Each metadata field is now unique. No app binary changes were required.
+
+Thank you.
+```
+
+### After approval
+
+No code changes needed. RevenueCat and the in-app paywall are unchanged.

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Linking } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Linking, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, typography, shadow } from '../../theme';
 import { useAppSelector, useAppDispatch } from '../../hooks/redux';
@@ -13,6 +13,7 @@ import {
   canUseRevenueCat, getCustomerInfo, getProEntitlement, isPro, openSubscriptionManagement,
 } from '../../services/revenueCat';
 import { PRIVACY_POLICY_URL, TERMS_OF_USE_URL } from '../../constants/legal';
+import { useScreenEntrance } from '../../hooks/useEntranceAnimation';
 
 export default function ProfileScreen() {
   const dispatch = useAppDispatch();
@@ -128,17 +129,23 @@ export default function ProfileScreen() {
     </View>
   );
 
+  const headerStyle = useScreenEntrance({ delay: 0, variant: 'pop' });
+  const statsStyle = useScreenEntrance({ delay: 110, variant: 'slideLeft' });
+  const learningStyle = useScreenEntrance({ delay: 210, variant: 'slideRight' });
+  const subStyle = useScreenEntrance({ delay: 310, variant: 'scale' });
+  const accountStyle = useScreenEntrance({ delay: 410, variant: 'fade' });
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
+      <Animated.View style={[styles.header, headerStyle]}>
         <View style={styles.avatarContainer}>
           <Text style={styles.avatarLetter}>{user?.name?.[0]?.toUpperCase() || '?'}</Text>
         </View>
         <Text style={styles.name}>{user?.name}</Text>
         <Text style={styles.email}>{user?.email}</Text>
-      </View>
+      </Animated.View>
 
-      <View style={styles.statsRow}>
+      <Animated.View style={[styles.statsRow, statsStyle]}>
         <View style={styles.statBox}>
           <Text style={styles.statNum}>{topics?.length ?? 0}</Text>
           <Text style={styles.statLabel}>Topics</Text>
@@ -156,17 +163,17 @@ export default function ProfileScreen() {
           </View>
           <Text style={styles.statLabel}>Day Streak</Text>
         </View>
-      </View>
+      </Animated.View>
 
-      <View style={styles.section}>
+      <Animated.View style={[styles.section, learningStyle]}>
         <Text style={styles.sectionTitle}>Learning Stats</Text>
         <MenuItem icon="checkmark-circle-outline" label="Overall Accuracy" value={`${analytics?.overallAccuracy ?? 0}%`} color={colors.success} />
         <MenuItem icon="bar-chart-outline" label="Total Sessions" value={`${analytics?.totalSessions ?? 0}`} color={colors.primary} />
         <MenuItem icon="layers-outline" label="Cards Reviewed" value={`${analytics?.totalCardsReviewed ?? 0}`} color={colors.warning} />
         <MenuItem icon="flash-outline" label="Cards Due Today" value={`${analytics?.dueToday ?? 0}`} color={colors.accent} />
-      </View>
+      </Animated.View>
 
-      <View style={styles.section}>
+      <Animated.View style={[styles.section, subStyle]}>
         <Text style={styles.sectionTitle}>Subscription</Text>
         {isPro ? (
           <View>
@@ -219,9 +226,9 @@ export default function ProfileScreen() {
             <Text style={styles.legalLink}>Terms of Use</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </Animated.View>
 
-      <View style={styles.section}>
+      <Animated.View style={[styles.section, accountStyle]}>
         <Text style={styles.sectionTitle}>Account</Text>
         <TouchableOpacity style={[styles.menuItem, styles.logoutItem]} onPress={handleLogout}>
           <View style={[styles.menuIcon, { backgroundColor: colors.error + '20' }]}>
@@ -235,7 +242,7 @@ export default function ProfileScreen() {
           </View>
           <Text style={[styles.menuLabel, { color: colors.error, opacity: 0.75 }]}>Delete Account</Text>
         </TouchableOpacity>
-      </View>
+      </Animated.View>
 
       <View style={{ height: 100 }} />
     </ScrollView>

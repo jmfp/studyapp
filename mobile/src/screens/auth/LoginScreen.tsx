@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
+  ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Animated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -11,6 +11,7 @@ import { useLoginMutation } from '../../services/api';
 import { setCredentials } from '../../store/authSlice';
 import { setTier } from '../../store/subscriptionSlice';
 import { useAppDispatch } from '../../hooks/redux';
+import { useMountEntrance } from '../../hooks/useEntranceAnimation';
 import type { AuthStackParamList } from '../../types';
 
 type Nav = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
@@ -22,6 +23,9 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
+  const headerAnim = useMountEntrance({ delay: 0, variant: 'slideRight' });
+  const whyAnim = useMountEntrance({ delay: 130, variant: 'fade' });
+  const formAnim = useMountEntrance({ delay: 260, variant: 'rise' });
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -41,15 +45,15 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.inner} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
+        <Animated.View style={[styles.header, headerAnim]}>
           <View style={styles.logoContainer}>
             <Ionicons name="flash" size={40} color={colors.primary} />
           </View>
           <Text style={styles.title}>StuhDee</Text>
-          <Text style={styles.subtitle}>Master anything, one card at a time</Text>
-        </View>
+          <Text style={styles.subtitle}>Remember what you study</Text>
+        </Animated.View>
 
-        <View style={styles.whyAccount}>
+        <Animated.View style={[styles.whyAccount, whyAnim]}>
           <View style={styles.whyRow}>
             <Ionicons name="cloud-outline" size={16} color={colors.primary} />
             <Text style={styles.whyText}>Cards sync across all your devices</Text>
@@ -62,9 +66,9 @@ export default function LoginScreen() {
             <Ionicons name="bar-chart-outline" size={16} color={colors.primary} />
             <Text style={styles.whyText}>Study analytics and streaks tracked per user</Text>
           </View>
-        </View>
+        </Animated.View>
 
-        <View style={styles.form}>
+        <Animated.View style={[styles.form, formAnim]}>
           <Text style={styles.formTitle}>Welcome back</Text>
 
           <View style={styles.inputGroup}>
@@ -120,7 +124,7 @@ export default function LoginScreen() {
           <TouchableOpacity style={styles.secondaryBtn} onPress={() => navigation.navigate('Register')}>
             <Text style={styles.secondaryBtnText}>Create an account</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );

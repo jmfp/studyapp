@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Dimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Dimensions, Platform, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -37,10 +37,10 @@ export default function QuizResultScreen() {
   const bgPulse = useRef(new Animated.Value(1)).current;
 
   const getGrade = () => {
-    if (score >= 90) return { label: 'Outstanding!', icon: 'trophy', color: colors.accent };
-    if (score >= 70) return { label: 'Great job!', icon: 'star', color: colors.success };
-    if (score >= 50) return { label: 'Good effort', icon: 'thumbs-up', color: colors.warning };
-    return { label: 'Keep going!', icon: 'trending-up', color: colors.error };
+    if (score >= 90) return { label: 'Nailed it', icon: 'trophy', color: colors.accent };
+    if (score >= 70) return { label: 'Solid round', icon: 'star', color: colors.success };
+    if (score >= 50) return { label: 'Getting there', icon: 'thumbs-up', color: colors.warning };
+    return { label: 'Rough one', icon: 'trending-up', color: colors.error };
   };
 
   const getMessage = () => {
@@ -86,15 +86,15 @@ export default function QuizResultScreen() {
       ]),
       Animated.spring(titleAnim, { toValue: 1, tension: 70, friction: 8, useNativeDriver: true }),
       Animated.spring(circleAnim, { toValue: 1, tension: 50, friction: 7, useNativeDriver: true }),
-      Animated.stagger(120, [
-        Animated.spring(stat1Anim, { toValue: 1, tension: 70, friction: 8, useNativeDriver: true }),
-        Animated.spring(stat2Anim, { toValue: 1, tension: 70, friction: 8, useNativeDriver: true }),
-        Animated.spring(stat3Anim, { toValue: 1, tension: 70, friction: 8, useNativeDriver: true }),
+      Animated.stagger(130, [
+        Animated.spring(stat1Anim, { toValue: 1, tension: 75, friction: 6, useNativeDriver: true }),
+        Animated.spring(stat2Anim, { toValue: 1, tension: 60, friction: 5, useNativeDriver: true }),
+        Animated.spring(stat3Anim, { toValue: 1, tension: 85, friction: 7, useNativeDriver: true }),
       ]),
       Animated.stagger(100, [
-        Animated.spring(messageAnim, { toValue: 1, tension: 60, friction: 8, useNativeDriver: true }),
-        Animated.spring(btn1Anim, { toValue: 1, tension: 60, friction: 8, useNativeDriver: true }),
-        Animated.spring(btn2Anim, { toValue: 1, tension: 60, friction: 8, useNativeDriver: true }),
+        Animated.spring(messageAnim, { toValue: 1, tension: 50, friction: 7, useNativeDriver: true }),
+        Animated.spring(btn1Anim, { toValue: 1, tension: 80, friction: 6, useNativeDriver: true }),
+        Animated.spring(btn2Anim, { toValue: 1, tension: 80, friction: 6, useNativeDriver: true }),
       ]),
     ]).start();
 

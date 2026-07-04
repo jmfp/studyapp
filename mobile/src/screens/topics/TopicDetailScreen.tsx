@@ -1,11 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  ActivityIndicator, Alert, Modal, Animated, Keyboard, Platform, useWindowDimensions,
+  ActivityIndicator, Alert, Modal, Animated, Keyboard, Platform, useWindowDimensions, Easing,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute, type CompositeNavigationProp, type RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, type CompositeNavigationProp, type RouteProp, useFocusEffect } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, radius, typography, shadow } from '../../theme';
@@ -21,6 +21,7 @@ import MultilingualAiToolbar from '../../components/MultilingualAiToolbar';
 import type { DraftCard } from '../../types';
 import { isWeakCard } from '../../utils/cardStats';
 import { useAiProGate } from '../../hooks/useAiProGate';
+import { useListItemEntrance, useMountEntrance } from '../../hooks/useEntranceAnimation';
 import ProBadge from '../../components/ProBadge';
 
 type Nav = CompositeNavigationProp<
@@ -29,27 +30,15 @@ type Nav = CompositeNavigationProp<
 >;
 type Route = RouteProp<TopicsStackParamList, 'TopicDetail'>;
 
-const MIN_CARD_HEIGHT = 120;
+const CARD_HEIGHT = 180;
 
-function AnimatedCard({ card, index, onFlip, isFlipped, onDelete, onImprove, onEdit }: {
-  card: Card; index: number; isFlipped: boolean;
+function AnimatedCard({ card, index, focusKey, onFlip, isFlipped, onDelete, onImprove, onEdit }: {
+  card: Card; index: number; focusKey: number; isFlipped: boolean;
   onFlip: () => void; onDelete: () => void; onImprove: () => void; onEdit: () => void;
 }) {
-  const [frontHeight, setFrontHeight] = useState(0);
-  const [backHeight, setBackHeight] = useState(0);
-  const cardHeight = Math.max(frontHeight, backHeight, MIN_CARD_HEIGHT);
-
-  const entranceAnim = useRef(new Animated.Value(0)).current;
+  const entrance = useListItemEntrance(index, focusKey, 65, index % 2 === 0 ? 'slideRight' : 'scale');
   const flipAnim = useRef(new Animated.Value(0)).current;
   const pressScale = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    Animated.spring(entranceAnim, {
-      toValue: 1, tension: 55, friction: 8,
-      delay: index * 60,
-      useNativeDriver: true,
-    }).start();
-  }, []);
 
   useEffect(() => {
     Animated.spring(flipAnim, {
@@ -76,53 +65,10 @@ function AnimatedCard({ card, index, onFlip, isFlipped, onDelete, onImprove, onE
   };
 
   return (
-    <Animated.View style={{
-      opacity: entranceAnim,
-      transform: [
-        { translateY: entranceAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) },
-        { scale: Animated.multiply(pressScale, entranceAnim.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1] })) },
-      ],
-      marginBottom: spacing.sm,
-    }}>
-      {/* Measure both faces so the flip container fits the taller side */}
-      <View style={styles.measureContainer} pointerEvents="none" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-        <View style={styles.measureFace} onLayout={(e) => setFrontHeight(e.nativeEvent.layout.height)}>
-          <View style={styles.cardTopRow}>
-            <View style={styles.cardSide}><Text style={styles.cardSideText}>QUESTION</Text></View>
-            {weak && (
-              <View style={styles.weakBadge}>
-                <Ionicons name="alert-circle" size={12} color={colors.error} />
-                <Text style={styles.weakBadgeText}>Needs work</Text>
-              </View>
-            )}
-            {accuracy !== null && (
-              <Text style={[styles.accuracyText, { color: accuracy >= 70 ? colors.success : accuracy >= 40 ? colors.warning : colors.error }]}>
-                {accuracy}%
-              </Text>
-            )}
-          </View>
-          <Text style={styles.cardText}>{card.question}</Text>
-          <Text style={styles.cardMeta}>
-            {card.timesReviewed > 0 ? `Reviewed ${card.timesReviewed}× · tap to flip` : 'Tap to flip'}
-          </Text>
-        </View>
-        <View style={styles.measureFace} onLayout={(e) => setBackHeight(e.nativeEvent.layout.height)}>
-          <View style={styles.cardTopRow}>
-            <View style={[styles.cardSide, { backgroundColor: colors.primary + '30' }]}>
-              <Text style={[styles.cardSideText, { color: colors.primaryLight }]}>ANSWER</Text>
-            </View>
-            <View style={styles.cardBackActions}>
-              <View style={styles.improveBtn}><Ionicons name="pencil" size={16} color={colors.textSecondary} /></View>
-              <View style={styles.improveBtn}><Ionicons name="sparkles" size={16} color={colors.primary} /></View>
-            </View>
-          </View>
-          <Text style={[styles.cardText, { color: colors.primaryLight }]}>{card.answer}</Text>
-          <Text style={styles.cardMeta}>Long press for edit, AI, or delete</Text>
-        </View>
-      </View>
-
+    <Animated.View style={[entrance, { marginBottom: spacing.sm }]}>
+      <Animated.View style={{ transform: [{ scale: pressScale }] }}>
       <TouchableOpacity
-        style={[styles.cardOuter, { height: cardHeight }]}
+        style={[styles.cardOuter, { height: CARD_HEIGHT }]}
         onPress={onFlip}
         onLongPress={handleLongPress}
         onPressIn={handlePressIn}
@@ -145,13 +91,17 @@ function AnimatedCard({ card, index, onFlip, isFlipped, onDelete, onImprove, onE
               </Text>
             )}
           </View>
-          <Text style={styles.cardText}>{card.question}</Text>
-          {card.timesReviewed > 0 && (
-            <Text style={styles.cardMeta}>Reviewed {card.timesReviewed}× · tap to flip</Text>
-          )}
-          {card.timesReviewed === 0 && (
-            <Text style={styles.cardMeta}>Tap to flip</Text>
-          )}
+          <ScrollView
+            style={styles.cardTextScroll}
+            contentContainerStyle={styles.cardTextScrollContent}
+            showsVerticalScrollIndicator
+            nestedScrollEnabled
+          >
+            <Text style={styles.cardText}>{card.question}</Text>
+          </ScrollView>
+          <Text style={styles.cardMeta}>
+            {card.timesReviewed > 0 ? `Reviewed ${card.timesReviewed}× · tap to flip` : 'Tap to flip'}
+          </Text>
         </Animated.View>
 
         {/* Back face */}
@@ -169,10 +119,18 @@ function AnimatedCard({ card, index, onFlip, isFlipped, onDelete, onImprove, onE
               </TouchableOpacity>
             </View>
           </View>
-          <Text style={[styles.cardText, { color: colors.primaryLight }]}>{card.answer}</Text>
+          <ScrollView
+            style={styles.cardTextScroll}
+            contentContainerStyle={styles.cardTextScrollContent}
+            showsVerticalScrollIndicator
+            nestedScrollEnabled
+          >
+            <Text style={[styles.cardText, { color: colors.primaryLight }]}>{card.answer}</Text>
+          </ScrollView>
           <Text style={styles.cardMeta}>Long press for edit, AI, or delete</Text>
         </Animated.View>
       </TouchableOpacity>
+      </Animated.View>
     </Animated.View>
   );
 }
@@ -206,6 +164,9 @@ export default function TopicDetailScreen() {
 
   const headerAnim = useRef(new Animated.Value(0)).current;
   const modalAnim = useRef(new Animated.Value(0)).current;
+  const focusKeyRef = useRef(0);
+  const [focusKey, setFocusKey] = useState(0);
+  const emptyStyle = useMountEntrance({ delay: 200, variant: 'fade' });
   const modalScrollRef = useRef<ScrollView>(null);
   const questionSectionY = useRef(0);
   const answerSectionY = useRef(0);
@@ -256,9 +217,14 @@ export default function TopicDetailScreen() {
     ? windowHeight - keyboardHeight - spacing.sm
     : windowHeight * 0.88;
 
-  useEffect(() => {
-    Animated.spring(headerAnim, { toValue: 1, tension: 60, friction: 8, useNativeDriver: true }).start();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      headerAnim.setValue(0);
+      Animated.spring(headerAnim, { toValue: 1, tension: 45, friction: 7, useNativeDriver: true }).start();
+      focusKeyRef.current += 1;
+      setFocusKey(focusKeyRef.current);
+    }, [headerAnim]),
+  );
 
   const frontLang = topic?.sourceLanguage ?? 'en';
   const backLang = topic?.language ?? 'en';
@@ -367,12 +333,12 @@ export default function TopicDetailScreen() {
       {isLoading ? (
         <ActivityIndicator color={colors.primary} style={{ marginTop: 80 }} />
       ) : cards?.length === 0 ? (
-        <View style={styles.emptyState}>
+        <Animated.View style={[styles.emptyState, emptyStyle]}>
           <View style={styles.emptyIcon}>
             <Ionicons name="layers-outline" size={52} color={colors.textMuted} />
           </View>
-          <Text style={styles.emptyTitle}>No cards yet</Text>
-          <Text style={styles.emptySubtitle}>Add cards manually or generate a deck with AI (Pro)</Text>
+          <Text style={styles.emptyTitle}>This deck is empty</Text>
+          <Text style={styles.emptySubtitle}>Add some cards to start studying this topic</Text>
           <TouchableOpacity style={styles.emptyBtn} onPress={openModal}>
             <Text style={styles.emptyBtnText}>Add Card</Text>
           </TouchableOpacity>
@@ -381,7 +347,7 @@ export default function TopicDetailScreen() {
             <Text style={styles.emptyAiBtnText}>Generate with AI</Text>
             <ProBadge compact />
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       ) : (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
           <Text style={styles.tapHint}>Tap to flip · Long press to edit, improve, or delete</Text>
@@ -390,6 +356,7 @@ export default function TopicDetailScreen() {
               key={card._id}
               card={card}
               index={i}
+              focusKey={focusKey}
               isFlipped={flippedCards.has(card._id)}
               onFlip={() => toggleFlip(card._id)}
               onDelete={() => handleDelete(card)}
@@ -575,18 +542,8 @@ const styles = StyleSheet.create({
   emptyAiBtnText: { color: colors.primary, fontWeight: '700' },
   list: { paddingHorizontal: spacing.lg, paddingTop: spacing.xs },
   tapHint: { ...typography.small, textAlign: 'center', marginBottom: spacing.md, color: colors.textMuted, fontSize: 12 },
-  measureContainer: {
-    position: 'absolute',
-    opacity: 0,
-    width: '100%',
-    zIndex: -1,
-  },
-  measureFace: {
-    padding: spacing.lg,
-    width: '100%',
-  },
   cardOuter: {
-    minHeight: MIN_CARD_HEIGHT,
+    height: CARD_HEIGHT,
     backgroundColor: colors.surface,
     borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     ...shadow.sm,
@@ -596,10 +553,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg, padding: spacing.lg,
     backfaceVisibility: 'hidden',
     flexDirection: 'column',
+    overflow: 'hidden',
   },
   cardFront: { backgroundColor: colors.surface },
   cardBack: { backgroundColor: colors.surfaceElevated, borderWidth: 1, borderColor: colors.primary + '30' },
-  cardTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
+  cardTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm, flexShrink: 0 },
   cardSide: { backgroundColor: colors.surfaceElevated, borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 3 },
   cardSideText: { fontSize: 10, fontWeight: '700', color: colors.textMuted, letterSpacing: 1 },
   accuracyText: { fontSize: 12, fontWeight: '600' },
@@ -614,8 +572,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary + '20', alignItems: 'center', justifyContent: 'center',
   },
   cardBackActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  cardText: { ...typography.body, lineHeight: 22, fontSize: 15, flexShrink: 0 },
-  cardMeta: { ...typography.small, fontSize: 11, marginTop: 4 },
+  cardTextScroll: { flex: 1, minHeight: 0 },
+  cardTextScrollContent: { flexGrow: 1 },
+  cardText: { ...typography.body, lineHeight: 22, fontSize: 15 },
+  cardMeta: { ...typography.small, fontSize: 11, marginTop: 4, flexShrink: 0 },
   modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
   modalContent: {
     backgroundColor: colors.surface,

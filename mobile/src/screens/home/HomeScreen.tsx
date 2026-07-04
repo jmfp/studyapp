@@ -6,24 +6,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, typography, shadow } from '../../theme';
 import { useGetTopicsQuery, useGetAnalyticsQuery } from '../../services/api';
 import { useAppSelector } from '../../hooks/redux';
+import { useScreenEntrance, useFocusReplayKey, useListItemEntrance } from '../../hooks/useEntranceAnimation';
 import type { Card, DailyActivity, ReviewSession } from '../../types';
 import CardImproveModal from '../../components/CardImproveModal';
 import { weakCardToCard } from '../../utils/cardStats';
 import { useAiProGate } from '../../hooks/useAiProGate';
 import { isTodayDateKey, weekdayLetterFromDateKey } from '../../utils/localDate';
-
-function useFadeSlideIn(delay = 0) {
-  const anim = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.spring(anim, {
-      toValue: 1, tension: 60, friction: 8, delay, useNativeDriver: true,
-    }).start();
-  }, []);
-  return {
-    opacity: anim,
-    transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) }],
-  };
-}
 
 function StatCard({
   icon, label, value, color, style,
@@ -39,19 +27,20 @@ function StatCard({
   );
 }
 
-function ActivityBar({ day, maxCards }: { day: DailyActivity; maxCards: number }) {
+function ActivityBar({ day, maxCards, focusKey }: { day: DailyActivity; maxCards: number; focusKey: number }) {
   const heightPct = maxCards > 0 ? day.cardsReviewed / maxCards : 0;
   const isToday = isTodayDateKey(day.date);
   const barHeight = useRef(new Animated.Value(0)).current;
   const hasActivity = day.cardsReviewed > 0;
 
   useEffect(() => {
+    barHeight.setValue(0);
     const target = hasActivity ? Math.max(heightPct * 90, 12) : 0;
     Animated.spring(barHeight, {
       toValue: target,
       tension: 50, friction: 7, delay: 400, useNativeDriver: false,
     }).start();
-  }, [barHeight, heightPct, hasActivity]);
+  }, [barHeight, heightPct, hasActivity, focusKey]);
 
   return (
     <View style={styles.barWrapper}>
@@ -73,19 +62,12 @@ function ActivityBar({ day, maxCards }: { day: DailyActivity; maxCards: number }
   );
 }
 
-function SessionRow({ session, index }: { session: ReviewSession; index: number }) {
+function SessionRow({ session, index, focusKey }: { session: ReviewSession; index: number; focusKey: number }) {
   const scoreColor = session.score >= 70 ? colors.success : session.score >= 40 ? colors.warning : colors.error;
-  const rowAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.spring(rowAnim, { toValue: 1, tension: 60, friction: 8, delay: 560 + index * 80, useNativeDriver: true }).start();
-  }, [rowAnim, index]);
+  const rowStyle = useListItemEntrance(index + 4, focusKey, 90, index % 2 === 0 ? 'slideRight' : 'rise');
 
   return (
-    <Animated.View style={[styles.sessionRow, {
-      opacity: rowAnim,
-      transform: [{ translateX: rowAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }],
-    }]}>
+    <Animated.View style={[styles.sessionRow, rowStyle]}>
       <View style={[styles.scoreCircle, { borderColor: scoreColor }]}>
         <Text style={[styles.scoreText, { color: scoreColor }]}>{session.score}%</Text>
       </View>
@@ -98,6 +80,37 @@ function SessionRow({ session, index }: { session: ReviewSession; index: number 
       <View style={styles.sessionResults}>
         <Text style={{ color: colors.success, fontSize: 12, fontWeight: '600' }}>✓ {session.correctCount}</Text>
         <Text style={{ color: colors.error, fontSize: 12, fontWeight: '600' }}>✗ {session.wrongCount}</Text>
+      </View>
+    </Animated.View>
+  );
+}
+
+function WeakCardRow({
+  card, index, focusKey, onImprove,
+}: {
+  card: { _id: string; question: string; accuracy: number; topicId?: string };
+  index: number;
+  focusKey: number;
+  onImprove: () => void;
+}) {
+  const rowStyle = useListItemEntrance(index, focusKey, 60, 'slideLeft');
+  return (
+    <Animated.View style={[styles.weakCard, rowStyle]}>
+      <View style={styles.weakCardLeft}>
+        <Ionicons name="alert-circle-outline" size={17} color={colors.error} />
+        <Text style={styles.weakCardQuestion} numberOfLines={1}>{card.question}</Text>
+      </View>
+      <View style={styles.weakCardRight}>
+        <View style={[styles.accuracyBadge, { backgroundColor: card.accuracy < 50 ? colors.error + '20' : colors.warning + '20' }]}>
+          <Text style={[styles.accuracyText, { color: card.accuracy < 50 ? colors.error : colors.warning }]}>
+            {card.accuracy}%
+          </Text>
+        </View>
+        {card.topicId && (
+          <TouchableOpacity style={styles.improveChip} onPress={onImprove}>
+            <Ionicons name="sparkles" size={14} color={colors.primary} />
+          </TouchableOpacity>
+        )}
       </View>
     </Animated.View>
   );
@@ -124,13 +137,14 @@ export default function HomeScreen() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
 
-  const headerStyle = useFadeSlideIn(0);
-  const stat1Style = useFadeSlideIn(100);
-  const stat2Style = useFadeSlideIn(180);
-  const stat3Style = useFadeSlideIn(260);
-  const chartStyle = useFadeSlideIn(360);
-  const weakStyle = useFadeSlideIn(460);
-  const sessionStyle = useFadeSlideIn(540);
+  const focusKey = useFocusReplayKey();
+  const headerStyle = useScreenEntrance({ delay: 0, variant: 'slideRight' });
+  const stat1Style = useScreenEntrance({ delay: 90, variant: 'pop' });
+  const stat2Style = useScreenEntrance({ delay: 160, variant: 'rise' });
+  const stat3Style = useScreenEntrance({ delay: 230, variant: 'slideLeft' });
+  const chartStyle = useScreenEntrance({ delay: 310, variant: 'scale' });
+  const weakStyle = useScreenEntrance({ delay: 390, variant: 'fade' });
+  const sessionStyle = useScreenEntrance({ delay: 460, variant: 'drop' });
 
   const streakPulse = useRef(new Animated.Value(1)).current;
   const idleScale = useRef(new Animated.Value(1)).current;
@@ -177,8 +191,8 @@ export default function HomeScreen() {
               <Text style={styles.sectionSub}>cards reviewed per day</Text>
             </View>
             <View style={styles.barChartContainer}>
-              {analytics?.dailyActivity.map((day, i) => (
-                <ActivityBar key={day.date} day={day} maxCards={maxCards} />
+              {analytics?.dailyActivity.map((day) => (
+                <ActivityBar key={day.date} day={day} maxCards={maxCards} focusKey={focusKey} />
               ))}
             </View>
           </Animated.View>
@@ -186,25 +200,14 @@ export default function HomeScreen() {
           {analytics && analytics.weakCards.length > 0 && (
             <Animated.View style={[styles.section, weakStyle]}>
               <Text style={styles.sectionTitle}>Focus On These</Text>
-              {analytics.weakCards.map((card) => (
-                <View key={card._id} style={styles.weakCard}>
-                  <View style={styles.weakCardLeft}>
-                    <Ionicons name="alert-circle-outline" size={17} color={colors.error} />
-                    <Text style={styles.weakCardQuestion} numberOfLines={1}>{card.question}</Text>
-                  </View>
-                  <View style={styles.weakCardRight}>
-                    <View style={[styles.accuracyBadge, { backgroundColor: card.accuracy < 50 ? colors.error + '20' : colors.warning + '20' }]}>
-                      <Text style={[styles.accuracyText, { color: card.accuracy < 50 ? colors.error : colors.warning }]}>
-                        {card.accuracy}%
-                      </Text>
-                    </View>
-                    {card.topicId && (
-                      <TouchableOpacity style={styles.improveChip} onPress={() => openWeakImprove(card)}>
-                        <Ionicons name="sparkles" size={14} color={colors.primary} />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
+              {analytics.weakCards.map((card, i) => (
+                <WeakCardRow
+                  key={card._id}
+                  card={card}
+                  index={i}
+                  focusKey={focusKey}
+                  onImprove={() => openWeakImprove(card)}
+                />
               ))}
             </Animated.View>
           )}
@@ -214,11 +217,11 @@ export default function HomeScreen() {
             {analytics?.recentSessions.length === 0 ? (
               <View style={styles.emptyState}>
                 <Ionicons name="play-circle-outline" size={40} color={colors.textMuted} />
-                <Text style={styles.emptyText}>No sessions yet. Start studying!</Text>
+                <Text style={styles.emptyText}>No study sessions yet</Text>
               </View>
             ) : (
               analytics?.recentSessions.slice(0, 5).map((s, i) => (
-                <SessionRow key={s._id} session={s} index={i} />
+                <SessionRow key={s._id} session={s} index={i} focusKey={focusKey} />
               ))
             )}
           </Animated.View>

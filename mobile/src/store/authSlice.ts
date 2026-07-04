@@ -2,9 +2,14 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { AuthState, User } from '../types';
 import { BYPASS_AUTH, DEV_TOKEN, DEV_USER } from '../config/dev';
 
-const initialState: AuthState = BYPASS_AUTH
-  ? { user: DEV_USER, token: DEV_TOKEN, isLoading: false, error: null }
-  : { user: null, token: null, isLoading: false, error: null };
+interface ExtendedAuthState extends AuthState {
+  needsOnboarding: boolean;
+  showDeckTip: boolean;
+}
+
+const initialState: ExtendedAuthState = BYPASS_AUTH
+  ? { user: DEV_USER, token: DEV_TOKEN, isLoading: false, error: null, needsOnboarding: false, showDeckTip: false }
+  : { user: null, token: null, isLoading: false, error: null, needsOnboarding: false, showDeckTip: false };
 
 const authSlice = createSlice({
   name: 'auth',
@@ -22,12 +27,20 @@ const authSlice = createSlice({
       state.user = null;
       state.token = null;
       state.error = null;
+      state.needsOnboarding = false;
+      state.showDeckTip = false;
     },
     setError: (state, action: PayloadAction<string>) => {
       state.error = action.payload;
     },
+    setNeedsOnboarding: (state, action: PayloadAction<boolean>) => {
+      state.needsOnboarding = action.payload;
+    },
+    setShowDeckTip: (state, action: PayloadAction<boolean>) => {
+      state.showDeckTip = action.payload;
+    },
   },
 });
 
-export const { setCredentials, updateUser, logout, setError } = authSlice.actions;
+export const { setCredentials, updateUser, logout, setError, setNeedsOnboarding, setShowDeckTip } = authSlice.actions;
 export default authSlice.reducer;

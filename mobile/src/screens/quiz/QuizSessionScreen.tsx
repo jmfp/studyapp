@@ -122,7 +122,7 @@ export default function QuizSessionScreen() {
   }, [isSubmitting]);
 
   useEffect(() => {
-    Animated.spring(startScreenAnim, { toValue: 1, tension: 55, friction: 8, useNativeDriver: true }).start();
+    Animated.spring(startScreenAnim, { toValue: 1, tension: 35, friction: 5, useNativeDriver: true }).start();
   }, []);
 
   const animateCardIn = useCallback(() => {
@@ -175,7 +175,7 @@ export default function QuizSessionScreen() {
   useEffect(() => {
     if (!isStarted || sessionCards === null) return;
     animateCardIn();
-    Animated.spring(headerAnim, { toValue: 1, tension: 60, friction: 8, useNativeDriver: true }).start();
+    Animated.spring(headerAnim, { toValue: 1, tension: 70, friction: 9, useNativeDriver: true }).start();
     Animated.spring(progressWidth, {
       toValue: sessionCards.length > 0 ? (currentIndex / sessionCards.length) * 100 : 0,
       tension: 40, friction: 8, useNativeDriver: false,
@@ -421,8 +421,8 @@ export default function QuizSessionScreen() {
       <View style={s.center}>
         <Animated.View style={{ transform: [{ scale: startScreenAnim }], alignItems: 'center' }}>
           <Ionicons name="checkmark-circle" size={72} color={colors.success} />
-          <Text style={s.noCardsTitle}>All caught up!</Text>
-          <Text style={s.noCardsSub}>No cards due. Your schedule is on track.</Text>
+          <Text style={s.noCardsTitle}>Nothing due right now</Text>
+          <Text style={s.noCardsSub}>You've reviewed everything for today. Check back later.</Text>
           <TouchableOpacity style={s.backBtn2} onPress={() => navigation.goBack()}>
             <Text style={s.backBtnText}>Go Back</Text>
           </TouchableOpacity>
